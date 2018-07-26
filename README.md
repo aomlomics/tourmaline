@@ -45,8 +45,9 @@ Preprocess and format sequence data and metadata for QIIME 2 processing.
 Run Deblur or DADA2 to generate ASV feature tables and representative sequences. This is akin to OTU picking.
 
 * Denoise amplicon data using Deblur or DADA2 to generate ASV feature tables (BIOM). Use paired-end mode (DADA2 only) if sequence and amplicon lengths permit.
-* Rarefy tables to even depth.
-* Summarize tables and representative sequences (ASVs).
+* Summarize tables and representative sequences (ASVs). Record results in Quality Control summary tables.
+* Use table summary to determine appropriate rarefaction depth.
+* Use representative sequences summary to determine length distribution of sequences.
 
 ## Step 4. ASV curation: phylogeny and taxonomy
 
@@ -57,7 +58,9 @@ Generate a phylogenetic tree of ASV sequences, and identify the taxonomy (phylum
 
 ## Step 5. Core analyses: alpha/beta diversity and taxonomic profiles
 
-* Alpha diversity: diversity metrics (evenness, Shannon, Faith's PD, observed sequences), alpha rarefaction, alpha group significance.
+First consult table summary and run alpha rarefaction to decide on a rarefaction depth. Then do the major alpha/beta diversity analyses and taxonomy summary.
+
+* Alpha diversity: alpha rarefaction, diversity metrics (evenness, Shannon, Faith's PD, observed sequences), alpha group significance.
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
 
