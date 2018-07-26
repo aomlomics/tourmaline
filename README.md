@@ -2,11 +2,11 @@
 
 # tourmaline
 
-Amplicon data processing workflow using [QIIME 2](https://qiime2.org).
+Amplicon sequencing is a metagenetics method whereby a single DNA locus in a community of organisms is PCR-amplified and sequenced. Tourmaline is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
-Two methods of amplicon data processing are supported, both of which generate ASVs (amplicon sequence variants, which approximate the "true" or "exact" sequences in the sample) rather than OTUs (operational taxonomic units, which blur sequencing errors and microdiversity through clustering):
+Two methods of amplicon sequence processing are supported, both of which generate ASVs (amplicon sequence variants, which approximate the "true" or "exact" sequences in a sample) rather than OTUs (operational taxonomic units, which blur sequencing errors and microdiversity through clustering):
 
-* [Deblur](https://github.com/biocore/deblur) is a greedy deconvolution algorithm based on known read error profiles ([Amir et al., 2017](https://doi.org/10.1128/mSystems.00191-16)).
+* [Deblur](https://github.com/biocore/deblur) is a greedy deconvolution algorithm based on known Illumina read error profiles ([Amir et al., 2017](https://doi.org/10.1128/mSystems.00191-16)).
 * [DADA2](https://github.com/benjjneb/dada2) implements a quality-aware model of Illumina amplicon errors to infer sample composition by dividing amplicon reads into partitions consistent with the error model ([Callahan et al., 2016](https://doi.org/10.1038/nmeth.3869)).
 
 Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) and uses [Swarm](https://github.com/torognes/swarm) for OTU picking.
