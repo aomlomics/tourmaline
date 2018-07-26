@@ -24,7 +24,7 @@ Evaluate the sequence data to determine the best parameters for processing. Ask 
 
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
-* What sequence processing has been done: Demultiplexing? Quality filtering? Merging of paired reads?
+* What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Merging of paired reads?
 
 Evaluate the sample set and sample metadata. Ask yourself:
 
