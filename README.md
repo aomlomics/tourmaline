@@ -13,14 +13,18 @@ Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/ji
 
 ## Step 1. Assess the data
 
-Consider your amplicon locus and evaluate the sequence data to determine the best parameters for processing. Ask yourself:
+Consider your amplicon locus. Ask yourself:
 
 * What is the locus being amplified, and what are the primer sequences?
 * How much sequence variation is expected for this locus and dataset?
 * Is the expected sequence variation enough to answer my question?
 * What is the expected amplicon size for this locus and dataset?
+
+Evaluate the sequence data to determine the best parameters for processing. Ask yourself:
+
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
+* What sequence processing has been done: Demultiplexing? Quality filtering? Merging of paired reads?
 
 Evaluate the sample set and sample metadata. Ask yourself:
 
@@ -59,7 +63,7 @@ Generate a phylogenetic tree of ASV sequences, and identify the taxonomy (phylum
 
 ## Step 6. Quality control
 
-After completing processing and core analyses, determine if the results make sense. Ask:
+After completing processing and core analyses, determine if the results make sense. Ask yourself:
 
 * How many sequences did I start with, and how many are left after denoising?
 * Are the representative sequences of similar length or of very different lengths?
