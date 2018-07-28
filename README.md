@@ -11,28 +11,36 @@ Two methods of amplicon sequence processing are supported, both of which generat
 
 Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) and uses [Swarm](https://github.com/torognes/swarm) for OTU picking.
 
-## Step 1. Data assessment
+## Installation
 
-Consider your amplicon locus. Ask:
+To be provided here.
+
+## Overview
+
+### Step 1. Data assessment
+
+Answer the following questions to determine the best parameters for processing and to be able to evaluate the success of your completed workflow.
+
+**Amplicon locus**
 
 * What is the locus being amplified, and what are the primer sequences?
-* How much sequence variation is expected for this locus and dataset?
+* How much sequence variation is expected for this locus (and primer sites) and dataset?
 * Is the expected sequence variation enough to answer my question?
 * What is the expected amplicon size for this locus and dataset?
 
-Evaluate the sequence data to determine the best parameters for processing. Ask:
+**Sequence data**
 
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
 * What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Merging of paired reads?
 
-Evaluate the sample set and sample metadata. Ask:
+**Sample set and metadata**
 
 * Is my metadata file properly formatted? See the [QIIME 2 documentation](https://docs.qiime2.org/2018.6/tutorials/metadata/) and the metadata tool [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp).
 * Is my metadata file complete? Are the relevant parameters of my dataset present as numeric or categorical variables?
 * Do I have enough samples in each group of key metadata categories to determine an effect?
 
-## Step 2. Data preparation
+### Step 2. Data preparation
 
 Preprocess and format sequence data and metadata for QIIME 2 processing.
 
@@ -40,7 +48,7 @@ Preprocess and format sequence data and metadata for QIIME 2 processing.
 * Reference sequence data: format and import into QIIME 2 artifact.
 * Metadata: format and import into QIIME 2 artifact.
 
-## Step 3. Denoising (ASV picking)
+### Step 3. Denoising (ASV picking)
 
 Run Deblur or DADA2 to generate ASV feature tables and representative sequences. This is akin to OTU picking.
 
@@ -49,14 +57,14 @@ Run Deblur or DADA2 to generate ASV feature tables and representative sequences.
 * Use table summary to determine appropriate rarefaction depth.
 * Use representative sequences summary to determine length distribution of sequences.
 
-## Step 4. ASV curation: phylogeny and taxonomy
+### Step 4. ASV curation: phylogeny and taxonomy
 
 Generate a phylogenetic tree of ASV sequences, and identify the taxonomy (phylum, class, order, etc.) of each ASV.
 
 * Build a phylogenetic tree of ASV sequences, or insert ASV sequences into an existing tree for your amplicon locus.
 * Assign taxonomy to ASVs using a reference database for your amplicon locus.
 
-## Step 5. Core analyses: alpha/beta diversity and taxonomic profiles
+### Step 5. Core analyses: alpha/beta diversity and taxonomic profiles
 
 First consult table summary and run alpha rarefaction to decide on a rarefaction depth. Then do the major alpha/beta diversity analyses and taxonomy summary.
 
@@ -64,7 +72,7 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
 
-## Step 6. Quality control
+### Step 6. Quality control
 
 After completing processing and core analyses, determine if the results make sense. Ask:
 
