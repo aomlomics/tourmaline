@@ -32,7 +32,7 @@ Answer the following questions to determine the best parameters for processing a
 
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
-* What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Merging of paired reads?
+* What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Primer removal? Merging of paired reads?
 
 **Sample set and metadata**
 
@@ -53,7 +53,10 @@ Preprocess and format sequence data and metadata for QIIME 2 processing.
 Run Deblur or DADA2 to generate ASV feature tables and representative sequences. This is akin to OTU picking.
 
 * Denoise amplicon data using Deblur or DADA2 to generate ASV feature tables (BIOM). Use paired-end mode (DADA2 only) if sequence and amplicon lengths permit.
-* Summarize tables and representative sequences (ASVs). Record results in Quality Control summary tables.
+
+Perform quality control and add to QC summary (Step 6) before proceeding.
+
+* Summarize tables and representative sequences (ASVs).
 * Use table summary to determine appropriate rarefaction depth.
 * Use representative sequences summary to determine length distribution of sequences.
 
@@ -74,7 +77,7 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 
 ### Step 6. Quality control
 
-After completing processing and core analyses, determine if the results make sense. Ask:
+After completing processing and core analyses, determine if the results make sense.
 
 * How many sequences did I start with, and how many are left after denoising?
 * Are the representative sequences of similar length or of very different lengths?
