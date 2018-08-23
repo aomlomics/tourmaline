@@ -1,5 +1,9 @@
 <img src="https://upload.wikimedia.org/wikipedia/commons/0/00/Tourmaline-121240.jpg" height=200> <img src="http://melissabessmonroe.com/wp-content/uploads/2014/03/20140303_TourmalineSurfPark128.jpg" height=200>
 
+<!--[![Build Status](https://travis-ci.org/cuttlefishh/tourmaline.svg?branch=master)](https://travis-ci.org/cuttlefishh/tourmaline)
+
+See https://docs.travis-ci.com/user/getting-started/ and https://github.com/biocore/oecophylla/blob/master/.travis.yml for setting up Travis.-->
+
 # tourmaline
 
 Amplicon sequencing is a metagenetics method whereby a single DNA locus in a community of organisms is PCR-amplified and sequenced. Tourmaline is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
@@ -17,7 +21,7 @@ To be provided here.
 
 ## Overview
 
-### Step 1. Data assessment
+### Step 0. Data assessment
 
 Answer the following questions to determine the best parameters for processing and to be able to evaluate the success of your completed workflow.
 
@@ -40,7 +44,7 @@ Answer the following questions to determine the best parameters for processing a
 * Is my metadata file complete? Are the relevant parameters of my dataset present as numeric or categorical variables?
 * Do I have enough samples in each group of key metadata categories to determine an effect?
 
-### Step 2. Data preparation
+### Step 1. Data preparation
 
 Preprocess and format sequence data and metadata for QIIME 2 processing.
 
@@ -48,11 +52,12 @@ Preprocess and format sequence data and metadata for QIIME 2 processing.
 * Reference sequence data: format and import into QIIME 2 artifact.
 * Metadata: format and import into QIIME 2 artifact.
 
-### Step 3. Denoising (ASV picking)
+### Step 2. Denoising
 
 Run Deblur or DADA2 to generate ASV feature tables and representative sequences. This is akin to OTU picking.
 
-* Denoise amplicon data using Deblur or DADA2 to generate ASV feature tables (BIOM). Use paired-end mode (DADA2 only) if sequence and amplicon lengths permit.
+* Denoise amplicon data using Deblur or DADA2 to generate ASV feature tables (BIOM).
+* Use paired-end mode (DADA2 only) if sequence and amplicon lengths permit.
 
 Perform quality control and add to QC summary (Step 6) before proceeding.
 
@@ -60,14 +65,14 @@ Perform quality control and add to QC summary (Step 6) before proceeding.
 * Use table summary to determine appropriate rarefaction depth.
 * Use representative sequences summary to determine length distribution of sequences.
 
-### Step 4. ASV curation: phylogeny and taxonomy
+### Step 3. Representative sequence curation
 
 Generate a phylogenetic tree of ASV sequences, and identify the taxonomy (phylum, class, order, etc.) of each ASV.
 
 * Build a phylogenetic tree of ASV sequences, or insert ASV sequences into an existing tree for your amplicon locus.
 * Assign taxonomy to ASVs using a reference database for your amplicon locus.
 
-### Step 5. Core analyses: alpha/beta diversity and taxonomic profiles
+### Step 4. Core diversity analyses
 
 First consult table summary and run alpha rarefaction to decide on a rarefaction depth. Then do the major alpha/beta diversity analyses and taxonomy summary.
 
@@ -75,7 +80,7 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
 
-### Step 6. Quality control
+### Step 5. Quality control
 
 After completing processing and core analyses, determine if the results make sense.
 
