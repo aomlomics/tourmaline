@@ -37,51 +37,145 @@ source activate qiime2-2018.6
 conda install snakemake
 ```
 
-Third, clone the Tourmaline repository to the working directory for your project.
+Third, clone the Tourmaline repository to the working directory for your project:
 
 ```
 cd /path/to/project
-git clone 
+git clone https://github.com/cuttlefishh/tourmaline.git
 ```
 
-## Getting started
+Now you are ready to start analyzing your amplicon sequence data.
+
+## Execution
+
+This section describes how to prepare your data and then run the workflow.
+
+### Prepare data
+
+This includes these steps (logic described in the next section):
+
+* Step 0: Assess and format data
+
+#### Format metadata
+
+Your metadata should be a tab-delimited text file (e.g., exported from Excel) with samples as rows and metadata categories as columns. In addition to basic sample information like collection date, latitude, and longitude, your metadata should include categories that describe treatment groups and environmental metadata relevant to your samples. See [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+
+#### Format sequence data
+
+Tourmaline currently supports amplicon sequence data that is already demultiplexed. Using the sample names in your mapping file and the paths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file. While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is recommended because it is ~5x faster and minimizes disk usage.
+
+#### Set up data directory
+
+Create a directory for data inside your working directory:
+
+```
+cd /path/to/project
+mkdir 00-data
+```
+
+Move your metadata file and fastq manifest file(s) to `/path/to/project/00-data`.
+
+#### Edit the configfile
+
+The configuration file or `configfile` is `config.yaml`. It must be edited to contain the paths to your data and the parameters you want to use. `Snakefile` and `config.yaml` should describe all the inputs, parameters, and commands needed to produce the desired output.
+
+### Run Snakemake
+
+This includes these steps (logic described in the next section):
+
+* Step 1: Import data
+* Step 2: Denoising
+* Step 3: Representative sequence curation
+* Step 4: Core diversity analyses
+* Step 5: Quality control report
+
+#### Rules
+
+Snakemake works by executing rules, defined in the `Snakefile`. Rules specify commands and outputs but most critically inputs, which dictate which other rules must be run beforehand to generate those inputs. By defining pseudo-rules at the beginning of the `Snakefile`, we can specify desired endpoints as "inputs" that force execution of the whole workflow or just part of it. When a snakemake command is run, only those rules that need to be executed to produce the requested inputs will be run.
+
+Tourmaline provides Snakemake commands for Deblur (single-end) and DADA2 (single-end and paired-end):
+
+```
+# deblur single-end: steps 1-5
+snakemake deblur_se_all
+
+# deblur single-end: steps 1-2
+snakemake deblur_se_denoise
+
+# deblur single-end: statistical analyses
+snakemake deblur_se_stats
+
+# dada2 single-end: steps 1-5
+snakemake dada2_se_all
+
+# dada2 single-end: steps 1-2
+snakemake dada2_se_denoise
+
+# dada2 single-end: statistical analyses
+snakemake dada2_se_stats
+
+# dada2 paired-end: steps 1-5
+snakemake dada2_pe_all
+
+# dada2 paired-end: steps 1-2
+snakemake dada2_pe_denoise
+
+# dada2 paired-end: statistical analyses
+snakemake dada2_pe_stats
+```
+
+That's it. Just run one of these commands and let Snakemake do its magic. The results will be placed in organized directories inside your working directory:
+
+```
+01-imported
+02-denoised
+03-repseqs
+04-diversity
+05-reports
+```
 
 ## Logic
 
-In plain English, this is the logic behind Tourmaline. Starting with Step 1, these steps correspond to the rules (commands) in `Snakefile`.
+In plain English, this is the logic behind Tourmaline. Starting with Step 1, these steps correspond to the rules (commands) in the `Snakefile`.
 
-### Step 0. Data assessment
+### Step 0: Assess and format data
 
 Answer the following questions to determine the best parameters for processing and to be able to evaluate the success of your completed workflow.
 
-**Amplicon locus**
+#### Assess amplicon locus
 
 * What is the locus being amplified, and what are the primer sequences?
 * How much sequence variation is expected for this locus (and primer sites) and dataset?
 * Is the expected sequence variation enough to answer my question?
 * What is the expected amplicon size for this locus and dataset?
 
-**Sequence data**
+#### Assess sequence data
 
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
 * What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Primer removal? Merging of paired reads?
 
-**Sample set and metadata**
+#### Assess sample set and metadata
 
-* Is my metadata file properly formatted? See the [QIIME 2 documentation](https://docs.qiime2.org/2018.6/tutorials/metadata/) and the metadata tool [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp).
 * Is my metadata file complete? Are the relevant parameters of my dataset present as numeric or categorical variables?
 * Do I have enough samples in each group of key metadata categories to determine an effect?
 
-### Step 1. Data preparation
+#### Format metadata and sequence data
 
-Preprocess and format sequence data and metadata for QIIME 2 processing.
+* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
+* Are my reference sequences and taxonomy properly formatted for QIIME 2?
+* Is my config file updated with the file paths and parameters I want to use?
 
-* Amplicon sequence data: preprocess, quality filter, and import into QIIME 2 artifact.
-* Reference sequence data: format and import into QIIME 2 artifact.
-* Metadata: format and import into QIIME 2 artifact.
+### Step 1: Import data
 
-### Step 2. Denoising
+Import sequence data and metadata for QIIME 2 processing. It is assumed that any preprocessing and formatting of data have already been done.
+
+* Amplicon sequence data: import into QIIME 2 artifact.
+* Reference sequence data: import into QIIME 2 artifact.
+* Metadata: import into QIIME 2 artifact.
+
+### Step 2: Denoising
 
 Run Deblur or DADA2 to generate ASV feature tables and representative sequences. This is akin to OTU picking.
 
@@ -94,14 +188,14 @@ Perform quality control and add to QC summary (Step 6) before proceeding.
 * Use table summary to determine appropriate rarefaction depth.
 * Use representative sequences summary to determine length distribution of sequences.
 
-### Step 3. Representative sequence curation
+### Step 3: Representative sequence curation
 
 Generate a phylogenetic tree of ASV sequences, and identify the taxonomy (phylum, class, order, etc.) of each ASV.
 
 * Build a phylogenetic tree of ASV sequences, or insert ASV sequences into an existing tree for your amplicon locus.
 * Assign taxonomy to ASVs using a reference database for your amplicon locus.
 
-### Step 4. Core diversity analyses
+### Step 4: Core diversity analyses
 
 First consult table summary and run alpha rarefaction to decide on a rarefaction depth. Then do the major alpha/beta diversity analyses and taxonomy summary.
 
@@ -109,7 +203,7 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
 
-### Step 5. Quality control
+### Step 5: Quality control report
 
 After completing processing and core analyses, determine if the results make sense.
 
