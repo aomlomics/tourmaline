@@ -17,15 +17,38 @@ Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/ji
 
 ## Installation
 
-To be provided here.
+Tourmaline has the following dependencies (installation instructions below):
 
-Dependencies:
+* QIIME 2 (version `2018.6` or later)
+* Snakemake
+* Perl and `fastaLengths.pl` (included)
 
-* qiime2 (>=qiime2-2018.6)
-* snakemake
-* fastaLengthDist.pl
+First, install QIIME 2 using the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/), if you haven't already. For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
 
-## Overview
+```
+wget https://data.qiime2.org/distro/core/qiime2-2018.6-py35-osx-conda.yml
+conda env create -n qiime2-2018.6 --file qiime2-2018.6-py35-osx-conda.yml
+```
+
+Second, activate your QIIME 2 environment and install Snakemake:
+
+```
+source activate qiime2-2018.6
+conda install snakemake
+```
+
+Third, clone the Tourmaline repository to the working directory for your project.
+
+```
+cd /path/to/project
+git clone 
+```
+
+## Getting started
+
+## Logic
+
+In plain English, this is the logic behind Tourmaline. Starting with Step 1, these steps correspond to the rules (commands) in `Snakefile`.
 
 ### Step 0. Data assessment
 

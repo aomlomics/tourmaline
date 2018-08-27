@@ -1,8 +1,12 @@
 import pandas as pd
 
+# GLOBALS ---------------------------------------------------------------------
+
 configfile: "config.yaml"
 
-# pseudo-rules ("stats" input is not included in "all")
+# PSEUDO-RULES ----------------------------------------------------------------
+
+# "stats" input is not included in "all"
 
 rule deblur_se_all:
     input:
@@ -91,7 +95,7 @@ rule dada2_pe_stats:
     input:
         "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
 
-# rules
+# RULES -----------------------------------------------------------------------
 
 rule import_fastq_se_demux:
     input:
@@ -127,7 +131,7 @@ rule count_fastq_pe_demux:
         "for line in `tail -n +2 {input} | cut -d',' -f2`; "
         "do echo -n $line; "
         "echo -n ','; "
-        "cat $line | echo $((`wc -l`/4)); "
+        "zcat $line | echo $((`wc -l`/4)); "
         "done > {output}"
 
 rule fastq_pe_count_describe:
@@ -140,7 +144,7 @@ rule fastq_pe_count_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t')
 
-# NOTE: refseqs.qza, reftax.qza, classifier.qza should be in external directory
+# refseqs.qza, reftax.qza, classifier.qza should be in external directory
 
 rule import_ref_seqs:
     input:
@@ -292,7 +296,7 @@ rule repseq_length_distribution:
     output:
         "02-denoised/{method}/representative_sequences_lengths.txt"
     shell:
-        "fastaLengthDist.pl {input} | sort > {output}"
+        "perl fastaLengths.pl {input} | sort > {output}"
 
 rule repseq_length_distribution_describe:
     input:
