@@ -2,7 +2,7 @@
 
 my $usage = qq{
 
-    fastaLengthDist.pl <infile>
+    fastaLengths.pl <infile>
 
         <infile>: multi-FASTA file with or without line breaks
 

@@ -23,7 +23,7 @@ Tourmaline has the following dependencies (installation instructions below):
 * Snakemake
 * Perl and `fastaLengths.pl` (included)
 
-First, install QIIME 2 using the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/), if you haven't already. For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
+First, if you haven't already, install QIIME 2 using the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
 
 ```
 wget https://data.qiime2.org/distro/core/qiime2-2018.6-py35-osx-conda.yml
@@ -37,11 +37,12 @@ source activate qiime2-2018.6
 conda install snakemake
 ```
 
-Third, clone the Tourmaline repository to the working directory for your project:
+Third, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
 
 ```
-cd /path/to/project
+cd /PATH/TO
 git clone https://github.com/cuttlefishh/tourmaline.git
+mv tourmaline PROJECT
 ```
 
 Now you are ready to start analyzing your amplicon sequence data.
@@ -52,7 +53,7 @@ This section describes how to prepare your data and then run the workflow.
 
 ### Prepare data
 
-This includes these steps (logic described in the next section):
+Tourmaline steps covered in this section (logic described below):
 
 * Step 0: Assess and format data
 
@@ -62,14 +63,14 @@ Your metadata should be a tab-delimited text file (e.g., exported from Excel) wi
 
 #### Format sequence data
 
-Tourmaline currently supports amplicon sequence data that is already demultiplexed. Using the sample names in your mapping file and the paths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file. While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is recommended because it is ~5x faster and minimizes disk usage.
+Tourmaline currently supports amplicon sequence data that is already demultiplexed. Using the sample names in your mapping file and the paths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage.
 
 #### Set up data directory
 
 Create a directory for data inside your working directory:
 
 ```
-cd /path/to/project
+cd /PATH/TO/PROJECT
 mkdir 00-data
 ```
 
@@ -81,7 +82,7 @@ The configuration file or `configfile` is `config.yaml`. It must be edited to co
 
 ### Run Snakemake
 
-This includes these steps (logic described in the next section):
+Tourmaline steps covered in this section (logic described below):
 
 * Step 1: Import data
 * Step 2: Denoising
