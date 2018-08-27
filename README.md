@@ -74,7 +74,7 @@ cd /PATH/TO/PROJECT
 mkdir 00-data
 ```
 
-Move your metadata file and fastq manifest file(s) to `/path/to/project/00-data`.
+Move your metadata file and fastq manifest file(s) to `/PATH/TO/PROJECT/00-data`.
 
 #### Edit the configfile
 

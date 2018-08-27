@@ -176,13 +176,17 @@ rule denoise_deblur_se:
     params:
         trim=config["deblur_trim"]
     output:
-        "02-denoised/deblur-se"
+        table="02-denoised/deblur-se/table.qza",
+        repseqs="02-denoised/deblur-se/representative_sequences.qza",
+        stats="02-denoised/deblur-se/stats.qza"
     shell:
         "qiime deblur denoise-other "
         "--i-demultiplexed-seqs {input.seqs} "
         "--i-reference-seqs {input.refseqs} "
         "--p-trim-length {params.trim} "
-        "--output-dir {output} "
+        "--o-table {output.table} "
+        "--o-representative-sequences {output.repseqs} "
+        "--o-stats {output.stats} "
         "--verbose"
 
 rule denoise_dada2_se:
@@ -192,13 +196,17 @@ rule denoise_dada2_se:
         trunclen=config["dada_trunc_len"],
         nthreads=config["dada_n_threads"]
     output:
-        "02-denoised/dada2-se"
+        table="02-denoised/dada2-se/table.qza",
+        repseqs="02-denoised/dada2-se/representative_sequences.qza",
+        stats="02-denoised/dada2-se/stats.qza"
     shell:
         "qiime dada2 denoise-single "
         "--i-demultiplexed-seqs {input} "
         "--p-trunc-len {params.trunclen} "
         "--p-n-threads {params.nthreads} "
-        "--output-dir {output} "
+        "--o-table {output.table} "
+        "--o-representative-sequences {output.repseqs} "
+        "--o-denoising-stats {output.stats} "
         "--verbose"
 
 rule denoise_dada2_pe:
@@ -211,7 +219,9 @@ rule denoise_dada2_pe:
         trimleftf=config["dada_trim_left_f"],
         nthreads=config["dada_n_threads"]
     output:
-        "02-denoised/dada2-pe"
+        table="02-denoised/dada2-pe/table.qza",
+        repseqs="02-denoised/dada2-pe/representative_sequences.qza",
+        stats="02-denoised/dada2-pe/stats.qza"
     shell:
         "qiime dada2 denoise-paired "
         "--i-demultiplexed-seqs {input} "
@@ -220,7 +230,9 @@ rule denoise_dada2_pe:
         "--p-trunc-q {params.truncq} "
         "--p-trim-left-f {params.trimleftf} "
         "--p-n-threads {params.nthreads} "
-        "--output-dir {output} "
+        "--o-table {output.table} "
+        "--o-representative-sequences {output.repseqs} "
+        "--o-denoising-stats {output.stats} "
         "--verbose"
 
 rule visualize_table:
