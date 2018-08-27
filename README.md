@@ -19,6 +19,12 @@ Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/ji
 
 To be provided here.
 
+Dependencies:
+
+* qiime2 (>=qiime2-2018.6)
+* snakemake
+* fastaLengthDist.pl
+
 ## Overview
 
 ### Step 0. Data assessment
