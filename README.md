@@ -78,6 +78,29 @@ mkdir 00-data
 
 Move your metadata file and fastq manifest file(s) to `/PATH/TO/PROJECT/00-data`.
 
+#### Create symbolic links to reference sequence and taxonomy data
+
+Reference sequences and taxonomy are used by QIIME 2 to assign taxonomy to the representative sequences you get from Deblur and DADA2. The sequence (full-length and trimmed to primers) and taxonomy files, and their QIIME 2 archive derivatives, can be used for multiple studies and need only exist in one place on your computer. Therefore, it may be best to store these files in a special directory for databases, then create symbolic links in the respective project subdirectories.
+
+Symbolic links to the QIIME 2-formatted reference sequence fasta and taxonomy files can go here (example locations of files shown):
+
+```
+cd /PATH/TO/PROJECT/00-data
+ln -s /PATH/TO/DATABASES/16s/16s_refseqs.fasta refseqs.fasta
+ln -s /PATH/TO/DATABASES/16s/16s_reftax.tsv reftax.tsv
+```
+
+The first time you run Tourmaline with a given amplicon locus, the files below will be created. However, for future projects with that same amplicon locus, you can put these files in your databases directory. You will have to make the directory `01-imported` before creating the symbolic links:
+
+```
+mkdir /PATH/TO/PROJECT/01-imported
+cd /PATH/TO/PROJECT/01-imported
+ln -s /PATH/TO/DATABASES/16s/16s_refseqs.qza refseqs.qza
+ln -s /PATH/TO/DATABASES/16s/16s_reftax.qza reftax.qza
+ln -s /PATH/TO/DATABASES/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
+ln -s /PATH/TO/DATABASES/16s/16s_classifier.qza classifier.qza
+```
+
 #### Edit the configfile
 
 The configuration file or `configfile` is `config.yaml`. It must be edited to contain the paths to your data and the parameters you want to use. `Snakefile` and `config.yaml` should describe all the inputs, parameters, and commands needed to produce the desired output.

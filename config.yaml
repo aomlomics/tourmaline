@@ -1,10 +1,8 @@
-# warning: snakemake will not automatically rerun if params change (inputs ok)
-
 manifest_se: 00-data/test_manifest_se.csv
 manifest_pe: 00-data/test_manifest_pe.csv
 metadata: 00-data/test_metadata_file.tsv
-refseqs: 00-data/SILVA_128_18S_Cv2.0_seqs_qiime.fasta
-reftax: 00-data/SILVA_128_18S_Cv2.0_taxonomy_qiime.txt
+refseqs: 00-data/refseqs.fasta
+reftax: 00-data/reftax.tsv
 deblur_trim: 115
 dada_trunc_len: 0
 dada_trunc_len_f: 100
@@ -16,7 +14,11 @@ alpha_max_depth: 63
 core_sampling_depth: 30
 beta_group_column: treatment
 
-# NOTE: refseqs, reftax, refseqs.qza, reftax.qza, classifier.qza should be in external directory
-# feature_classifier_fit_classifier_naive_bayes should be done only once for each amplicon, outside of snakemake
-# then specify classifer (eg "classifier_18s_fprimer_rprimer.qza") in configfile for feature_classifier_classify_sklearn
+# NOTE: refseqs.fasta and reftax.tsv -- and their outputs refseqs.qza, 
+# reftax.qza, and classifier.qza -- should ideally be in an external directory.
+# The command feature_classifier_fit_classifier_naive_bayes should be done only
+# once for each amplicon. We recommend setting symbolic links in 00-data and 
+# 01-imported to these external files.
 
+# WARNING: Snakemake will not automatically rerun if parameters change. It 
+# should rerun in input files change.

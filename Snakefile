@@ -126,8 +126,7 @@ rule fastq_pe_count_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t')
 
-# refseqs.qza, reftax.qza, classifier.qza should be in external directory
-
+# this rule will be skipped if symbolic link to refseqs.qza is already present
 rule import_ref_seqs:
     input:
         config["refseqs"]
@@ -139,6 +138,7 @@ rule import_ref_seqs:
         "--input-path {input} "
         "--output-path {output}"
 
+# this rule will be skipped if symbolic link to reftax.qza is already present
 rule import_ref_tax:
     input:
         config["reftax"]
@@ -314,23 +314,20 @@ rule repseq_length_distribution_describe:
 #         [filter biom based on specific sequences]
 #         [filter repseqs based on specific sequences]
 
-# skipping this step for now because it is slow with degenerate primers
-# however it only needs to be done one for each primer pair
-# consider re-implementing this outside of qiime2
-# rule feature_classifier_extract_reads:
-#     input:
-#         "01-imported/refseqs.qza"
-#     output:
-#         "01-imported/refseqs_extracted.qza"
-#     shell:
-#         "qiime feature-classifier extract-reads "
-#         "--i-sequences {input} "
-#         "--p-f-primer {params.fprimer} "
-#         "--p-r-primer {params.rprimer} "
-#         "--o-reads {output}"
+# this rule (slow) will be skipped unless following rule takes input refseqs_extracted.qza
+rule feature_classifier_extract_reads:
+    input:
+        "01-imported/refseqs.qza"
+    output:
+        "01-imported/refseqs_extracted.qza"
+    shell:
+        "qiime feature-classifier extract-reads "
+        "--i-sequences {input} "
+        "--p-f-primer {params.fprimer} "
+        "--p-r-primer {params.rprimer} "
+        "--o-reads {output}"
 
-# this step should be done only once for each amplicon, outside of snakemake
-# then specify classifer (eg "classifier_18s_fprimer_rprimer.qza") in configfile
+# this rule will be skipped if symbolic link to classifier.qza is already present
 rule feature_classifier_fit_classifier_naive_bayes:
     input:
         seqs="01-imported/refseqs.qza",
