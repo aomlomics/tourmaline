@@ -57,13 +57,15 @@ Tourmaline steps covered in this section (logic described below):
 
 * Step 0: Assess and format data
 
+Note: Currently, Tourmaline does not do demultiplexing and quality filtering (support for this may be added later). You should demultiplex and quality filter your fastq data yourself, then gzip the resulting per-sample fastq files.
+
 #### Format metadata
 
 Your metadata should be a tab-delimited text file (e.g., exported from Excel) with samples as rows and metadata categories as columns. In addition to basic sample information like collection date, latitude, and longitude, your metadata should include categories that describe treatment groups and environmental metadata relevant to your samples. See [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
 
 #### Format sequence data
 
-Tourmaline currently supports amplicon sequence data that is already demultiplexed. Using the sample names in your mapping file and the paths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage.
+Currently, Tourmaline supports amplicon sequence data that is already demultiplexed. Using the sample names in your mapping file and the paths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
 
 #### Set up data directory
 
@@ -94,34 +96,44 @@ Tourmaline steps covered in this section (logic described below):
 
 Snakemake works by executing rules, defined in the `Snakefile`. Rules specify commands and outputs but most critically inputs, which dictate which other rules must be run beforehand to generate those inputs. By defining pseudo-rules at the beginning of the `Snakefile`, we can specify desired endpoints as "inputs" that force execution of the whole workflow or just part of it. When a snakemake command is run, only those rules that need to be executed to produce the requested inputs will be run.
 
-Tourmaline provides Snakemake commands for Deblur (single-end) and DADA2 (single-end and paired-end):
+Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule runs steps 1 and 2 (import data and denoising), the `diversity` rule runs steps 3 through 5 (representative sequence curation, core diversity analyses, and QC report), and the `stats` rule runs group significance and other tests. Pausing after step 2 allows you to filter your biom table and representative sequences before proceeding. For example, if your amplicon is 16S rRNA, you may want to filter out chloroplast/mitochondria sequences.
+
+##### Deblur (single-end)
 
 ```
-# deblur single-end: steps 1-5
-snakemake deblur_se_all
-
-# deblur single-end: steps 1-2
+# steps 1-2
 snakemake deblur_se_denoise
 
-# deblur single-end: statistical analyses
+# steps 3-5
+snakemake deblur_se_diversity
+
+# statistical analyses
 snakemake deblur_se_stats
+```
 
-# dada2 single-end: steps 1-5
-snakemake dada2_se_all
+##### DADA2 (single-end)
 
-# dada2 single-end: steps 1-2
+```
+# steps 1-2
 snakemake dada2_se_denoise
 
-# dada2 single-end: statistical analyses
+# steps 3-5
+snakemake dada2_se_diversity
+
+# statistical analyses
 snakemake dada2_se_stats
+```
 
-# dada2 paired-end: steps 1-5
-snakemake dada2_pe_all
+##### DADA2 (paired-end)
 
-# dada2 paired-end: steps 1-2
+```
+# steps 1-2
 snakemake dada2_pe_denoise
 
-# dada2 paired-end: statistical analyses
+# steps 3-5
+snakemake dada2_pe_diversity
+
+# statistical analyses
 snakemake dada2_pe_stats
 ```
 

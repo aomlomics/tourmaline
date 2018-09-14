@@ -8,22 +8,6 @@ configfile: "config.yaml"
 
 # "stats" input is not included in "all"
 
-rule deblur_se_all:
-    input:
-        "01-imported/fastq_pe_count_describe.tsv",
-        "02-denoised/deblur-se/table.qzv",
-        "02-denoised/deblur-se/table_summary_samples.txt",
-        "02-denoised/deblur-se/table_summary_features.txt",
-        "02-denoised/deblur-se/representative_sequences.qzv",
-        "02-denoised/deblur-se/representative_sequences_lengths_describe.tsv",
-        "03-repseqs/deblur-se/taxonomy.qzv",
-        "03-repseqs/deblur-se/rooted_tree.qza",
-        "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
-        "04-diversity/deblur-se/alpha_rarefaction.qzv",
-        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/deblur-se/taxa_barplot.qzv",
-        "05-reports/deblur-se/report.txt"
-
 rule deblur_se_denoise:
     input:
         "01-imported/fastq_pe_count_describe.tsv",
@@ -33,25 +17,19 @@ rule deblur_se_denoise:
         "02-denoised/deblur-se/representative_sequences.qzv",
         "02-denoised/deblur-se/representative_sequences_lengths_describe.tsv"
 
+rule deblur_se_diversity:
+    input:
+        "03-repseqs/deblur-se/taxonomy.qzv",
+        "03-repseqs/deblur-se/rooted_tree.qza",
+        "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
+        "04-diversity/deblur-se/alpha_rarefaction.qzv",
+        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
+        "04-diversity/deblur-se/taxa_barplot.qzv",
+        "05-reports/deblur-se/report.txt"
+
 rule deblur_se_stats:
     input:
         "04-diversity/deblur-se/unweighted_unifrac_group_significance.qzv"
-
-rule dada2_se_all:
-    input:
-        "01-imported/fastq_pe_count_describe.tsv",
-        "02-denoised/dada2-se/table.qzv",
-        "02-denoised/dada2-se/table_summary_samples.txt",
-        "02-denoised/dada2-se/table_summary_features.txt",
-        "02-denoised/dada2-se/representative_sequences.qzv",
-        "02-denoised/dada2-se/representative_sequences_lengths_describe.tsv",
-        "03-repseqs/dada2-se/taxonomy.qzv",
-        "03-repseqs/dada2-se/rooted_tree.qza",
-        "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
-        "04-diversity/dada2-se/alpha_rarefaction.qzv",
-        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-se/taxa_barplot.qzv",
-        "05-reports/dada2-se/report.txt"
 
 rule dada2_se_denoise:
     input:
@@ -62,25 +40,19 @@ rule dada2_se_denoise:
         "02-denoised/dada2-se/representative_sequences.qzv",
         "02-denoised/dada2-se/representative_sequences_lengths_describe.tsv"
 
+rule dada2_se_diversity:
+    input:
+        "03-repseqs/dada2-se/taxonomy.qzv",
+        "03-repseqs/dada2-se/rooted_tree.qza",
+        "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
+        "04-diversity/dada2-se/alpha_rarefaction.qzv",
+        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
+        "04-diversity/dada2-se/taxa_barplot.qzv",
+        "05-reports/dada2-se/report.txt"
+
 rule dada2_se_stats:
     input:
         "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
-
-rule dada2_pe_all:
-    input:
-        "01-imported/fastq_pe_count_describe.tsv",
-        "02-denoised/dada2-pe/table.qzv",
-        "02-denoised/dada2-pe/table_summary_samples.txt",
-        "02-denoised/dada2-pe/table_summary_features.txt",
-        "02-denoised/dada2-pe/representative_sequences.qzv",
-        "02-denoised/dada2-pe/representative_sequences_lengths_describe.tsv",
-        "03-repseqs/dada2-pe/taxonomy.qzv",
-        "03-repseqs/dada2-pe/rooted_tree.qza",
-        "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
-        "04-diversity/dada2-pe/alpha_rarefaction.qzv",
-        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-pe/taxa_barplot.qzv",
-        "05-reports/dada2-pe/report.txt"
 
 rule dada2_pe_denoise:
     input:
@@ -90,6 +62,16 @@ rule dada2_pe_denoise:
         "02-denoised/dada2-pe/table_summary_features.txt",
         "02-denoised/dada2-pe/representative_sequences.qzv",
         "02-denoised/dada2-pe/representative_sequences_lengths_describe.tsv"
+
+rule dada2_pe_diversity:
+    input:
+        "03-repseqs/dada2-pe/taxonomy.qzv",
+        "03-repseqs/dada2-pe/rooted_tree.qza",
+        "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
+        "04-diversity/dada2-pe/alpha_rarefaction.qzv",
+        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
+        "04-diversity/dada2-pe/taxa_barplot.qzv",
+        "05-reports/dada2-pe/report.txt"
 
 rule dada2_pe_stats:
     input:
@@ -320,8 +302,22 @@ rule repseq_length_distribution_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t')
 
+# add this rule later (to be run after step 2)
+# rule filter_chloroplasts_mitochondria:
+#     input:
+#         [biom]
+#         [repseqs]
+#     output:
+#         [biom]
+#         [repseqs]
+#     shell:
+#         [filter biom based on specific sequences]
+#         [filter repseqs based on specific sequences]
+
 # skipping this step for now because it is slow with degenerate primers
-# rule feature_classifier_extract_reads 
+# however it only needs to be done one for each primer pair
+# consider re-implementing this outside of qiime2
+# rule feature_classifier_extract_reads:
 #     input:
 #         "01-imported/refseqs.qza"
 #     output:
