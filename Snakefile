@@ -54,7 +54,7 @@ rule dada2_se_stats:
     input:
         "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
 
-rule deblur_se_report:
+rule dada2_se_report:
     input:
         "05-reports/dada2-se/report.txt"
 
@@ -80,7 +80,7 @@ rule dada2_pe_stats:
     input:
         "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
 
-rule deblur_se_report:
+rule dada2_pe_report:
     input:
         "05-reports/dada2-pe/report.txt"
 
