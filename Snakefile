@@ -22,12 +22,15 @@ rule deblur_se_diversity:
         "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/deblur-se/alpha_rarefaction.qzv",
         "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/deblur-se/taxa_barplot.qzv",
-        "05-reports/deblur-se/report.txt"
+        "04-diversity/deblur-se/taxa_barplot.qzv"
 
 rule deblur_se_stats:
     input:
         "04-diversity/deblur-se/unweighted_unifrac_group_significance.qzv"
+
+rule deblur_se_report:
+    input:
+        "05-reports/deblur-se/report.txt"
 
 rule dada2_se_denoise:
     input:
@@ -45,12 +48,15 @@ rule dada2_se_diversity:
         "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-se/alpha_rarefaction.qzv",
         "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-se/taxa_barplot.qzv",
-        "05-reports/dada2-se/report.txt"
+        "04-diversity/dada2-se/taxa_barplot.qzv"
 
 rule dada2_se_stats:
     input:
         "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
+
+rule deblur_se_report:
+    input:
+        "05-reports/dada2-se/report.txt"
 
 rule dada2_pe_denoise:
     input:
@@ -68,12 +74,15 @@ rule dada2_pe_diversity:
         "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-pe/alpha_rarefaction.qzv",
         "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-pe/taxa_barplot.qzv",
-        "05-reports/dada2-pe/report.txt"
+        "04-diversity/dada2-pe/taxa_barplot.qzv"
 
 rule dada2_pe_stats:
     input:
         "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
+
+rule deblur_se_report:
+    input:
+        "05-reports/dada2-pe/report.txt"
 
 # RULES -----------------------------------------------------------------------
 

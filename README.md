@@ -73,7 +73,7 @@ We'll use variables to reference our project and databases directories:
 
 ```
 PRJ=/PATH/TO/PROJECT
-DBS=/PATH/TO/DATABASES
+DB=/PATH/TO/DATABASES
 ```
 
 Create a directory for data inside your working directory:
@@ -93,8 +93,8 @@ Symbolic links to the QIIME 2-formatted reference sequence fasta and taxonomy fi
 
 ```
 cd $PRJ/00-data
-ln -s $DBS/16s/16s_refseqs.fasta refseqs.fasta
-ln -s $DBS/16s/16s_reftax.tsv reftax.tsv
+ln -s $DB/16s/16s_refseqs.fasta refseqs.fasta
+ln -s $DB/16s/16s_reftax.tsv reftax.tsv
 ```
 
 The first time you run Tourmaline with a given amplicon locus, the files below will be created. However, for future projects with that same amplicon locus, you can put these files in your databases directory. You will have to make the directory `01-imported` before creating the symbolic links:
@@ -102,10 +102,10 @@ The first time you run Tourmaline with a given amplicon locus, the files below w
 ```
 mkdir $PRJ/01-imported
 cd $PRJ/01-imported
-ln -s $DBS/16s/16s_refseqs.qza refseqs.qza
-ln -s $DBS/16s/16s_reftax.qza reftax.qza
-ln -s $DBS/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
-ln -s $DBS/16s/16s_classifier.qza classifier.qza
+ln -s $DB/16s/16s_refseqs.qza refseqs.qza
+ln -s $DB/16s/16s_reftax.qza reftax.qza
+ln -s $DB/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
+ln -s $DB/16s/16s_classifier.qza classifier.qza
 ```
 
 For Snakemake to work with these symbolic links, you may have to run `snakemake --cleanup-metadata <filenames>` on them first.
