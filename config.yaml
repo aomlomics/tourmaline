@@ -16,9 +16,10 @@ beta_group_column: treatment
 
 # NOTE: refseqs.fasta and reftax.tsv -- and their outputs refseqs.qza, 
 # reftax.qza, and classifier.qza -- should ideally be in an external directory.
-# The command feature_classifier_fit_classifier_naive_bayes should be done only
-# once for each amplicon. We recommend setting symbolic links in 00-data and 
-# 01-imported to these external files.
+# We recommend setting symbolic links in 00-data and 01-imported to these
+# external files. Adding these files will circumvent the rules that produce
+# them; e.g., if classifier.qza is added, the rule
+# feature_classifier_fit_classifier_naive_bayes will be skipped.
 
 # WARNING: Snakemake will not automatically rerun if parameters change. It 
 # should rerun in input files change.

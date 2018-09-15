@@ -6,8 +6,6 @@ configfile: "config.yaml"
 
 # PSEUDO-RULES ----------------------------------------------------------------
 
-# "stats" input is not included in "all"
-
 rule deblur_se_denoise:
     input:
         "01-imported/fastq_pe_count_describe.tsv",
@@ -126,7 +124,6 @@ rule fastq_pe_count_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t')
 
-# this rule will be skipped if symbolic link to refseqs.qza is already present
 rule import_ref_seqs:
     input:
         config["refseqs"]
@@ -138,7 +135,6 @@ rule import_ref_seqs:
         "--input-path {input} "
         "--output-path {output}"
 
-# this rule will be skipped if symbolic link to reftax.qza is already present
 rule import_ref_tax:
     input:
         config["reftax"]
@@ -327,7 +323,6 @@ rule feature_classifier_extract_reads:
         "--p-r-primer {params.rprimer} "
         "--o-reads {output}"
 
-# this rule will be skipped if symbolic link to classifier.qza is already present
 rule feature_classifier_fit_classifier_naive_bayes:
     input:
         seqs="01-imported/refseqs.qza",

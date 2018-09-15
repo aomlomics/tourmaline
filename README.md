@@ -69,14 +69,21 @@ Currently, Tourmaline supports amplicon sequence data that is already demultiple
 
 #### Set up data directory
 
+We'll use variables to reference our project and databases directories:
+
+```
+PRJ=/PATH/TO/PROJECT
+DBS=/PATH/TO/DATABASES
+```
+
 Create a directory for data inside your working directory:
 
 ```
-cd /PATH/TO/PROJECT
+cd $PRJ
 mkdir 00-data
 ```
 
-Move your metadata file and fastq manifest file(s) to `/PATH/TO/PROJECT/00-data`.
+Move your metadata file and fastq manifest file(s) to `$PRJ/00-data`.
 
 #### Create symbolic links to reference sequence and taxonomy data
 
@@ -85,21 +92,23 @@ Reference sequences and taxonomy are used by QIIME 2 to assign taxonomy to the r
 Symbolic links to the QIIME 2-formatted reference sequence fasta and taxonomy files can go here (example locations of files shown):
 
 ```
-cd /PATH/TO/PROJECT/00-data
-ln -s /PATH/TO/DATABASES/16s/16s_refseqs.fasta refseqs.fasta
-ln -s /PATH/TO/DATABASES/16s/16s_reftax.tsv reftax.tsv
+cd $PRJ/00-data
+ln -s $DBS/16s/16s_refseqs.fasta refseqs.fasta
+ln -s $DBS/16s/16s_reftax.tsv reftax.tsv
 ```
 
 The first time you run Tourmaline with a given amplicon locus, the files below will be created. However, for future projects with that same amplicon locus, you can put these files in your databases directory. You will have to make the directory `01-imported` before creating the symbolic links:
 
 ```
-mkdir /PATH/TO/PROJECT/01-imported
-cd /PATH/TO/PROJECT/01-imported
-ln -s /PATH/TO/DATABASES/16s/16s_refseqs.qza refseqs.qza
-ln -s /PATH/TO/DATABASES/16s/16s_reftax.qza reftax.qza
-ln -s /PATH/TO/DATABASES/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
-ln -s /PATH/TO/DATABASES/16s/16s_classifier.qza classifier.qza
+mkdir $PRJ/01-imported
+cd $PRJ/01-imported
+ln -s $DBS/16s/16s_refseqs.qza refseqs.qza
+ln -s $DBS/16s/16s_reftax.qza reftax.qza
+ln -s $DBS/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
+ln -s $DBS/16s/16s_classifier.qza classifier.qza
 ```
+
+For Snakemake to work with these symbolic links, you may have to run `snakemake --cleanup-metadata <filenames>` on them first.
 
 #### Edit the configfile
 
