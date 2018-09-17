@@ -32,6 +32,8 @@ rule deblur_se_report:
     input:
         "05-reports/deblur-se/report.txt"
 
+# -----------------------------------------------------------------------------
+
 rule dada2_se_denoise:
     input:
         "01-imported/fastq_pe_count_describe.tsv",
@@ -57,6 +59,8 @@ rule dada2_se_stats:
 rule dada2_se_report:
     input:
         "05-reports/dada2-se/report.txt"
+
+# -----------------------------------------------------------------------------
 
 rule dada2_pe_denoise:
     input:
