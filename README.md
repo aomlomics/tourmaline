@@ -19,9 +19,10 @@ Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/ji
 
 Tourmaline has the following dependencies (installation instructions below):
 
-* QIIME 2 version `2018.6` (not tested with other versions)
+* QIIME 2 version `2018.6` (should work with later versions but has not been tested)
 * Snakemake
-* Perl and `fastaLengths.pl` (included)
+
+### QIIME2 and Snakemake
 
 First, if you haven't already, install QIIME 2 using the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
 
@@ -47,6 +48,14 @@ mv tourmaline PROJECT
 
 Now you are ready to start analyzing your amplicon sequence data.
 
+### Helper Scripts
+
+Tourmaline comes with the following helper scripts in the `scripts` directory:
+
+* `match_manifest_to_metadata.py` -- Given a metadata/mapping file and a fastq manifest file, generate paired-end and single-end manifest fastq files corresponding to the samples in the metadata/mapping file. This is useful if you want to use Tourmaline, which requires paired-end and/or single-end manifest files, but your data are not demultiplexed (e.g., they are in the "Earth Microbiome Project (EMP) protocol" format for paired-end reads, as described below).
+* `detect_amplicon_locus.py` -- Try to guess the amplicon locus of a fasta file based on the first four nucleotides. Used by rule `repseq_detect_amplicon_type`.
+* `fastaLengths.pl` -- Calculate the length of every sequence in a fasta file. Used by rule `repseq_length_distribution`.
+
 ## Execution
 
 This section describes how to prepare your data and then run the workflow.
@@ -61,11 +70,19 @@ Note: Currently, Tourmaline does not do demultiplexing and quality filtering (su
 
 #### Format metadata
 
-Your metadata should be a tab-delimited text file (e.g., exported from Excel) with samples as rows and metadata categories as columns. In addition to basic sample information like collection date, latitude, and longitude, your metadata should include categories that describe treatment groups and environmental metadata relevant to your samples. See [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+Your metadata, also known as a mapping file, should be a tab-delimited text file (e.g., exported from Excel) with samples as rows and metadata categories as columns. 
+
+Sample metadata should include basic sample information like `collection_timestamp`, `latitude`, and `longitude`, plus categories that describe treatment groups and environmental metadata relevant to your samples. It's important to have rich and complete sample metadata before you begin your analyses.
+
+Processing information should ideally include all of the following columns: `project_name`, `experiment_design_description`, `target_gene`, `target_subfragment`, `pcr_primers`, `pcr_primer_names`, `platform`, `instrument_model`, `run_center`, `run_date`. These will be included in your QC report.
+
+The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
 
 #### Format sequence data
 
-Currently, Tourmaline supports amplicon sequence data that is already demultiplexed. Using the sample names in your mapping file and the paths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
+Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `match_manifest_to_metadata.py` can help with this).
+
+Note: While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
 
 #### Set up data directory
 
@@ -126,9 +143,13 @@ Tourmaline steps covered in this section (logic described below):
 
 #### Rules
 
-Snakemake works by executing rules, defined in the `Snakefile`. Rules specify commands and outputs but most critically inputs, which dictate which other rules must be run beforehand to generate those inputs. By defining pseudo-rules at the beginning of the `Snakefile`, we can specify desired endpoints as "inputs" that force execution of the whole workflow or just part of it. When a snakemake command is run, only those rules that need to be executed to produce the requested inputs will be run.
+Snakemake works by executing rules, defined in the `Snakefile`. Rules specify commands and outputs but most critically inputs, which dictate which other rules must be run beforehand to generate those inputs. By defining pseudo-rules at the beginning of the `Snakefile`, we can specify desired endpoints as "inputs" that force execution of the whole workflow or just part of it. When a Snakemake command is run, only those rules that need to be executed to produce the requested inputs will be run. Before proceeding, you should familiarize yourself with Snakemake using the [documentation](https://snakemake.readthedocs.io), and create your own simple Snakemake workflow to understand how it works.
 
-Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule runs steps 1 and 2 (import data and denoising), the `diversity` rule runs steps 3 through 5 (representative sequence curation, core diversity analyses, and QC report), and the `stats` rule runs group significance and other tests. Pausing after step 2 allows you to filter your biom table and representative sequences before proceeding. For example, if your amplicon is 16S rRNA, you may want to filter out chloroplast/mitochondria sequences.
+Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2), the `diversity` rule does representative sequence curation and core diversity analyses (steps 3 and 4), the `stats` rule runs group significance and other tests (optional), and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
+
+* Check the table summaries and representative sequence lengths to determine if Deblur or DADA2 parameters need to be modified. If so, you can rename the output directories and then rerun the `denoise` rule.
+* View the table visualization to decide an appropriate subsampling (rarefaction) depth. Then modify the parameters `alpha_max_depth` and `core_sampling_depth` in `config.yaml`.
+* Filter your biom table and representative sequences to remove unwanted sequences. For example, if your amplicon is 16S rRNA, you may want to filter out chloroplast/mitochondria sequences. You should keep the same filenames so that Snakemake will recognize them; you can save the old versions with different names if you don't want to overwrite them.
 
 ##### Deblur (single-end)
 
@@ -136,11 +157,14 @@ Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-en
 # steps 1-2
 snakemake deblur_se_denoise
 
-# steps 3-5
+# steps 3-4
 snakemake deblur_se_diversity
 
 # statistical analyses
 snakemake deblur_se_stats
+
+# step 5
+snakemake deblur_se_report
 ```
 
 ##### DADA2 (single-end)
@@ -149,11 +173,14 @@ snakemake deblur_se_stats
 # steps 1-2
 snakemake dada2_se_denoise
 
-# steps 3-5
+# steps 3-4
 snakemake dada2_se_diversity
 
 # statistical analyses
 snakemake dada2_se_stats
+
+# step 5
+snakemake dada2_se_report
 ```
 
 ##### DADA2 (paired-end)
@@ -162,11 +189,14 @@ snakemake dada2_se_stats
 # steps 1-2
 snakemake dada2_pe_denoise
 
-# steps 3-5
+# steps 3-4
 snakemake dada2_pe_diversity
 
 # statistical analyses
 snakemake dada2_pe_stats
+
+# step 5
+snakemake dada2_pe_report
 ```
 
 That's it. Just run one of these commands and let Snakemake do its magic. The results will be placed in organized directories inside your working directory:
@@ -227,11 +257,11 @@ Run Deblur or DADA2 to generate ASV feature tables and representative sequences.
 * Denoise amplicon data using Deblur or DADA2 to generate ASV feature tables (BIOM).
 * Use paired-end mode (DADA2 only) if sequence and amplicon lengths permit.
 
-Perform quality control and add to QC summary (Step 6) before proceeding.
+Perform quality control of output tables and representative sequences. Manually evaluate output files to determine subsampling (rarefaction) depth, decide if denoising parameters need to be changed, or if output need to be filtered. QC results will also go into the QC report later.
 
 * Summarize tables and representative sequences (ASVs).
-* Use table summary to determine appropriate rarefaction depth.
-* Use representative sequences summary to determine length distribution of sequences.
+* Manually view table summary to determine appropriate rarefaction depth.
+* Manually view representative sequences summary to determine length distribution of sequences.
 
 ### Step 3: Representative sequence curation
 
@@ -247,6 +277,10 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 * Alpha diversity: alpha rarefaction, diversity metrics (evenness, Shannon, Faith's PD, observed sequences), alpha group significance.
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
+
+### Step 4.1: Statistical analyses
+
+Run statistical tests on your data, such as group significance tests. These rules are optional, and the output does not go into the QC report. (This functionality is currently minimal.)
 
 ### Step 5: Quality control report
 

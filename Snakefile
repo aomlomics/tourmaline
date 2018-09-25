@@ -30,7 +30,7 @@ rule deblur_se_stats:
 rule deblur_se_report:
     input:
         "01-imported/fastq_pe_count_describe.tsv",
-        "05-reports/deblur-se/report.txt"
+        "05-reports/report_deblur-se.txt"
 
 # -----------------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ rule dada2_se_stats:
 rule dada2_se_report:
     input:
         "01-imported/fastq_pe_count_describe.tsv",
-        "05-reports/dada2-se/report.txt"
+        "05-reports/report_dada2-se.txt"
 
 # -----------------------------------------------------------------------------
 
@@ -86,7 +86,7 @@ rule dada2_pe_stats:
 rule dada2_pe_report:
     input:
         "01-imported/fastq_pe_count_describe.tsv",
-        "05-reports/dada2-pe/report.txt"
+        "05-reports/report_dada2-pe.txt"
 
 # RULES -----------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ rule fastq_pe_count_describe:
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        t.to_csv(output[0], sep='\t')
+        t.to_csv(output[0], sep='\t', header='sequences_per_sample')
 
 rule import_ref_seqs:
     input:
@@ -169,7 +169,8 @@ rule denoise_deblur_se:
     output:
         table="02-denoised/deblur-se/table.qza",
         repseqs="02-denoised/deblur-se/representative_sequences.qza",
-        stats="02-denoised/deblur-se/stats.qza"
+        stats="02-denoised/deblur-se/stats.qza",
+        outputdir="02-denoised/deblur-se"
     shell:
         "qiime deblur denoise-other "
         "--i-demultiplexed-seqs {input.seqs} "
@@ -178,6 +179,7 @@ rule denoise_deblur_se:
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-stats {output.stats} "
+        "--output-dir {output.outputdir} "
         "--verbose"
 
 rule denoise_dada2_se:
@@ -297,13 +299,21 @@ rule unzip_repseq_to_fasta:
         "mv temp/*/data/dna-sequences.fasta {output}; "
         "/bin/rm -r temp"
 
+rule repseq_detect_amplicon_type:
+    input:
+        "02-denoised/{method}/representative_sequences.fasta"
+    output:
+        "02-denoised/{method}/representative_sequences_amplicon_type.txt"
+    shell:
+        "python scripts/detect_amplicon_locus.py -f {input} > {output}"
+
 rule repseq_length_distribution:
     input:
         "02-denoised/{method}/representative_sequences.fasta"
     output:
         "02-denoised/{method}/representative_sequences_lengths.txt"
     shell:
-        "perl fastaLengths.pl {input} | sort > {output}"
+        "perl scripts/fastaLengths.pl {input} | sort > {output}"
 
 rule repseq_length_distribution_describe:
     input:
@@ -313,7 +323,7 @@ rule repseq_length_distribution_describe:
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        t.to_csv(output[0], sep='\t')
+        t.to_csv(output[0], sep='\t', header='sequence_length_bp')
 
 # add this rule later (to be run after step 2)
 # rule filter_chloroplasts_mitochondria:
@@ -462,7 +472,7 @@ rule alignment_gaps_distribution_describe:
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        t.to_csv(output[0], sep='\t')
+        t.to_csv(output[0], sep='\t', header='gaps_per_sequence')
 
 rule diversity_alpha_rarefaction:
     input:
@@ -550,15 +560,42 @@ rule diversity_beta_group_significance:
         "--o-visualization {output} "
         "--p-pairwise"
 
-rule report:
+rule summarize_processing_info:
+    input:
+        metadata=config["metadata"]
+    output:
+        "05-reports/processing.txt"
+    run:
+        df = pd.read_csv(input.metadata, sep='\t')
+        cols = ['project_name', 'experiment_design_description', 
+                'target_gene', 'target_subfragment', 'pcr_primers', 
+                'pcr_primer_names', 'platform', 'instrument_model',
+                'run_center', 'run_date']
+        ser = pd.Series()
+        for col in cols:
+            if col in df.columns:
+                vc = df[col].value_counts()
+                list = []
+                for index, value in vc.items():
+                    list.append('%s (%s)' % (index, value))
+                entry = ', '.join(list)
+                ser.loc[col] = entry
+            else:
+                ser.loc[col] = 'NOT PROVIDED'
+        ser.to_csv(output[0], sep='\t')
+
+rule generate_report:
     input:
         fastq="01-imported/fastq_pe_count_describe.tsv",
         samples="02-denoised/{method}/table_summary_samples.txt",
         features="02-denoised/{method}/table_summary_features.txt",
+        amplicontype="02-denoised/{method}/representative_sequences_amplicon_type.txt",
         repseqs="02-denoised/{method}/representative_sequences_lengths_describe.tsv",
-        alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.tsv"
+        alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.tsv",
+        processing="05-reports/processing.txt"
     output:
-        "05-reports/{method}/report.txt"
+        "05-reports/report_{method}.txt"
     shell:
-        "head -n 13 {input.fastq} {input.samples} {input.features} {input.repseqs} {input.alignment} > {output}"
+        "head -n 13 {input.processing} {input.fastq} {input.samples} {input.features} "
+        "{input.amplicontype} {input.repseqs} {input.alignment} > {output}"
 

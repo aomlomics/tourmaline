@@ -1,9 +1,12 @@
+# input files
 manifest_se: 00-data/manifest_se.csv
 manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
 refseqs: 00-data/refseqs.fasta
 reftax: 00-data/reftax.tsv
+# deblur
 deblur_trim: 150
+# dada2
 dada_trunc_len: 0
 dada_trunc_len_f: 0
 dada_trunc_len_r: 0
@@ -12,11 +15,13 @@ dada_trim_left: 0
 dada_trim_left_f: 0
 dada_trim_left_r: 0
 dada_n_threads: 8
+# subsampling
 alpha_max_depth: 5000
 core_sampling_depth: 5000
+# statistics
 beta_group_column: treatment
 
-# NOTE: refseqs.fasta and reftax.tsv -- and their outputs refseqs.qza, 
+# NOTE: refseqs.fasta and reftax.tsv -- and even their outputs refseqs.qza, 
 # reftax.qza, and classifier.qza -- should ideally be in an external directory.
 # We recommend setting symbolic links in 00-data and 01-imported to these
 # external files. Adding these files will circumvent the rules that produce
