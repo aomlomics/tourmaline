@@ -19,7 +19,7 @@ Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/ji
 
 Tourmaline has the following dependencies (installation instructions below):
 
-* QIIME 2 (version `2018.6` or later)
+* QIIME 2 version `2018.6` (not tested with other versions)
 * Snakemake
 * Perl and `fastaLengths.pl` (included)
 

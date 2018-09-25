@@ -3,15 +3,17 @@ manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
 refseqs: 00-data/refseqs.fasta
 reftax: 00-data/reftax.tsv
-deblur_trim: 115
+deblur_trim: 150
 dada_trunc_len: 0
-dada_trunc_len_f: 100
-dada_trunc_len_r: 100
+dada_trunc_len_f: 0
+dada_trunc_len_r: 0
 dada_trunc_q: 20
-dada_trim_left_f: 1
+dada_trim_left: 0
+dada_trim_left_f: 0
+dada_trim_left_r: 0
 dada_n_threads: 8
-alpha_max_depth: 63
-core_sampling_depth: 30
+alpha_max_depth: 5000
+core_sampling_depth: 5000
 beta_group_column: treatment
 
 # NOTE: refseqs.fasta and reftax.tsv -- and their outputs refseqs.qza, 
@@ -22,4 +24,4 @@ beta_group_column: treatment
 # feature_classifier_fit_classifier_naive_bayes will be skipped.
 
 # WARNING: Snakemake will not automatically rerun if parameters change. It 
-# should rerun in input files change.
+# should rerun if input files change.

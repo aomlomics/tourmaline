@@ -8,7 +8,6 @@ configfile: "config.yaml"
 
 rule deblur_se_denoise:
     input:
-        "01-imported/fastq_pe_count_describe.tsv",
         "02-denoised/deblur-se/table.qzv",
         "02-denoised/deblur-se/table_summary_samples.txt",
         "02-denoised/deblur-se/table_summary_features.txt",
@@ -18,11 +17,11 @@ rule deblur_se_denoise:
 rule deblur_se_diversity:
     input:
         "03-repseqs/deblur-se/taxonomy.qzv",
+        "04-diversity/deblur-se/taxa_barplot.qzv",
         "03-repseqs/deblur-se/rooted_tree.qza",
         "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/deblur-se/alpha_rarefaction.qzv",
-        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/deblur-se/taxa_barplot.qzv"
+        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv"
 
 rule deblur_se_stats:
     input:
@@ -30,13 +29,13 @@ rule deblur_se_stats:
 
 rule deblur_se_report:
     input:
+        "01-imported/fastq_pe_count_describe.tsv",
         "05-reports/deblur-se/report.txt"
 
 # -----------------------------------------------------------------------------
 
 rule dada2_se_denoise:
     input:
-        "01-imported/fastq_pe_count_describe.tsv",
         "02-denoised/dada2-se/table.qzv",
         "02-denoised/dada2-se/table_summary_samples.txt",
         "02-denoised/dada2-se/table_summary_features.txt",
@@ -46,11 +45,11 @@ rule dada2_se_denoise:
 rule dada2_se_diversity:
     input:
         "03-repseqs/dada2-se/taxonomy.qzv",
+        "04-diversity/dada2-se/taxa_barplot.qzv",
         "03-repseqs/dada2-se/rooted_tree.qza",
         "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-se/alpha_rarefaction.qzv",
-        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-se/taxa_barplot.qzv"
+        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv"
 
 rule dada2_se_stats:
     input:
@@ -58,13 +57,13 @@ rule dada2_se_stats:
 
 rule dada2_se_report:
     input:
+        "01-imported/fastq_pe_count_describe.tsv",
         "05-reports/dada2-se/report.txt"
 
 # -----------------------------------------------------------------------------
 
 rule dada2_pe_denoise:
     input:
-        "01-imported/fastq_pe_count_describe.tsv",
         "02-denoised/dada2-pe/table.qzv",
         "02-denoised/dada2-pe/table_summary_samples.txt",
         "02-denoised/dada2-pe/table_summary_features.txt",
@@ -74,11 +73,11 @@ rule dada2_pe_denoise:
 rule dada2_pe_diversity:
     input:
         "03-repseqs/dada2-pe/taxonomy.qzv",
+        "04-diversity/dada2-pe/taxa_barplot.qzv",
         "03-repseqs/dada2-pe/rooted_tree.qza",
         "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-pe/alpha_rarefaction.qzv",
-        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-pe/taxa_barplot.qzv"
+        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv"
 
 rule dada2_pe_stats:
     input:
@@ -86,6 +85,7 @@ rule dada2_pe_stats:
 
 rule dada2_pe_report:
     input:
+        "01-imported/fastq_pe_count_describe.tsv",
         "05-reports/dada2-pe/report.txt"
 
 # RULES -----------------------------------------------------------------------
@@ -185,6 +185,7 @@ rule denoise_dada2_se:
         "01-imported/fastq_se.qza"
     params:
         trunclen=config["dada_trunc_len"],
+        trimleft=config["dada_trim_left"],
         nthreads=config["dada_n_threads"]
     output:
         table="02-denoised/dada2-se/table.qza",
@@ -194,6 +195,7 @@ rule denoise_dada2_se:
         "qiime dada2 denoise-single "
         "--i-demultiplexed-seqs {input} "
         "--p-trunc-len {params.trunclen} "
+        "--p-trim-left {params.trimleft} "
         "--p-n-threads {params.nthreads} "
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
@@ -208,6 +210,7 @@ rule denoise_dada2_pe:
         trunclenr=config["dada_trunc_len_r"],
         truncq=config["dada_trunc_q"],
         trimleftf=config["dada_trim_left_f"],
+        trimleftr=config["dada_trim_left_r"],
         nthreads=config["dada_n_threads"]
     output:
         table="02-denoised/dada2-pe/table.qza",
@@ -220,6 +223,7 @@ rule denoise_dada2_pe:
         "--p-trunc-len-r {params.trunclenr} "
         "--p-trunc-q {params.truncq} "
         "--p-trim-left-f {params.trimleftf} "
+        "--p-trim-left-r {params.trimleftr} "
         "--p-n-threads {params.nthreads} "
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
@@ -368,6 +372,20 @@ rule visualize_taxonomy:
     shell:
         "qiime metadata tabulate "
         "--m-input-file {input} "
+        "--o-visualization {output}"
+
+rule taxa_barplot:
+    input:
+        table="02-denoised/{method}/table.qza",
+        taxonomy="03-repseqs/{method}/taxonomy.qza",
+        metadata=config["metadata"]
+    output:
+        "04-diversity/{method}/taxa_barplot.qzv"
+    shell:
+        "qiime taxa barplot "
+        "--i-table {input.table} "
+        "--i-taxonomy {input.taxonomy} "
+        "--m-metadata-file {input.metadata} "
         "--o-visualization {output}"
 
 rule alignment_mafft:
@@ -531,20 +549,6 @@ rule diversity_beta_group_significance:
         "--m-metadata-column {params.column} "
         "--o-visualization {output} "
         "--p-pairwise"
-
-rule taxa_barplot:
-    input:
-        table="02-denoised/{method}/table.qza",
-        taxonomy="03-repseqs/{method}/taxonomy.qza",
-        metadata=config["metadata"]
-    output:
-        "04-diversity/{method}/taxa_barplot.qzv"
-    shell:
-        "qiime taxa barplot "
-        "--i-table {input.table} "
-        "--i-taxonomy {input.taxonomy} "
-        "--m-metadata-file {input.metadata} "
-        "--o-visualization {output}"
 
 rule report:
     input:
