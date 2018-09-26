@@ -46,7 +46,28 @@ git clone https://github.com/cuttlefishh/tourmaline.git
 mv tourmaline PROJECT
 ```
 
-Now you are ready to start analyzing your amplicon sequence data.
+### Test Data
+
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database.
+
+First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `PROJECT`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+
+```
+cat manifest_pe.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
+mv temp manifest_pe.csv 
+cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
+mv temp manifest_se.csv
+```
+
+You will also need to edit the configuration file `config.yaml` and change the values of `alpha_max_depth` and `core_sampling_depth` to 50 because the sequencing depth of the test dataset is very low.
+
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow:
+
+```
+snakemake dada2_pe_denoise
+```
+
+You can try any of the rules described below. Once you are ready to start analyzing your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
 
 ### Helper Scripts
 

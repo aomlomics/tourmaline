@@ -12,6 +12,7 @@ rule deblur_se_denoise:
         "02-denoised/deblur-se/table_summary_samples.txt",
         "02-denoised/deblur-se/table_summary_features.txt",
         "02-denoised/deblur-se/representative_sequences.qzv",
+        "02-denoised/deblur-se/representative_sequences_amplicon_type.txt",
         "02-denoised/deblur-se/representative_sequences_lengths_describe.tsv"
 
 rule deblur_se_diversity:
@@ -40,6 +41,7 @@ rule dada2_se_denoise:
         "02-denoised/dada2-se/table_summary_samples.txt",
         "02-denoised/dada2-se/table_summary_features.txt",
         "02-denoised/dada2-se/representative_sequences.qzv",
+        "02-denoised/dada2-se/representative_sequences_amplicon_type.txt",
         "02-denoised/dada2-se/representative_sequences_lengths_describe.tsv"
 
 rule dada2_se_diversity:
@@ -68,6 +70,7 @@ rule dada2_pe_denoise:
         "02-denoised/dada2-pe/table_summary_samples.txt",
         "02-denoised/dada2-pe/table_summary_features.txt",
         "02-denoised/dada2-pe/representative_sequences.qzv",
+        "02-denoised/dada2-pe/representative_sequences_amplicon_type.txt",
         "02-denoised/dada2-pe/representative_sequences_lengths_describe.tsv"
 
 rule dada2_pe_diversity:
@@ -169,8 +172,7 @@ rule denoise_deblur_se:
     output:
         table="02-denoised/deblur-se/table.qza",
         repseqs="02-denoised/deblur-se/representative_sequences.qza",
-        stats="02-denoised/deblur-se/stats.qza",
-        outputdir="02-denoised/deblur-se"
+        stats="02-denoised/deblur-se/stats.qza"
     shell:
         "qiime deblur denoise-other "
         "--i-demultiplexed-seqs {input.seqs} "
@@ -179,7 +181,6 @@ rule denoise_deblur_se:
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-stats {output.stats} "
-        "--output-dir {output.outputdir} "
         "--verbose"
 
 rule denoise_dada2_se:
