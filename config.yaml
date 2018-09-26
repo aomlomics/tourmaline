@@ -4,20 +4,46 @@ manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
 refseqs: 00-data/refseqs.fasta
 reftax: 00-data/reftax.tsv
+
 # deblur
-deblur_trim: 150
-# dada2
-dada_trunc_len: 0
-dada_trunc_len_f: 0
-dada_trunc_len_r: 0
-dada_trunc_q: 20
-dada_trim_left: 0
-dada_trim_left_f: 0
-dada_trim_left_r: 0
-dada_n_threads: 8
+deblur_trim_length: 150
+deblur_sample_stats: --p-sample-stats
+deblur_mean_error: 0.005
+deblur_indel_prob: 0.01
+deblur_indel_max: 3
+deblur_min_reads: 10
+deblur_min_size: 2
+deblur_jobs_to_start: 1
+deblur_hashed_feature_ids: --p-hashed-feature-ids
+
+# dada2 single-end
+dada2se_trunc_len: 0
+dada2se_trim_left: 0
+dada2se_max_ee: 2
+dada2se_trunc_q: 2
+dada2se_chimera_method: consensus
+dada2se_min_fold_parent_over_abundance: 1
+dada2se_n_threads: 8
+dada2se_n_reads_learn: 1000000
+dada2se_hashed_feature_ids: --p-hashed-feature-ids
+
+# dada2 paired-end
+dada2pe_trunc_len_f: 0
+dada2pe_trunc_len_r: 0
+dada2pe_trim_left_f: 0
+dada2pe_trim_left_r: 0
+dada2pe_max_ee: 2
+dada2pe_trunc_q: 2
+dada2pe_chimera_method: consensus
+dada2pe_min_fold_parent_over_abundance: 1
+dada2pe_n_threads: 8
+dada2pe_n_reads_learn: 1000000
+dada2pe_hashed_feature_ids: --p-hashed-feature-ids
+
 # subsampling
 alpha_max_depth: 5000
 core_sampling_depth: 5000
+
 # statistics
 beta_group_column: treatment
 

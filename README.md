@@ -59,7 +59,22 @@ cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJEC
 mv temp manifest_se.csv
 ```
 
-You will also need to edit the configuration file `config.yaml` and change the values of `alpha_max_depth` and `core_sampling_depth` to 50 because the sequencing depth of the test dataset is very low.
+You will also need to edit the configuration file `config.yaml` to reduce the Deblur trim length because the test sequences are only 120 bp, and decrease the subsampling values because the sequencing depth of the test dataset is very low:
+
+```
+deblur_trim_length: 100
+alpha_max_depth: 50
+core_sampling_depth: 50
+```
+
+Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
+
+<!--
+THIS DOES NOT FIX DEBLUR WITH TEST DATA, STILL GET IndexError:
+
+deblur_min_reads: 1
+deblur_min_size: 1
+-->
 
 Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow:
 
@@ -67,7 +82,7 @@ Now you are ready to test Snakemake. You might start with the DADA2 paired-end w
 snakemake dada2_pe_denoise
 ```
 
-You can try any of the rules described below. Once you are ready to start analyzing your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
+You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* Once you are ready to start analyzing your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
 
 ### Helper Scripts
 

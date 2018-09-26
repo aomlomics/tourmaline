@@ -168,7 +168,15 @@ rule denoise_deblur_se:
         seqs="01-imported/fastq_se.qza",
         refseqs="01-imported/refseqs.qza"
     params:
-        trim=config["deblur_trim"]
+        trimlength=config["deblur_trim_length"],
+        samplestats=config["deblur_sample_stats"],
+        meanerror=config["deblur_mean_error"],
+        indelprob=config["deblur_indel_prob"],
+        indelmax=config["deblur_indel_max"],
+        minreads=config["deblur_min_reads"],
+        minsize=config["deblur_min_size"],
+        jobstostart=config["deblur_jobs_to_start"],
+        hashedfeatureids=config["deblur_hashed_feature_ids"]
     output:
         table="02-denoised/deblur-se/table.qza",
         repseqs="02-denoised/deblur-se/representative_sequences.qza",
@@ -177,7 +185,15 @@ rule denoise_deblur_se:
         "qiime deblur denoise-other "
         "--i-demultiplexed-seqs {input.seqs} "
         "--i-reference-seqs {input.refseqs} "
-        "--p-trim-length {params.trim} "
+        "--p-trim-length {params.trimlength} "
+        "{params.samplestats} "
+        "--p-mean-error {params.meanerror} "
+        "--p-indel-prob {params.indelprob} "
+        "--p-indel-max {params.indelmax} "
+        "--p-min-reads {params.minreads} "
+        "--p-min-size {params.minsize} "
+        "--p-jobs-to-start {params.jobstostart} "
+        "{params.hashedfeatureids} "        
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-stats {output.stats} "
@@ -187,9 +203,15 @@ rule denoise_dada2_se:
     input:
         "01-imported/fastq_se.qza"
     params:
-        trunclen=config["dada_trunc_len"],
-        trimleft=config["dada_trim_left"],
-        nthreads=config["dada_n_threads"]
+        trunclen=config["dada2se_trunc_len"],
+        trimleft=config["dada2se_trim_left"],
+        maxee=config["dada2se_max_ee"],
+        truncq=config["dada2se_trunc_q"],
+        chimeramethod=config["dada2se_chimera_method"],
+        minfoldparentoverabundance=config["dada2se_min_fold_parent_over_abundance"],
+        nthreads=config["dada2se_n_threads"],
+        nreadslearn=config["dada2se_n_reads_learn"],
+        hashedfeatureids=config["dada2se_hashed_feature_ids"]
     output:
         table="02-denoised/dada2-se/table.qza",
         repseqs="02-denoised/dada2-se/representative_sequences.qza",
@@ -199,7 +221,13 @@ rule denoise_dada2_se:
         "--i-demultiplexed-seqs {input} "
         "--p-trunc-len {params.trunclen} "
         "--p-trim-left {params.trimleft} "
+        "--p-max-ee {params.maxee} "
+        "--p-trunc-q {params.truncq} "
+        "--p-chimera-method {params.chimeramethod} "
+        "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
         "--p-n-threads {params.nthreads} "
+        "--p-n-reads-learn {params.nreadslearn} "
+        "{params.hashedfeatureids} "
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-denoising-stats {output.stats} "
@@ -209,12 +237,17 @@ rule denoise_dada2_pe:
     input:
         "01-imported/fastq_pe.qza"
     params:
-        trunclenf=config["dada_trunc_len_f"],
-        trunclenr=config["dada_trunc_len_r"],
-        truncq=config["dada_trunc_q"],
-        trimleftf=config["dada_trim_left_f"],
-        trimleftr=config["dada_trim_left_r"],
-        nthreads=config["dada_n_threads"]
+        trunclenf=config["dada2pe_trunc_len_f"],
+        trunclenr=config["dada2pe_trunc_len_r"],
+        trimleftf=config["dada2pe_trim_left_f"],
+        trimleftr=config["dada2pe_trim_left_r"],
+        maxee=config["dada2pe_max_ee"],
+        truncq=config["dada2pe_trunc_q"],
+        chimeramethod=config["dada2pe_chimera_method"],
+        minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
+        nthreads=config["dada2pe_n_threads"],
+        nreadslearn=config["dada2pe_n_reads_learn"],
+        hashedfeatureids=config["dada2pe_hashed_feature_ids"]
     output:
         table="02-denoised/dada2-pe/table.qza",
         repseqs="02-denoised/dada2-pe/representative_sequences.qza",
@@ -224,10 +257,15 @@ rule denoise_dada2_pe:
         "--i-demultiplexed-seqs {input} "
         "--p-trunc-len-f {params.trunclenf} "
         "--p-trunc-len-r {params.trunclenr} "
-        "--p-trunc-q {params.truncq} "
         "--p-trim-left-f {params.trimleftf} "
         "--p-trim-left-r {params.trimleftr} "
+        "--p-max-ee {params.maxee} "
+        "--p-trunc-q {params.truncq} "
+        "--p-chimera-method {params.chimeramethod} "
+        "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
         "--p-n-threads {params.nthreads} "
+        "--p-n-reads-learn {params.nreadslearn} "
+        "{params.hashedfeatureids} "
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-denoising-stats {output.stats} "
