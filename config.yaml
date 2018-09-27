@@ -47,7 +47,7 @@ core_sampling_depth: 5000
 # statistics
 beta_group_column: treatment
 
-# NOTE: refseqs.fasta and reftax.tsv -- and even their outputs refseqs.qza, 
+# NOTE: refseqs.fasta and reftax.tsv -- and/or their outputs refseqs.qza, 
 # reftax.qza, and classifier.qza -- should ideally be in an external directory.
 # We recommend setting symbolic links in 00-data and 01-imported to these
 # external files. Adding these files will circumvent the rules that produce
@@ -55,4 +55,5 @@ beta_group_column: treatment
 # feature_classifier_fit_classifier_naive_bayes will be skipped.
 
 # WARNING: Snakemake will not automatically rerun if parameters change. It 
-# should rerun if input files change.
+# should rerun if input files change. To ensure that a file is regenerated,
+# you can delete it directly before re-running Snakemake.
