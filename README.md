@@ -19,26 +19,29 @@ Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/ji
 
 Tourmaline has the following dependencies (installation instructions below):
 
+* Conda
 * QIIME 2 version `2018.6` (should work with later versions but has not been tested)
 * Snakemake
 
 ### QIIME2 and Snakemake
 
-First, if you haven't already, install QIIME 2 using the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
+First, if you don't have Conda installed on your machine, install [Miniconda](https://conda.io/miniconda.html) for your operating system (Python 3.7+ version).
+
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
 
 ```
 wget https://data.qiime2.org/distro/core/qiime2-2018.6-py35-osx-conda.yml
 conda env create -n qiime2-2018.6 --file qiime2-2018.6-py35-osx-conda.yml
 ```
 
-Second, activate your QIIME 2 environment and install Snakemake:
+Third, activate your QIIME 2 environment and install Snakemake:
 
 ```
 source activate qiime2-2018.6
 conda install snakemake
 ```
 
-Third, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
+Finally, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
 
 ```
 cd /PATH/TO
@@ -146,7 +149,7 @@ Symbolic links to the QIIME 2-formatted reference sequence fasta and taxonomy fi
 
 ```
 cd $PRJ/00-data
-ln -s $DB/16s/16s_refseqs.fasta refseqs.fasta
+ln -s $DB/16s/16s_refseqs.fna refseqs.fna
 ln -s $DB/16s/16s_reftax.tsv reftax.tsv
 ```
 

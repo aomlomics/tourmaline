@@ -2,7 +2,7 @@
 manifest_se: 00-data/manifest_se.csv
 manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
-refseqs: 00-data/refseqs.fasta
+refseqs: 00-data/refseqs.fna
 reftax: 00-data/reftax.tsv
 
 # deblur
