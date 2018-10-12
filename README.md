@@ -8,12 +8,20 @@ See https://docs.travis-ci.com/user/getting-started/ and https://github.com/bioc
 
 Amplicon sequencing is a metagenetics method whereby a single DNA locus in a community of organisms is PCR-amplified and sequenced. Tourmaline is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
+#### Amplicon sequence variants
+
 Two methods of amplicon sequence processing are supported, both of which generate ASVs (amplicon sequence variants, which approximate the "true" or "exact" sequences in a sample) rather than OTUs (operational taxonomic units, which blur sequencing errors and microdiversity through clustering):
 
 * [Deblur](https://github.com/biocore/deblur) is a greedy deconvolution algorithm based on known Illumina read error profiles ([Amir et al., 2017](https://doi.org/10.1128/mSystems.00191-16)).
 * [DADA2](https://github.com/benjjneb/dada2) implements a quality-aware model of Illumina amplicon errors to infer sample composition by dividing amplicon reads into partitions consistent with the error model ([Callahan et al., 2016](https://doi.org/10.1038/nmeth.3869)).
 
-Tourmaline is an alternative amplicon pipeline to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) and uses [Swarm](https://github.com/torognes/swarm) for OTU picking.
+#### QIIME 2 and Snakemake commands
+
+QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/cuttlefishh/tourmaline/blob/master/Snakefile). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/cuttlefishh/tourmaline/blob/master/Snakefile).
+
+#### Ready for MBON
+
+Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) and uses [Swarm](https://github.com/torognes/swarm) for OTU picking. Tourmaline provides rapid and reproducible workflows for [Deblur](https://github.com/biocore/deblur) and [DADA2](https://github.com/benjjneb/dada2) and is extensible to other OTU picking algorithms.
 
 ## Installation
 
