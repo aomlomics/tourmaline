@@ -36,7 +36,7 @@ Tourmaline requires the following software:
 
 First, if you don't have Conda installed on your machine, install [Miniconda](https://conda.io/miniconda.html) for your operating system (Python 3.7+ version).
 
-### QIIME2
+### QIIME 2
 
 Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
 
