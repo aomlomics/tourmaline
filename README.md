@@ -88,7 +88,7 @@ core_sampling_depth: 50
 Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
 
 <!--
-THIS DOES NOT FIX DEBLUR WITH TEST DATA. THIS STILL PRODUCES: IndexError:
+THIS DOES NOT FIX DEBLUR WITH TEST DATA -- STILL PRODUCES ERROR: IndexError:
 
 deblur_min_reads: 1
 deblur_min_size: 1
