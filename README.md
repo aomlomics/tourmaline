@@ -17,7 +17,7 @@ Two methods of amplicon sequence processing are supported, both of which generat
 
 #### QIIME 2 and Snakemake commands
 
-QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/cuttlefishh/tourmaline/blob/master/commands.txt). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/cuttlefishh/tourmaline/blob/master/Snakefile).
+QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/NOAA-AOML/tourmaline/blob/master/commands.txt). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/NOAA-AOML/tourmaline/blob/master/Snakefile).
 
 #### Ready for MBON
 
@@ -60,7 +60,7 @@ Finally, clone the Tourmaline repository and rename it to the working directory 
 
 ```
 cd /PATH/TO
-git clone https://github.com/cuttlefishh/tourmaline.git
+git clone https://github.com/NOAA-AOML/tourmaline.git
 mv tourmaline PROJECT
 ```
 
