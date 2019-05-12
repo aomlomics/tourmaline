@@ -52,10 +52,11 @@ def detect_amplicon_locus(input_fasta_fp, num_seqs, cutoff, seed):
     match, above a given cutoff fraction of sequences, one of the following  
     diagnostic tetramers:
 
-      Tetramer\tAmplicon\tForward primer                             
-      TACG\t16S rRNA\t515f                                       
-      GTAG\tITS rRNA\tITS1f                                       
-      GCT[AC]\t18S rRNA\tEuk1391f                                    
+      Tetramer\tAmplicon locus\tForward primer                                  
+      TACG\t16S rRNA prok\t515f (EMP)                                           
+      GTAG\tITS rRNA euk\tITS1f (EMP)                                           
+      GCT[AC]\t18S rRNA euk\tEuk1391f (EMP)                                     
+      GTCG\t12S rRNA mt\tMiFish-U-F                                             
     """
     starting_kmer_value_counts = count_starting_kmers(input_fasta_fp, num_seqs, 
       seed)
@@ -79,9 +80,12 @@ def detect_amplicon_locus(input_fasta_fp, num_seqs, cutoff, seed):
         top3_kmer_frac > cutoff):
         print('Amplicon locus: 18S/Euk1391f (%s%% of sequences start with %s, %s, or %s)' %
               (round(top3_kmer_frac*100, 1), top_kmer, second_kmer, third_kmer))
+    elif (top_kmer == 'GTCG') & (top_kmer_frac > cutoff):
+        print('Amplicon locus: 12S/MiFish-U-F (%s%% of sequences start with %s)' %
+              (round(top_kmer_frac*100, 1), top_kmer))
     else:
-        print('Could not determine amplicon locus'),
-        print('(most frequent starting tetramer was %s with %s%%)' %
+        print('Could not determine amplicon locus.'),
+        print('Most frequent starting tetramer was %s (%s%% of sequences).' %
               (top_kmer, round(top_kmer_frac*100, 1)))
 
 if __name__ == '__main__':

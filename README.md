@@ -28,7 +28,7 @@ Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version `2018.6` (should work with later versions but has not been tested)
+* QIIME 2 version `2018.11` (should work with later versions but has not been tested)
 * Snakemake
 * Tournmaline (this repository)
 
@@ -38,11 +38,11 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.11/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.11`:
 
 ```
-wget https://data.qiime2.org/distro/core/qiime2-2018.6-py35-osx-conda.yml
-conda env create -n qiime2-2018.6 --file qiime2-2018.6-py35-osx-conda.yml
+wget https://data.qiime2.org/distro/core/qiime2-2018.11-py35-osx-conda.yml
+conda env create -n qiime2-2018.11 --file qiime2-2018.11-py35-osx-conda.yml
 ```
 
 ### Snakemake
@@ -50,7 +50,7 @@ conda env create -n qiime2-2018.6 --file qiime2-2018.6-py35-osx-conda.yml
 Third, activate your QIIME 2 environment and install Snakemake:
 
 ```
-source activate qiime2-2018.6
+source activate qiime2-2018.11
 conda install snakemake
 ```
 
@@ -59,18 +59,20 @@ conda install snakemake
 Finally, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
 
 ```
-cd /PATH/TO
+cd /PATH/TO/PROJECT
 git clone https://github.com/NOAA-AOML/tourmaline.git
-mv tourmaline PROJECT
+mv tourmaline tourmaline-test
+cd tourmaline-test
 ```
 
 ### Test Data
 
 The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database.
 
-First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `PROJECT`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
 
 ```
+cd /PATH/TO/PROJECT/tourmaline-test/00-data
 cat manifest_pe.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
 mv temp manifest_pe.csv 
 cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
@@ -94,7 +96,7 @@ deblur_min_reads: 1
 deblur_min_size: 1
 -->
 
-Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow:
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
 
 ```
 snakemake dada2_pe_denoise
@@ -130,11 +132,11 @@ Sample metadata should include basic sample information like `collection_timesta
 
 Processing information should ideally include all of the following columns: `project_name`, `experiment_design_description`, `target_gene`, `target_subfragment`, `pcr_primers`, `pcr_primer_names`, `platform`, `instrument_model`, `run_center`, `run_date`. These will be included in your QC report.
 
-The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2018.11/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
 
 #### Format sequence data
 
-Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `match_manifest_to_metadata.py` can help with this).
+Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.11/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `match_manifest_to_metadata.py` can help with this).
 
 Note: While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
 
@@ -147,14 +149,25 @@ PRJ=/PATH/TO/PROJECT
 DB=/PATH/TO/DATABASES
 ```
 
-Create a directory for data inside your working directory:
+Clone a new copy of the Tourmaline repository inside your working directory:
 
 ```
 cd $PRJ
-mkdir 00-data
+git clone https://github.com/NOAA-AOML/tourmaline.git
+cd tourmaline
 ```
 
-Move your metadata file and fastq manifest file(s) to `$PRJ/00-data`.
+#### Copy metadata and manifest files or create symbolic links to them
+
+Copy your metadata file and fastq manifest file(s) to `$PRJ/tourmaline/00-data` or create symbolic links to them. Use the code below to remove the test files and create links to your own metadata and fastq manifest files (the files in $PRJ/metadata can be named however you like):
+
+```
+cd $PRJ/tourmaline/00-data
+rm metadata.tsv manifest_se.csv manifest_pe.csv
+ln -s $PRJ/metadata/metadata.tsv metadata.tsv
+ln -s $PRJ/metadata/manifest_se.csv manifest_se.csv
+ln -s $PRJ/metadata/manifest_pe.csv manifest_pe.csv
+```
 
 #### Create symbolic links to reference sequence and taxonomy data
 
@@ -163,7 +176,8 @@ Reference sequences and taxonomy are used by QIIME 2 to assign taxonomy to the r
 Symbolic links to the QIIME 2-formatted reference sequence fasta and taxonomy files can go here (example locations of files shown):
 
 ```
-cd $PRJ/00-data
+cd $PRJ/tourmaline/00-data
+rm refseqs.fna reftax.tsv
 ln -s $DB/16s/16s_refseqs.fna refseqs.fna
 ln -s $DB/16s/16s_reftax.tsv reftax.tsv
 ```
@@ -171,8 +185,8 @@ ln -s $DB/16s/16s_reftax.tsv reftax.tsv
 The first time you run Tourmaline with a given amplicon locus, the files below will be created. However, for future projects with that same amplicon locus, you can put these files in your databases directory. You will have to make the directory `01-imported` before creating the symbolic links:
 
 ```
-mkdir $PRJ/01-imported
-cd $PRJ/01-imported
+mkdir $PRJ/tourmaline/01-imported
+cd $PRJ/tourmaline/01-imported
 ln -s $DB/16s/16s_refseqs.qza refseqs.qza
 ln -s $DB/16s/16s_reftax.qza reftax.qza
 ln -s $DB/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
@@ -291,8 +305,8 @@ Answer the following questions to determine the best parameters for processing a
 
 #### Format metadata and sequence data
 
-* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
-* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
+* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2018.11/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2018.11/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
 * Are my reference sequences and taxonomy properly formatted for QIIME 2?
 * Is my config file updated with the file paths and parameters I want to use?
 
