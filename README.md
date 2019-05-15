@@ -61,13 +61,15 @@ Finally, clone the Tourmaline repository and rename it to the working directory 
 ```
 cd /PATH/TO/PROJECT
 git clone https://github.com/NOAA-AOML/tourmaline.git
-mv tourmaline tourmaline-test
-cd tourmaline-test
 ```
 
 ### Test Data
 
-The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database.
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` before running the test data, for example:
+
+```
+mv /PATH/TO/PROJECT/tourmaline /PATH/TO/PROJECT/tourmaline-test
+```
 
 First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
 
@@ -102,7 +104,7 @@ Now you are ready to test Snakemake. You might start with the DADA2 paired-end w
 snakemake dada2_pe_denoise
 ```
 
-You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* Once you are ready to start analyzing your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
+You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* If you want to use `tourmaline-test` to analyze your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
 
 ### Helper Scripts
 
@@ -228,7 +230,7 @@ snakemake deblur_se_denoise
 # steps 3-4
 snakemake deblur_se_diversity
 
-# statistical analyses
+# step 4.1
 snakemake deblur_se_stats
 
 # step 5
@@ -244,7 +246,7 @@ snakemake dada2_se_denoise
 # steps 3-4
 snakemake dada2_se_diversity
 
-# statistical analyses
+# step 4.1
 snakemake dada2_se_stats
 
 # step 5
@@ -260,14 +262,18 @@ snakemake dada2_pe_denoise
 # steps 3-4
 snakemake dada2_pe_diversity
 
-# statistical analyses
+# step 4.1
 snakemake dada2_pe_stats
 
 # step 5
 snakemake dada2_pe_report
 ```
 
-That's it. Just run one of these commands and let Snakemake do its magic. The results will be placed in organized directories inside your working directory:
+That's it. Just run one of these commands and let Snakemake do its magic.
+
+#### Output
+
+The results will be placed in organized directories inside your working directory:
 
 ```
 01-imported
@@ -275,6 +281,77 @@ That's it. Just run one of these commands and let Snakemake do its magic. The re
 03-repseqs
 04-diversity
 05-reports
+```
+
+The output files of each command (shown for DADA2 paired-end) are as follows:
+
+##### dada2_pe_denoise (steps 1-2)
+
+```
+01-imported/fastq_pe.qza
+02-denoised/data2-pe/stats.qza
+02-denoised/data2-pe/table.qza
+02-denoised/data2-pe/representative_sequences.qza
+02-denoised/data2-pe/table.qzv
+02-denoised/data2-pe/table.biom
+02-denoised/data2-pe/table_summary_features.txt
+02-denoised/data2-pe/table_summary_samples.txt
+02-denoised/data2-pe/representative_sequences.fasta
+02-denoised/data2-pe/representative_sequences.qzv
+02-denoised/data2-pe/representative_sequences_amplicon_type.txt
+02-denoised/data2-pe/representative_sequences_lengths.txt
+02-denoised/data2-pe/representative_sequences_lengths_describe.tsv
+```
+
+##### dada2_pe_diversity (steps 3-4)
+
+```
+01-imported/refseqs.qza
+01-imported/reftax.qza
+01-imported/classifier.qza
+03-repseqs/dada2-pe/taxonomy.qza
+03-repseqs/dada2-pe/taxonomy.qzv
+03-repseqs/dada2-pe/aligned_representative_sequences.qza
+03-repseqs/dada2-pe/masked_aligned_representative_sequences.qza
+03-repseqs/dada2-pe/unrooted_tree.qza
+03-repseqs/dada2-pe/rooted_tree.qza
+03-repseqs/dada2-pe/aligned_dna_sequences.fasta
+03-repseqs/dada2-pe/aligned_dna_sequences_gaps.txt
+03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv
+04-diversity/dada2-pe/taxa_barplot.qzv
+04-diversity/dada2-pe/unweighted_unifrac_pcoa_results.qza
+04-diversity/dada2-pe/observed_otus_vector.qza
+04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv
+04-diversity/dada2-pe/weighted_unifrac_pcoa_results.qza
+04-diversity/dada2-pe/weighted_unifrac_distance_matrix.qza
+04-diversity/dada2-pe/unweighted_unifrac_distance_matrix.qza
+04-diversity/dada2-pe/bray_curtis_pcoa_results.qza
+04-diversity/dada2-pe/bray_curtis_distance_matrix.qza
+04-diversity/dada2-pe/jaccard_pcoa_results.qza
+04-diversity/dada2-pe/shannon_vector.qza
+04-diversity/dada2-pe/jaccard_distance_matrix.qza
+04-diversity/dada2-pe/rarefied_table.qza
+04-diversity/dada2-pe/bray_curtis_emperor.qzv
+04-diversity/dada2-pe/faith_pd_vector.qza
+04-diversity/dada2-pe/jaccard_emperor.qzv
+04-diversity/dada2-pe/evenness_vector.qza
+04-diversity/dada2-pe/weighted_unifrac_emperor.qzv
+04-diversity/dada2-pe/alpha_rarefaction.qzv
+```
+
+##### dada2_pe_stats (step 4.1)
+
+```
+04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv
+```
+
+##### dada2_pe_report (step 5)
+
+```
+01-imported/fastq_pe_count.csv
+01-imported/fastq_pe_count_describe.tsv
+05-reports/processing.txt
+05-reports/report_dada2-pe.txt
 ```
 
 ## Logic
