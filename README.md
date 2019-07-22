@@ -271,7 +271,7 @@ snakemake dada2_pe_report
 
 That's it. Just run one of these commands and let Snakemake do its magic.
 
-#### Output
+## Output
 
 The results will be placed in organized directories inside your working directory:
 
