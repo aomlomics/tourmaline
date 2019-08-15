@@ -17,18 +17,18 @@ Two methods of amplicon sequence processing are supported, both of which generat
 
 #### QIIME 2 and Snakemake commands
 
-QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/cuttlefishh/tourmaline/blob/master/commands.txt). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/cuttlefishh/tourmaline/blob/master/Snakefile).
+QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/NOAA-AOML/tourmaline/blob/master/commands.txt). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/NOAA-AOML/tourmaline/blob/master/Snakefile). With the help of Snakemake, Tourmaline provides rapid and reproducible workflows for processing amplicon sequence data, storing output files in a logical directory structure.
 
 #### Ready for MBON
 
-Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) (Marine Biodiversity Observation Network) and uses [Swarm](https://github.com/torognes/swarm) for OTU picking. Tourmaline provides rapid and reproducible workflows for [Deblur](https://github.com/biocore/deblur) and [DADA2](https://github.com/benjjneb/dada2) and is extensible to other OTU picking algorithms.
+Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) (Marine Biodiversity Observation Network). Banzai uses [Swarm](https://github.com/torognes/swarm) for OTU picking. Tourmaline supports both [Deblur](https://github.com/biocore/deblur) and [DADA2](https://github.com/benjjneb/dada2) for denoising to generate ASVs. In the future, Tourmaline could be extended to other OTU/ASV picking algorithms if they are added to QIIME 2.
 
 ## Installation
 
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version `2018.6` (should work with later versions but has not been tested)
+* QIIME 2 version `2018.11` (should work with later versions but has not been tested)
 * Snakemake
 * Tournmaline (this repository)
 
@@ -38,11 +38,11 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.6`:
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.11/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.11`:
 
 ```
-wget https://data.qiime2.org/distro/core/qiime2-2018.6-py35-osx-conda.yml
-conda env create -n qiime2-2018.6 --file qiime2-2018.6-py35-osx-conda.yml
+wget https://data.qiime2.org/distro/core/qiime2-2018.11-py35-osx-conda.yml
+conda env create -n qiime2-2018.11 --file qiime2-2018.11-py35-osx-conda.yml
 ```
 
 ### Snakemake
@@ -50,7 +50,7 @@ conda env create -n qiime2-2018.6 --file qiime2-2018.6-py35-osx-conda.yml
 Third, activate your QIIME 2 environment and install Snakemake:
 
 ```
-source activate qiime2-2018.6
+source activate qiime2-2018.11
 conda install snakemake
 ```
 
@@ -59,18 +59,22 @@ conda install snakemake
 Finally, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
 
 ```
-cd /PATH/TO
-git clone https://github.com/cuttlefishh/tourmaline.git
-mv tourmaline PROJECT
+cd /PATH/TO/PROJECT
+git clone https://github.com/NOAA-AOML/tourmaline.git
 ```
 
 ### Test Data
 
-The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database.
-
-First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `PROJECT`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` before running the test data, for example:
 
 ```
+mv /PATH/TO/PROJECT/tourmaline /PATH/TO/PROJECT/tourmaline-test
+```
+
+First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+
+```
+cd /PATH/TO/PROJECT/tourmaline-test/00-data
 cat manifest_pe.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
 mv temp manifest_pe.csv 
 cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
@@ -94,13 +98,13 @@ deblur_min_reads: 1
 deblur_min_size: 1
 -->
 
-Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow:
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
 
 ```
 snakemake dada2_pe_denoise
 ```
 
-You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* Once you are ready to start analyzing your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
+You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* If you want to use `tourmaline-test` to analyze your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
 
 ### Helper Scripts
 
@@ -130,11 +134,11 @@ Sample metadata should include basic sample information like `collection_timesta
 
 Processing information should ideally include all of the following columns: `project_name`, `experiment_design_description`, `target_gene`, `target_subfragment`, `pcr_primers`, `pcr_primer_names`, `platform`, `instrument_model`, `run_center`, `run_date`. These will be included in your QC report.
 
-The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2018.11/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
 
 #### Format sequence data
 
-Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `match_manifest_to_metadata.py` can help with this).
+Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2018.11/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `match_manifest_to_metadata.py` can help with this).
 
 Note: While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
 
@@ -147,14 +151,25 @@ PRJ=/PATH/TO/PROJECT
 DB=/PATH/TO/DATABASES
 ```
 
-Create a directory for data inside your working directory:
+Clone a new copy of the Tourmaline repository inside your working directory:
 
 ```
 cd $PRJ
-mkdir 00-data
+git clone https://github.com/NOAA-AOML/tourmaline.git
+cd tourmaline
 ```
 
-Move your metadata file and fastq manifest file(s) to `$PRJ/00-data`.
+#### Copy metadata and manifest files or create symbolic links to them
+
+Copy your metadata file and fastq manifest file(s) to `$PRJ/tourmaline/00-data` or create symbolic links to them. Use the code below to remove the test files and create links to your own metadata and fastq manifest files (the files in $PRJ/metadata can be named however you like):
+
+```
+cd $PRJ/tourmaline/00-data
+rm metadata.tsv manifest_se.csv manifest_pe.csv
+ln -s $PRJ/metadata/metadata.tsv metadata.tsv
+ln -s $PRJ/metadata/manifest_se.csv manifest_se.csv
+ln -s $PRJ/metadata/manifest_pe.csv manifest_pe.csv
+```
 
 #### Create symbolic links to reference sequence and taxonomy data
 
@@ -163,7 +178,8 @@ Reference sequences and taxonomy are used by QIIME 2 to assign taxonomy to the r
 Symbolic links to the QIIME 2-formatted reference sequence fasta and taxonomy files can go here (example locations of files shown):
 
 ```
-cd $PRJ/00-data
+cd $PRJ/tourmaline/00-data
+rm refseqs.fna reftax.tsv
 ln -s $DB/16s/16s_refseqs.fna refseqs.fna
 ln -s $DB/16s/16s_reftax.tsv reftax.tsv
 ```
@@ -171,8 +187,8 @@ ln -s $DB/16s/16s_reftax.tsv reftax.tsv
 The first time you run Tourmaline with a given amplicon locus, the files below will be created. However, for future projects with that same amplicon locus, you can put these files in your databases directory. You will have to make the directory `01-imported` before creating the symbolic links:
 
 ```
-mkdir $PRJ/01-imported
-cd $PRJ/01-imported
+mkdir $PRJ/tourmaline/01-imported
+cd $PRJ/tourmaline/01-imported
 ln -s $DB/16s/16s_refseqs.qza refseqs.qza
 ln -s $DB/16s/16s_reftax.qza reftax.qza
 ln -s $DB/16s/16s_refseqs_515f_806r.qza refseqs_extracted.qza
@@ -214,7 +230,7 @@ snakemake deblur_se_denoise
 # steps 3-4
 snakemake deblur_se_diversity
 
-# statistical analyses
+# step 4.1
 snakemake deblur_se_stats
 
 # step 5
@@ -230,7 +246,7 @@ snakemake dada2_se_denoise
 # steps 3-4
 snakemake dada2_se_diversity
 
-# statistical analyses
+# step 4.1
 snakemake dada2_se_stats
 
 # step 5
@@ -246,14 +262,18 @@ snakemake dada2_pe_denoise
 # steps 3-4
 snakemake dada2_pe_diversity
 
-# statistical analyses
+# step 4.1
 snakemake dada2_pe_stats
 
 # step 5
 snakemake dada2_pe_report
 ```
 
-That's it. Just run one of these commands and let Snakemake do its magic. The results will be placed in organized directories inside your working directory:
+That's it. Just run one of these commands and let Snakemake do its magic.
+
+## Output
+
+The results will be placed in organized directories inside your working directory:
 
 ```
 01-imported
@@ -261,6 +281,77 @@ That's it. Just run one of these commands and let Snakemake do its magic. The re
 03-repseqs
 04-diversity
 05-reports
+```
+
+The output files of each command (shown for DADA2 paired-end) are as follows:
+
+##### dada2_pe_denoise (steps 1-2)
+
+```
+01-imported/fastq_pe.qza
+02-denoised/data2-pe/stats.qza
+02-denoised/data2-pe/table.qza
+02-denoised/data2-pe/representative_sequences.qza
+02-denoised/data2-pe/table.qzv
+02-denoised/data2-pe/table.biom
+02-denoised/data2-pe/table_summary_features.txt
+02-denoised/data2-pe/table_summary_samples.txt
+02-denoised/data2-pe/representative_sequences.fasta
+02-denoised/data2-pe/representative_sequences.qzv
+02-denoised/data2-pe/representative_sequences_amplicon_type.txt
+02-denoised/data2-pe/representative_sequences_lengths.txt
+02-denoised/data2-pe/representative_sequences_lengths_describe.tsv
+```
+
+##### dada2_pe_diversity (steps 3-4)
+
+```
+01-imported/refseqs.qza
+01-imported/reftax.qza
+01-imported/classifier.qza
+03-repseqs/dada2-pe/taxonomy.qza
+03-repseqs/dada2-pe/taxonomy.qzv
+03-repseqs/dada2-pe/aligned_representative_sequences.qza
+03-repseqs/dada2-pe/masked_aligned_representative_sequences.qza
+03-repseqs/dada2-pe/unrooted_tree.qza
+03-repseqs/dada2-pe/rooted_tree.qza
+03-repseqs/dada2-pe/aligned_dna_sequences.fasta
+03-repseqs/dada2-pe/aligned_dna_sequences_gaps.txt
+03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv
+04-diversity/dada2-pe/taxa_barplot.qzv
+04-diversity/dada2-pe/unweighted_unifrac_pcoa_results.qza
+04-diversity/dada2-pe/observed_otus_vector.qza
+04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv
+04-diversity/dada2-pe/weighted_unifrac_pcoa_results.qza
+04-diversity/dada2-pe/weighted_unifrac_distance_matrix.qza
+04-diversity/dada2-pe/unweighted_unifrac_distance_matrix.qza
+04-diversity/dada2-pe/bray_curtis_pcoa_results.qza
+04-diversity/dada2-pe/bray_curtis_distance_matrix.qza
+04-diversity/dada2-pe/jaccard_pcoa_results.qza
+04-diversity/dada2-pe/shannon_vector.qza
+04-diversity/dada2-pe/jaccard_distance_matrix.qza
+04-diversity/dada2-pe/rarefied_table.qza
+04-diversity/dada2-pe/bray_curtis_emperor.qzv
+04-diversity/dada2-pe/faith_pd_vector.qza
+04-diversity/dada2-pe/jaccard_emperor.qzv
+04-diversity/dada2-pe/evenness_vector.qza
+04-diversity/dada2-pe/weighted_unifrac_emperor.qzv
+04-diversity/dada2-pe/alpha_rarefaction.qzv
+```
+
+##### dada2_pe_stats (step 4.1)
+
+```
+04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv
+```
+
+##### dada2_pe_report (step 5)
+
+```
+01-imported/fastq_pe_count.csv
+01-imported/fastq_pe_count_describe.tsv
+05-reports/processing.txt
+05-reports/report_dada2-pe.txt
 ```
 
 ## Logic
@@ -291,8 +382,8 @@ Answer the following questions to determine the best parameters for processing a
 
 #### Format metadata and sequence data
 
-* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2018.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
-* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2018.6/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
+* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2018.11/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2018.11/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
 * Are my reference sequences and taxonomy properly formatted for QIIME 2?
 * Is my config file updated with the file paths and parameters I want to use?
 

@@ -103,7 +103,7 @@ rule import_fastq_se_demux:
         "--type 'SampleData[SequencesWithQuality]' "
         "--input-path {input} "
         "--output-path {output} "
-        "--source-format SingleEndFastqManifestPhred33"
+        "--input-format SingleEndFastqManifestPhred33"
 
 rule import_fastq_pe_demux:
     input:
@@ -115,9 +115,10 @@ rule import_fastq_pe_demux:
         "--type 'SampleData[PairedEndSequencesWithQuality]' "
         "--input-path {input} "
         "--output-path {output} "
-        "--source-format PairedEndFastqManifestPhred33"
+        "--input-format PairedEndFastqManifestPhred33"
 
-# change zcat to cat if fastq files are not gzipped (but they should be)
+# change gzcat to cat if fastq files are not gzipped (but they should be)
+# using gzcat instead of zcat because on some systems zcat requires extension .Z
 rule count_fastq_pe_demux:
     input:
         config["manifest_pe"]
@@ -127,7 +128,7 @@ rule count_fastq_pe_demux:
         "for line in `tail -n +2 {input} | cut -d',' -f2`; "
         "do echo -n $line; "
         "echo -n ','; "
-        "zcat $line | echo $((`wc -l`/4)); "
+        "gzcat $line | echo $((`wc -l`/4)); "
         "done > {output}"
 
 rule fastq_pe_count_describe:
@@ -159,7 +160,7 @@ rule import_ref_tax:
     shell:
         "qiime tools import "
         "--type 'FeatureData[Taxonomy]' "
-        '--source-format HeaderlessTSVTaxonomyFormat '
+        '--input-format HeaderlessTSVTaxonomyFormat '
         "--input-path {input} "
         "--output-path {output}"
 
