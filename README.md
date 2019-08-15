@@ -17,11 +17,11 @@ Two methods of amplicon sequence processing are supported, both of which generat
 
 #### QIIME 2 and Snakemake commands
 
-QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/NOAA-AOML/tourmaline/blob/master/commands.txt). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/NOAA-AOML/tourmaline/blob/master/Snakefile).
+QIIME 2 shell commands are provided for reference in [`commands.txt`](https://github.com/NOAA-AOML/tourmaline/blob/master/commands.txt). Exact commands executed by the workflow are in [`Snakefile`](https://github.com/NOAA-AOML/tourmaline/blob/master/Snakefile). With the help of Snakemake, Tourmaline provides rapid and reproducible workflows for processing amplicon sequence data, storing output files in a logical directory structure.
 
 #### Ready for MBON
 
-Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) (Marine Biodiversity Observation Network) and uses [Swarm](https://github.com/torognes/swarm) for OTU picking. Tourmaline provides rapid and reproducible workflows for [Deblur](https://github.com/biocore/deblur) and [DADA2](https://github.com/benjjneb/dada2) and is extensible to other OTU picking algorithms.
+Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/jimmyodonnell/banzai), which was developed for [MBON](https://github.com/marinebon/MBON) (Marine Biodiversity Observation Network). Banzai uses [Swarm](https://github.com/torognes/swarm) for OTU picking. Tourmaline supports both [Deblur](https://github.com/biocore/deblur) and [DADA2](https://github.com/benjjneb/dada2) for denoising to generate ASVs. In the future, Tourmaline could be extended to other OTU/ASV picking algorithms if they are added to QIIME 2.
 
 ## Installation
 
