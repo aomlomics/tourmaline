@@ -28,7 +28,7 @@ Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version `2018.11` (should work with later versions but has not been tested)
+* QIIME 2 version `2018.11` (minor changes to Snakefile commands are required to work with later versions)
 * Snakemake
 * Tournmaline (this repository)
 
@@ -289,6 +289,7 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 
 ```
 01-imported/fastq_pe.qza
+01-imported/fastq_illumina_run.log
 02-denoised/data2-pe/stats.qza
 02-denoised/data2-pe/table.qza
 02-denoised/data2-pe/representative_sequences.qza
@@ -372,6 +373,7 @@ Answer the following questions to determine the best parameters for processing a
 #### Assess sequence data
 
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
+* Were all my samples sequenced in the same sequencing run? (Rule check_illumina_run will check for this.)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
 * What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Primer removal? Merging of paired reads?
 

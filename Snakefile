@@ -8,6 +8,7 @@ configfile: "config.yaml"
 
 rule deblur_se_denoise:
     input:
+        "01-imported/fastq_illumina_run.log",
         "02-denoised/deblur-se/table.qzv",
         "02-denoised/deblur-se/table_summary_samples.txt",
         "02-denoised/deblur-se/table_summary_features.txt",
@@ -37,6 +38,7 @@ rule deblur_se_report:
 
 rule dada2_se_denoise:
     input:
+        "01-imported/fastq_illumina_run.log",
         "02-denoised/dada2-se/table.qzv",
         "02-denoised/dada2-se/table_summary_samples.txt",
         "02-denoised/dada2-se/table_summary_features.txt",
@@ -66,6 +68,7 @@ rule dada2_se_report:
 
 rule dada2_pe_denoise:
     input:
+        "01-imported/fastq_illumina_run.log",
         "02-denoised/dada2-pe/table.qzv",
         "02-denoised/dada2-pe/table_summary_samples.txt",
         "02-denoised/dada2-pe/table_summary_features.txt",
@@ -116,6 +119,22 @@ rule import_fastq_pe_demux:
         "--input-path {input} "
         "--output-path {output} "
         "--input-format PairedEndFastqManifestPhred33"
+
+# change gzcat to cat if fastq files are not gzipped (but they should be)
+# using gzcat instead of zcat because on some systems zcat requires extension .Z
+rule check_illumina_run:
+    input:
+        config["manifest_pe"]
+    output:
+        runs="01-imported/fastq_illumina_run.txt",
+        log="01-imported/fastq_illumina_run.log"
+    shell:
+        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
+        "do echo -n $line; "
+        "echo -n ','; "
+        "gzcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
+        "done > {output.runs};"
+    	"echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
 
 # change gzcat to cat if fastq files are not gzipped (but they should be)
 # using gzcat instead of zcat because on some systems zcat requires extension .Z
