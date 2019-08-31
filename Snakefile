@@ -14,7 +14,8 @@ rule deblur_se_denoise:
         "02-denoised/deblur-se/table_summary_features.txt",
         "02-denoised/deblur-se/representative_sequences.qzv",
         "02-denoised/deblur-se/representative_sequences_amplicon_type.txt",
-        "02-denoised/deblur-se/representative_sequences_lengths_describe.tsv"
+        "02-denoised/deblur-se/representative_sequences_lengths_describe.tsv",
+        "02-denoised/deblur-se/representative_sequences_md5_status.txt"
 
 rule deblur_se_diversity:
     input:
@@ -44,7 +45,8 @@ rule dada2_se_denoise:
         "02-denoised/dada2-se/table_summary_features.txt",
         "02-denoised/dada2-se/representative_sequences.qzv",
         "02-denoised/dada2-se/representative_sequences_amplicon_type.txt",
-        "02-denoised/dada2-se/representative_sequences_lengths_describe.tsv"
+        "02-denoised/dada2-se/representative_sequences_lengths_describe.tsv",
+        "02-denoised/dada2-se/representative_sequences_md5_status.txt"
 
 rule dada2_se_diversity:
     input:
@@ -74,7 +76,8 @@ rule dada2_pe_denoise:
         "02-denoised/dada2-pe/table_summary_features.txt",
         "02-denoised/dada2-pe/representative_sequences.qzv",
         "02-denoised/dada2-pe/representative_sequences_amplicon_type.txt",
-        "02-denoised/dada2-pe/representative_sequences_lengths_describe.tsv"
+        "02-denoised/dada2-pe/representative_sequences_lengths_describe.tsv",
+        "02-denoised/dada2-pe/representative_sequences_md5_status.txt"
 
 rule dada2_pe_diversity:
     input:
@@ -386,6 +389,34 @@ rule repseq_length_distribution_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t', header='sequence_length_bp')
 
+# use md5 on mac systems, md5sum on linux systems if no md5
+rule check_repseq_md5:
+    input:
+        "02-denoised/{method}/representative_sequences.fasta"
+    output:
+        "02-denoised/{method}/representative_sequences_md5_status.txt"
+    shell:
+        "seq1id=`head -n 1 {input} | sed 's/^>//'`; "
+        "seq1md5=`head -n 2 {input} | tail -n 1 | md5 | perl -pe 's/([0-9a-z]*).*/$1/'`; "
+        "echo -n First representative sequence ID..... > {output}; "
+        "echo $seq1id >> {output}; "
+        "echo -n First representative sequence MD5.... >> {output}; "
+        "echo $seq1md5 >> {output}; "
+        "if [ '$seq1id' == '$seq1md5' ]; "
+        "then echo 'First representative sequence has ID matching MD5 :)'; "
+        "else echo 'First representative sequence has ID *not* matching MD5 :('; "
+        "fi >> {output}; "
+        "seq2id=`tail -n 2 {input} | head -n 1 | sed 's/^>//'`; "
+        "seq2md5=`tail -n 1 {input} | md5 | perl -pe 's/([0-9a-z]*).*/$1/'`; "
+        "echo -n Last representative sequence ID..... >> {output}; "
+        "echo $seq2id >> {output}; "
+        "echo -n Last representative sequence MD5.... >> {output}; "
+        "echo $seq2md5 >> {output}; "
+        "if [ '$seq2id' == '$seq2md5' ]; "
+        "then echo 'Last representative sequence has ID matching MD5 :)'; "
+        "else echo 'Last representative sequence has ID *not* matching MD5 :('; "
+        "fi >> {output}"
+
 # add this rule later (to be run after step 2)
 # rule filter_chloroplasts_mitochondria:
 #     input:
@@ -648,15 +679,17 @@ rule summarize_processing_info:
 rule generate_report:
     input:
         fastq="01-imported/fastq_pe_count_describe.tsv",
+        run="01-imported/fastq_illumina_run.log",
         samples="02-denoised/{method}/table_summary_samples.txt",
         features="02-denoised/{method}/table_summary_features.txt",
         amplicontype="02-denoised/{method}/representative_sequences_amplicon_type.txt",
         repseqs="02-denoised/{method}/representative_sequences_lengths_describe.tsv",
+        md5status="02-denoised/{method}/representative_sequences_md5_status.txt",
         alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.tsv",
         processing="05-reports/processing.txt"
     output:
         "05-reports/report_{method}.txt"
     shell:
-        "head -n 13 {input.processing} {input.fastq} {input.samples} {input.features} "
-        "{input.amplicontype} {input.repseqs} {input.alignment} > {output}"
+        "head -n 13 {input.processing} {input.fastq} {input.run} {input.samples} {input.features} "
+        "{input.amplicontype} {input.repseqs} {input.md5status} {input.alignment} > {output}"
 
