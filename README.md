@@ -81,15 +81,18 @@ cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJEC
 mv temp manifest_se.csv
 ```
 
-You will also need to edit the configuration file `config.yaml` to reduce the Deblur trim length because the test sequences are only 120 bp, and decrease the subsampling values because the sequencing depth of the test dataset is very low:
+You will need to edit the configuration file `config.yaml` to decrease the subsampling values because the sequencing depth of the test dataset is very low, and if you are testing Deblur reduce the Deblur trim length because the test sequences are only 120 bp in length:
 
 ```
 deblur_trim_length: 100
+...
 alpha_max_depth: 50
 core_sampling_depth: 50
 ```
 
 Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
+
+Note: Currently Deblur (command `snakemake deblur_se_denoise`) produces an error with the test data, but it should work with normal experimental data. 
 
 <!--
 BELOW DOES NOT FIX DEBLUR WITH TEST DATA -- STILL PRODUCES ERROR: IndexError:
