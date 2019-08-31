@@ -292,6 +292,7 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 
 ```
 01-imported/fastq_pe.qza
+01-imported/fastq_illumina_run.txt
 01-imported/fastq_illumina_run.log
 02-denoised/data2-pe/stats.qza
 02-denoised/data2-pe/table.qza
@@ -305,6 +306,7 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 02-denoised/data2-pe/representative_sequences_amplicon_type.txt
 02-denoised/data2-pe/representative_sequences_lengths.txt
 02-denoised/data2-pe/representative_sequences_lengths_describe.tsv
+02-denoised/dada2-pe/representative_sequences_md5_status.txt
 ```
 
 ##### dada2_pe_diversity (steps 3-4)
