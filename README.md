@@ -65,13 +65,13 @@ git clone https://github.com/NOAA-AOML/tourmaline.git
 
 ### Test Data
 
-The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` before running the test data, for example:
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` to something else before running the test data, for example:
 
 ```
 mv /PATH/TO/PROJECT/tourmaline /PATH/TO/PROJECT/tourmaline-test
 ```
 
-First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+To run the test data, first you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
 
 ```
 cd /PATH/TO/PROJECT/tourmaline-test/00-data

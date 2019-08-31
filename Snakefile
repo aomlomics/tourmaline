@@ -261,7 +261,8 @@ rule denoise_dada2_pe:
         trunclenr=config["dada2pe_trunc_len_r"],
         trimleftf=config["dada2pe_trim_left_f"],
         trimleftr=config["dada2pe_trim_left_r"],
-        maxee=config["dada2pe_max_ee"],
+        maxeef=config["dada2pe_max_ee_f"],
+        maxeer=config["dada2pe_max_ee_r"],
         truncq=config["dada2pe_trunc_q"],
         chimeramethod=config["dada2pe_chimera_method"],
         minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
@@ -279,7 +280,8 @@ rule denoise_dada2_pe:
         "--p-trunc-len-r {params.trunclenr} "
         "--p-trim-left-f {params.trimleftf} "
         "--p-trim-left-r {params.trimleftr} "
-        "--p-max-ee {params.maxee} "
+        "--p-max-ee-f {params.maxeef} "
+        "--p-max-ee-r {params.maxeer} "
         "--p-trunc-q {params.truncq} "
         "--p-chimera-method {params.chimeramethod} "
         "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
