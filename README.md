@@ -28,7 +28,7 @@ Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version `2018.11` (minor changes to Snakefile commands are required to work with later versions)
+* QIIME 2 version `2019.7`
 * Snakemake
 * Tournmaline (this repository)
 
@@ -38,11 +38,11 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.11/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.11`:
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.11/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2019.7`:
 
 ```
-wget https://data.qiime2.org/distro/core/qiime2-2018.11-py35-osx-conda.yml
-conda env create -n qiime2-2018.11 --file qiime2-2018.11-py35-osx-conda.yml
+wget https://data.qiime2.org/distro/core/qiime2-2019.7-py36-osx-conda.yml
+conda env create -n qiime2-2019.7 --file qiime2-2019.7-py36-osx-conda.yml
 ```
 
 ### Snakemake
