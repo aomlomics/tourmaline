@@ -32,7 +32,8 @@ dada2pe_trunc_len_f: 0
 dada2pe_trunc_len_r: 0
 dada2pe_trim_left_f: 0
 dada2pe_trim_left_r: 0
-dada2pe_max_ee: 2
+dada2pe_max_ee_f: 2
+dada2pe_max_ee_r: 2
 dada2pe_trunc_q: 2
 dada2pe_chimera_method: consensus
 dada2pe_min_fold_parent_over_abundance: 1

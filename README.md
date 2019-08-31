@@ -28,7 +28,7 @@ Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version `2018.11` (should work with later versions but has not been tested)
+* QIIME 2 version `2019.7`
 * Snakemake
 * Tournmaline (this repository)
 
@@ -38,11 +38,11 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.11/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2018.11`:
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2018.11/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2019.7`:
 
 ```
-wget https://data.qiime2.org/distro/core/qiime2-2018.11-py35-osx-conda.yml
-conda env create -n qiime2-2018.11 --file qiime2-2018.11-py35-osx-conda.yml
+wget https://data.qiime2.org/distro/core/qiime2-2019.7-py36-osx-conda.yml
+conda env create -n qiime2-2019.7 --file qiime2-2019.7-py36-osx-conda.yml
 ```
 
 ### Snakemake
@@ -65,13 +65,13 @@ git clone https://github.com/NOAA-AOML/tourmaline.git
 
 ### Test Data
 
-The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` before running the test data, for example:
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` to something else before running the test data, for example:
 
 ```
 mv /PATH/TO/PROJECT/tourmaline /PATH/TO/PROJECT/tourmaline-test
 ```
 
-First you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+To run the test data, first you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
 
 ```
 cd /PATH/TO/PROJECT/tourmaline-test/00-data
@@ -81,15 +81,18 @@ cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJEC
 mv temp manifest_se.csv
 ```
 
-You will also need to edit the configuration file `config.yaml` to reduce the Deblur trim length because the test sequences are only 120 bp, and decrease the subsampling values because the sequencing depth of the test dataset is very low:
+You will need to edit the configuration file `config.yaml` to decrease the subsampling values because the sequencing depth of the test dataset is very low, and if you are testing Deblur reduce the Deblur trim length because the test sequences are only 120 bp in length:
 
 ```
 deblur_trim_length: 100
+...
 alpha_max_depth: 50
 core_sampling_depth: 50
 ```
 
 Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
+
+Note: Currently Deblur (command `snakemake deblur_se_denoise`) produces an error with the test data, but it should work with normal experimental data. 
 
 <!--
 BELOW DOES NOT FIX DEBLUR WITH TEST DATA -- STILL PRODUCES ERROR: IndexError:
@@ -289,6 +292,8 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 
 ```
 01-imported/fastq_pe.qza
+01-imported/fastq_illumina_run.txt
+01-imported/fastq_illumina_run.log
 02-denoised/data2-pe/stats.qza
 02-denoised/data2-pe/table.qza
 02-denoised/data2-pe/representative_sequences.qza
@@ -301,6 +306,7 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 02-denoised/data2-pe/representative_sequences_amplicon_type.txt
 02-denoised/data2-pe/representative_sequences_lengths.txt
 02-denoised/data2-pe/representative_sequences_lengths_describe.tsv
+02-denoised/dada2-pe/representative_sequences_md5_status.txt
 ```
 
 ##### dada2_pe_diversity (steps 3-4)
@@ -372,6 +378,7 @@ Answer the following questions to determine the best parameters for processing a
 #### Assess sequence data
 
 * What type and length of sequencing was used? (e.g., MiSeq 2x150bp)
+* Were all my samples sequenced in the same sequencing run? (Rule check_illumina_run will check for this.)
 * Do I have long enough sequening to do paired-end analysis, or do I have to do single-end analysis only?
 * What sequence pre-processing has been done already: Demultiplexing? Quality filtering and FastQC? Primer removal? Merging of paired reads?
 
