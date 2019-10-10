@@ -1,3 +1,6 @@
+# THESE COMMANDS ARE FOR REFERENCE USE ONLY, MAY NOT MATCH THE EXACT COMMANDS
+# USED IN THE SNAKEFILE, AND MAY NOT REFLECT THE LATEST RELEASE OF QIIME 2
+
 # 0 - Data assessment
 
 # 1 - Data preparation
@@ -20,7 +23,7 @@ qiime tools import \
   --type 'SampleData[SequencesWithQuality]' \
   --input-path MANIFESTPATH \
   --output-path ARTIFACTPATH \
-  --source-format SingleEndFastqManifestPhred33
+  --input-format SingleEndFastqManifestPhred33
 
 # demultiplex and quality filter (if imported multiplexed above)
 # option 1: demultiplex paired-end sequence data with barcodes in-sequence
@@ -62,7 +65,7 @@ convert_taxonomy_to_qiime_sp.sh \
 # import taxonomy as q2 artifact
 qiime tools import \
   --type 'FeatureData[Taxonomy]' \
-  --source-format HeaderlessTSVTaxonomyFormat \
+  --input-format HeaderlessTSVTaxonomyFormat \
   --input-path Q2TAXONOMYPATH \
   --output-path ARTIFACTPATH
 
