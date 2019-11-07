@@ -430,7 +430,9 @@ rule check_repseq_md5:
 #         [filter biom based on specific sequences]
 #         [filter repseqs based on specific sequences]
 
-# this rule (slow) will be skipped unless following rule takes input refseqs_extracted.qza
+# rule feature_classifier_extract_reads (slow) will be skipped
+# unless following rule feature_classifier_fit_classifier_naive_bayes
+# takes input refseqs_extracted.qza
 rule feature_classifier_extract_reads:
     input:
         "01-imported/refseqs.qza"
@@ -446,9 +448,11 @@ rule feature_classifier_extract_reads:
         "--p-r-primer {params.rprimer} "
         "--o-reads {output}"
 
+# change refseqs.qza to refseqs_extracted.qza
+# for rule feature_classifier_fit_classifier_naive_bayes to run
 rule feature_classifier_fit_classifier_naive_bayes:
     input:
-        seqs="01-imported/refseqs_extracted.qza",
+        seqs="01-imported/refseqs.qza",
         tax="01-imported/reftax.qza"
     output:
         "01-imported/classifier.qza"
