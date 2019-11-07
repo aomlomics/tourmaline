@@ -92,7 +92,15 @@ core_sampling_depth: 50
 
 Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
 
-Note: Currently Deblur (command `snakemake deblur_se_denoise`) produces an error with the test data, but it should work with normal experimental data. 
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
+
+```
+snakemake dada2_pe_denoise
+```
+
+You can try any of the DADA2 rules below.*
+
+**Warning:* Deblur (command `snakemake deblur_se_denoise`) currently produces an error with the test data, but it should work with normal experimental data. 
 
 <!--
 BELOW DOES NOT FIX DEBLUR WITH TEST DATA -- STILL PRODUCES ERROR: IndexError:
@@ -101,13 +109,7 @@ deblur_min_reads: 1
 deblur_min_size: 1
 -->
 
-Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
-
-```
-snakemake dada2_pe_denoise
-```
-
-You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* If you want to use `tourmaline-test` to analyze your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
+If you want to use `tourmaline-test` to analyze your own data after testing, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
 
 ### Helper Scripts
 
