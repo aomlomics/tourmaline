@@ -434,6 +434,9 @@ rule check_repseq_md5:
 rule feature_classifier_extract_reads:
     input:
         "01-imported/refseqs.qza"
+    params:
+        fprimer=config["pcr_primer_fwd"],
+        rprimer=config["pcr_primer_rev"]
     output:
         "01-imported/refseqs_extracted.qza"
     shell:
@@ -445,7 +448,7 @@ rule feature_classifier_extract_reads:
 
 rule feature_classifier_fit_classifier_naive_bayes:
     input:
-        seqs="01-imported/refseqs.qza",
+        seqs="01-imported/refseqs_extracted.qza",
         tax="01-imported/reftax.qza"
     output:
         "01-imported/classifier.qza"
