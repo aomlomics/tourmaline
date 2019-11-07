@@ -1,9 +1,14 @@
-# input files
+# fastq manifests and metadata
 manifest_se: 00-data/manifest_se.csv
 manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
+
+# reference sequences
 refseqs: 00-data/refseqs.fna
 reftax: 00-data/reftax.tsv
+pcr_locus: 18S-EMP
+pcr_primer_fwd: GTACACACCGCCCGTC
+pcr_primer_rev: TGATCCTTCTGCAGGTTCACCTAC
 
 # deblur
 deblur_trim_length: 150
