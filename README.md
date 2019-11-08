@@ -54,24 +54,49 @@ source activate qiime2-2019.7
 conda install -c bioconda snakemake
 ```
 
-### Tourmaline
+Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this by "cloning" the GitHub repository.
 
-Finally, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
+## Setup
+
+### Clone the Tourmaline Repository
+
+Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "/home/johndoe/myproject"):
 
 ```
 cd /PATH/TO/PROJECT
 git clone https://github.com/NOAA-AOML/tourmaline.git
 ```
 
+You might want to rename the directory `tourmaline` to something else before running the test data, for example (hint: you can do this with your projects to have different copies of Tourmaline with different sample sets or databases):
+
+```
+mv tourmaline tourmaline-test
+```
+
+Now change directories to `tourmaline-test`:
+
+```
+cd tourmaline-test
+```
+
+### Snakefile: Mac or Linux
+
+Tourmaline comes with support for both Mac and Linux operating systems. Due to some difference in the way similar commands work on the two systems (e.g., md5/md5sum, gzcat/zcat), two different Snakefiles are provided. Activate the Snakefile for your system by setting a symbolic link:
+
+```
+# if you have a mac system
+ln -s Snakefile_mac Snakefile
+# if you have a linux system
+ln -s Snakefile_linux Snakefile
+```
+
+You can see where your symbolic links point with the command `ls -l`. When you run Snakemake/Tourmaline, it will use whichever file `Snakefile` points to.
+
 ### Test Data
 
-The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` to something else before running the test data, for example:
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. 
 
-```
-mv /PATH/TO/PROJECT/tourmaline /PATH/TO/PROJECT/tourmaline-test
-```
-
-To run the test data, first you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
 
 ```
 cd /PATH/TO/PROJECT/tourmaline-test/00-data
@@ -91,6 +116,8 @@ core_sampling_depth: 50
 ```
 
 Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
+
+### Run A Test
 
 Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
 
