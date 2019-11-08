@@ -38,7 +38,7 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2019.7/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2019.7`:
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2019.7/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2019.7` (for Linux, change "osx" to "linux"):
 
 ```
 wget https://data.qiime2.org/distro/core/qiime2-2019.7-py36-osx-conda.yml
@@ -54,24 +54,49 @@ source activate qiime2-2019.7
 conda install -c bioconda snakemake
 ```
 
-### Tourmaline
+Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this by "cloning" the GitHub repository.
 
-Finally, clone the Tourmaline repository and rename it to the working directory for your project (replace the directories in ALL CAPS with your directories):
+## Setup
+
+### Clone the Tourmaline Repository
+
+Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "/home/johndoe/myproject"):
 
 ```
 cd /PATH/TO/PROJECT
 git clone https://github.com/NOAA-AOML/tourmaline.git
 ```
 
+You might want to rename the directory `tourmaline` to something else before running the test data, for example (hint: you can do this with your projects to have different copies of Tourmaline with different sample sets or databases):
+
+```
+mv tourmaline tourmaline-test
+```
+
+Now change directories to `tourmaline-test`:
+
+```
+cd tourmaline-test
+```
+
+### Snakefile: Mac or Linux
+
+Tourmaline comes with support for both Mac and Linux operating systems. Due to some difference in the way similar commands work on the two systems (e.g., md5/md5sum, gzcat/zcat), two different Snakefiles are provided. Activate the Snakefile for your system by setting a symbolic link:
+
+```
+# if you have a mac system
+ln -s Snakefile_mac Snakefile
+# if you have a linux system
+ln -s Snakefile_linux Snakefile
+```
+
+You can see where your symbolic links point with the command `ls -l`. When you run Snakemake/Tourmaline, it will use whichever file `Snakefile` points to.
+
 ### Test Data
 
-The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. You might want to rename the directory `tourmaline` to something else before running the test data, for example:
+The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. 
 
-```
-mv /PATH/TO/PROJECT/tourmaline /PATH/TO/PROJECT/tourmaline-test
-```
-
-To run the test data, first you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
 
 ```
 cd /PATH/TO/PROJECT/tourmaline-test/00-data
@@ -92,7 +117,17 @@ core_sampling_depth: 50
 
 Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` that will stay unchanged. You can always run `diff config_default.yaml config.yaml` to see which parameters you have changed from the defaults.
 
-Note: Currently Deblur (command `snakemake deblur_se_denoise`) produces an error with the test data, but it should work with normal experimental data. 
+### Run A Test
+
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
+
+```
+snakemake dada2_pe_denoise
+```
+
+You can try any of the DADA2 rules below.*
+
+**Warning:* Deblur (command `snakemake deblur_se_denoise`) currently produces an error with the test data, but it should work with normal experimental data. 
 
 <!--
 BELOW DOES NOT FIX DEBLUR WITH TEST DATA -- STILL PRODUCES ERROR: IndexError:
@@ -101,13 +136,7 @@ deblur_min_reads: 1
 deblur_min_size: 1
 -->
 
-Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
-
-```
-snakemake dada2_pe_denoise
-```
-
-You can try any of the DADA2 rules below. *Warning: The current test dataset does not work with Deblur.* If you want to use `tourmaline-test` to analyze your own data, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
+If you want to use `tourmaline-test` to analyze your own data after testing, make sure to delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the testing process.
 
 ### Helper Scripts
 
