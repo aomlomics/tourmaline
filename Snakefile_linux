@@ -398,7 +398,7 @@ rule check_repseq_md5:
         "02-denoised/{method}/representative_sequences_md5_status.txt"
     shell:
         "seq1id=`head -n 1 {input} | sed 's/^>//'`; "
-        "seq1md5=`head -n 2 {input} | tail -n 1 | md5sum | awk '{ print $1 }'`; "
+        "seq1md5=`head -n 2 {input} | tail -n 1 | md5sum | awk '{{ print $1 }}'`; "
         "echo -n First representative sequence ID..... > {output}; "
         "echo $seq1id >> {output}; "
         "echo -n First representative sequence MD5.... >> {output}; "
@@ -408,7 +408,7 @@ rule check_repseq_md5:
         "else echo 'First representative sequence has ID *not* matching MD5 :('; "
         "fi >> {output}; "
         "seq2id=`tail -n 2 {input} | head -n 1 | sed 's/^>//'`; "
-        "seq2md5=`tail -n 1 {input} | md5sum | awk '{ print $1 }'`; "
+        "seq2md5=`tail -n 1 {input} | md5sum | awk '{{ print $1 }}'`; "
         "echo -n Last representative sequence ID..... >> {output}; "
         "echo $seq2id >> {output}; "
         "echo -n Last representative sequence MD5.... >> {output}; "
