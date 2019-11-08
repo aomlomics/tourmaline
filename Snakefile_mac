@@ -390,7 +390,7 @@ rule repseq_length_distribution_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t', header='sequence_length_bp')
 
-# use md5 on mac systems, md5sum on linux systems if no md5
+# mac: md5 -q {input} / linux: md5sum {input} | awk '{ print $1 }'
 rule check_repseq_md5:
     input:
         "02-denoised/{method}/representative_sequences.fasta"
@@ -398,7 +398,7 @@ rule check_repseq_md5:
         "02-denoised/{method}/representative_sequences_md5_status.txt"
     shell:
         "seq1id=`head -n 1 {input} | sed 's/^>//'`; "
-        "seq1md5=`head -n 2 {input} | tail -n 1 | md5 | perl -pe 's/([0-9a-z]*).*/$1/'`; "
+        "seq1md5=`head -n 2 {input} | tail -n 1 | md5 -q`; "
         "echo -n First representative sequence ID..... > {output}; "
         "echo $seq1id >> {output}; "
         "echo -n First representative sequence MD5.... >> {output}; "
@@ -408,7 +408,7 @@ rule check_repseq_md5:
         "else echo 'First representative sequence has ID *not* matching MD5 :('; "
         "fi >> {output}; "
         "seq2id=`tail -n 2 {input} | head -n 1 | sed 's/^>//'`; "
-        "seq2md5=`tail -n 1 {input} | md5 | perl -pe 's/([0-9a-z]*).*/$1/'`; "
+        "seq2md5=`tail -n 1 {input} | md5 -q`; "
         "echo -n Last representative sequence ID..... >> {output}; "
         "echo $seq2id >> {output}; "
         "echo -n Last representative sequence MD5.... >> {output}; "

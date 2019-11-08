@@ -38,7 +38,7 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2019.7/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2019.7`:
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2019.7/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2019.7` (for Linux, change "osx" to "linux"):
 
 ```
 wget https://data.qiime2.org/distro/core/qiime2-2019.7-py36-osx-conda.yml
