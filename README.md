@@ -253,20 +253,20 @@ Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-en
 * View the table visualization to decide an appropriate subsampling (rarefaction) depth. Then modify the parameters `alpha_max_depth` and `core_sampling_depth` in `config.yaml`.
 * Filter your biom table and representative sequences to remove unwanted sequences. For example, if your amplicon is 16S rRNA, you may want to filter out chloroplast/mitochondria sequences. You should keep the same filenames so that Snakemake will recognize them; you can save the old versions with different names if you don't want to overwrite them.
 
-##### Deblur (single-end)
+##### DADA2 (paired-end)
 
 ```
 # steps 1-2
-snakemake deblur_se_denoise
+snakemake dada2_pe_denoise
 
 # steps 3-4
-snakemake deblur_se_diversity
+snakemake dada2_pe_diversity
 
 # step 4.1
-snakemake deblur_se_stats
+snakemake dada2_pe_stats
 
 # step 5
-snakemake deblur_se_report
+snakemake dada2_pe_report
 ```
 
 ##### DADA2 (single-end)
@@ -285,20 +285,20 @@ snakemake dada2_se_stats
 snakemake dada2_se_report
 ```
 
-##### DADA2 (paired-end)
+##### Deblur (single-end)
 
 ```
 # steps 1-2
-snakemake dada2_pe_denoise
+snakemake deblur_se_denoise
 
 # steps 3-4
-snakemake dada2_pe_diversity
+snakemake deblur_se_diversity
 
 # step 4.1
-snakemake dada2_pe_stats
+snakemake deblur_se_stats
 
 # step 5
-snakemake dada2_pe_report
+snakemake deblur_se_report
 ```
 
 That's it. Just run one of these commands and let Snakemake do its magic.
