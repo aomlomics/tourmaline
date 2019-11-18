@@ -60,10 +60,10 @@ Finally, you will install Tourmaline. "Installation" here is really just copying
 
 ### Clone the Tourmaline Repository
 
-Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "/home/johndoe/myproject"):
+Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "$HOME/workshop-2019.11"):
 
 ```
-cd /PATH/TO/PROJECT
+cd $HOME/workshop-2019.11
 git clone https://github.com/NOAA-AOML/tourmaline.git
 ```
 
@@ -96,13 +96,13 @@ You can see where your symbolic links point with the command `ls -l`. When you r
 
 The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence data and a corresponding reference database. 
 
-To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `/PATH/TO/PROJECT`, these commands will fix the manifest files:
+To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `$HOME/workshop-2019.11`, these commands will fix the manifest files (change `$HOME` to the absolute path of your home directory):
 
 ```
-cd /PATH/TO/PROJECT/tourmaline-test/00-data
-cat manifest_pe.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
+cd $HOME/workshop-2019.11/tourmaline-test/00-data
+cat manifest_pe.csv | sed 's|/PATH/TO/PROJECT/tourmaline|$HOME/workshop-2019.11/tourmaline-test|' > temp
 mv temp manifest_pe.csv 
-cat manifest_se.csv | sed 's|/Users/luke.thompson/git/tourmaline|/PATH/TO/PROJECT|' > temp
+cat manifest_se.csv | sed 's|/PATH/TO/PROJECT/tourmaline|$HOME/workshop-2019.11/tourmaline-test|' > temp
 mv temp manifest_se.csv
 ```
 
@@ -119,15 +119,31 @@ Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` 
 
 ### Run A Test
 
-Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `/PATH/TO/PROJECT/tourmaline-test`, run:
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `$HOME/workshop-2019.11/tourmaline-test`, run the Denoise rule:
 
 ```
 snakemake dada2_pe_denoise
 ```
 
-You can try any of the DADA2 rules below.*
+If that works, try the next target rule in the DADA2 paired-end workflow, the Diversity rule:
 
-**Warning:* Deblur (command `snakemake deblur_se_denoise`) currently produces an error with the test data, but it should work with normal experimental data. 
+```
+snakemake dada2_pe_diversity
+```
+
+Then try the Stats rule:
+
+```
+snakemake dada2_pe_stats
+```
+
+Finally try the Report rule:
+
+```
+snakemake dada2_pe_report
+```
+
+You can also try DADA2 single-end. Deblur (command `snakemake deblur_se_denoise`) currently produces an error with the test data, but it should work with normal experimental data. 
 
 <!--
 BELOW DOES NOT FIX DEBLUR WITH TEST DATA -- STILL PRODUCES ERROR: IndexError:
@@ -172,7 +188,7 @@ The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/sta
 
 Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2019.7/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `match_manifest_to_metadata.py` can help with this).
 
-Note: While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is ~5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
+Note: While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is $HOME5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
 
 #### Set up data directory
 
