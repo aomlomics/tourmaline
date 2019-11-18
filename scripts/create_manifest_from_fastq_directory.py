@@ -32,8 +32,9 @@ path_fastq = sys.argv[1]
 path_manifest_pe = sys.argv[2] # 'manifest_pe.csv'
 path_manifest_se = sys.argv[3] # 'manifest_se.csv'
 
-# list of full fastq.gz paths
+# list of full fastq.gz paths for R1 and R2 files
 list_fastq_full = sorted(glob.glob(os.path.join(path_fastq, '*.fastq.gz')))
+list_fastq_full = [x for x in list_fastq_full if (('_R1_' in x) or ('_R2_' in x))]
 
 # list of sample names (one per path)
 list_fastq = [x.split('/')[-1] for x in list_fastq_full]

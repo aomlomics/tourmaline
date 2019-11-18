@@ -50,7 +50,7 @@ conda env create -n qiime2-2019.7 --file qiime2-2019.7-py36-osx-conda.yml
 Third, activate your QIIME 2 environment and install Snakemake:
 
 ```
-source activate qiime2-2019.7
+conda activate qiime2-2019.7
 conda install -c bioconda snakemake
 ```
 
