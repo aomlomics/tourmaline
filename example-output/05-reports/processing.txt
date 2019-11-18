@@ -1,0 +1,10 @@
+project_name	My Project (6)
+experiment_design_description	This is what my project is about (6)
+target_gene	18S rRNA (6)
+target_subfragment	V7 (6)
+pcr_primers	FWD:TGGTGCATGGCCGTTCTTAGT; REV:CATCTAAGGGCATCACAGACC (6)
+pcr_primer_names	FWD:Euk1560F; REV:Euk2035R (6)
+platform	Illumina (6)
+instrument_model	NOT PROVIDED
+run_center	NOT PROVIDED
+run_date	NOT PROVIDED

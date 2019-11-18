@@ -119,7 +119,7 @@ Hint: Before you change `config.yaml`, make a copy called `config_default.yaml` 
 
 ### Run A Test
 
-Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `$HOME/workshop-2019.11/tourmaline-test`, run the Denoise rule:
+Now you are ready to test Snakemake. You might start with the DADA2 paired-end workflow. From your directory `$HOME/workshop-2019.11/tourmaline-test`, run Snakemake with the Denoise rule as the target:
 
 ```
 snakemake dada2_pe_denoise
@@ -142,6 +142,8 @@ Finally try the Report rule:
 ```
 snakemake dada2_pe_report
 ```
+
+If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file (often the file paths in your fastq manifest need to be changed). Example output from the above commands is found in the directory `example-output`.
 
 You can also try DADA2 single-end. Deblur (command `snakemake deblur_se_denoise`) currently produces an error with the test data, but it should work with normal experimental data. 
 

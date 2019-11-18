@@ -1,0 +1,21 @@
+Num samples: 6
+Num features: 22
+Total count: 404
+Table density (fraction of non-zero values): 0.258
+
+Counts/sample summary:
+ Min: 35.000
+ Max: 90.000
+ Median: 67.000
+ Mean: 67.333
+ Std. dev.: 17.566
+ Sample Metadata Categories: None provided
+ Observation Metadata Categories: None provided
+
+Counts/sample detail:
+samp.537: 35.000
+samp.521: 62.000
+samp.519: 64.000
+samp.538: 70.000
+samp.520: 83.000
+samp.539: 90.000

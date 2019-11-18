@@ -1,0 +1,12 @@
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_519_R1.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_519_R2.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_520_R1.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_520_R2.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_521_R1.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_521_R2.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_537_R1.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_537_R2.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_538_R1.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_538_R2.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_539_R1.fastq.gz,M02082:263:000000000-B4YG6
+/Users/luke/workshop-2019.11/tourmaline-test/00-data/test_539_R2.fastq.gz,M02082:263:000000000-B4YG6
