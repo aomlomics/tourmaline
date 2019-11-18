@@ -1,0 +1,6 @@
+First representative sequence ID.....0b910fec64142d678a8b6dabeb04d19f
+First representative sequence MD5....3c58daf617111879309580480fd59296
+First representative sequence has ID *not* matching MD5 :(
+Last representative sequence ID.....6adc1efd06eca87d387152b3c0e773e7
+Last representative sequence MD5....0ad7facc10c46eb9fb6eb25ff2618674
+Last representative sequence has ID *not* matching MD5 :(
