@@ -30,7 +30,6 @@ Tourmaline requires the following software:
 * Conda
 * QIIME 2 version 2019.7
 * Snakemake
-* Tournmaline (this repository)
 
 ### Conda
 
