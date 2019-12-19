@@ -378,7 +378,7 @@ rule repseq_length_distribution:
     output:
         "02-denoised/{method}/representative_sequences_lengths.txt"
     shell:
-        "perl scripts/fastaLengths.pl {input} | sort > {output}"
+        "perl scripts/fastaLengths.pl {input} > {output}"
 
 rule repseq_length_distribution_describe:
     input:
@@ -386,7 +386,7 @@ rule repseq_length_distribution_describe:
     output:
         "02-denoised/{method}/representative_sequences_lengths_describe.tsv"
     run:
-        s = pd.read_csv(input[0], header=None)
+        s = pd.read_csv(input[0], header=None, index_col=0)
         t = s.describe()
         t.to_csv(output[0], sep='\t', header='sequence_length_bp')
 

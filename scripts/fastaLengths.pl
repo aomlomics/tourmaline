@@ -7,7 +7,8 @@ my $usage = qq{
         <infile>: multi-FASTA file with or without line breaks
 
         This script takes a multi-fasta file with or without line breaks and
-        prints the number of bases in each sequence to standard output.
+        prints the sequence header (up to the first space) and number of bases
+        in each sequence, comma-delimited (.csv), to standard output.
 
 
 };
@@ -32,20 +33,27 @@ foreach my $line (@fasta) {
     } elsif ($line =~ /^\s*#/) {
         next;
 
-    # Discard header line but print previous length and initialize length
+    # Store header line. If previous length exists, print previous length and
+    # next header, else print (first) header. Initialize length.
     } elsif ($line =~ /^>[a-zA-Z0-9]*/) {
-	if ($length) { print "$length\n"; }
+        $header = $line =~ s/>([a-zA-Z0-9]*).*\n/$1/r;
+        if ($length) {
+            print "$length\n";
+            print "$header,";
+        } else {
+            print "$header,";
+        }
         $length = 0;
-	next;
+        next;
 
-    # Keep sequence line, count bases, print
+    # Keep sequence line, add bases to length
     } else {
         chomp $line;
-	$length += length($line);
+        $length += length($line);
     }
 }
 
-#print last fasta length
+# Print last fasta length
 print "$length\n";
 
 exit;
