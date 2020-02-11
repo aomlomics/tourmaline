@@ -390,7 +390,7 @@ rule repseq_length_distribution_describe:
         t = s.describe()
         t.to_csv(output[0], sep='\t', header='sequence_length_bp')
 
-# mac: md5 -q {input} / linux: md5sum {input} | awk '{ print $1 }'
+# mac: md5 / linux: md5sum
 rule check_repseq_md5:
     input:
         "02-denoised/{method}/representative_sequences.fasta"
@@ -430,48 +430,65 @@ rule check_repseq_md5:
 #         [filter biom based on specific sequences]
 #         [filter repseqs based on specific sequences]
 
+# this rule isn't needed if using blast classification
 # rule feature_classifier_extract_reads (slow) will be skipped
-# unless following rule feature_classifier_fit_classifier_naive_bayes
+# unless next rule feature_classifier_fit_classifier_naive_bayes
 # takes input refseqs_extracted.qza
-rule feature_classifier_extract_reads:
-    input:
-        "01-imported/refseqs.qza"
-    params:
-        fprimer=config["pcr_primer_fwd"],
-        rprimer=config["pcr_primer_rev"]
-    output:
-        "01-imported/refseqs_extracted.qza"
-    shell:
-        "qiime feature-classifier extract-reads "
-        "--i-sequences {input} "
-        "--p-f-primer {params.fprimer} "
-        "--p-r-primer {params.rprimer} "
-        "--o-reads {output}"
+# rule feature_classifier_extract_reads:
+#     input:
+#         "01-imported/refseqs.qza"
+#     params:
+#         fprimer=config["pcr_primer_fwd"],
+#         rprimer=config["pcr_primer_rev"]
+#     output:
+#         "01-imported/refseqs_extracted.qza"
+#     shell:
+#         "qiime feature-classifier extract-reads "
+#         "--i-sequences {input} "
+#         "--p-f-primer {params.fprimer} "
+#         "--p-r-primer {params.rprimer} "
+#         "--o-reads {output}"
 
+# this rule isn't needed if using blast classification
 # change refseqs.qza to refseqs_extracted.qza
 # for rule feature_classifier_fit_classifier_naive_bayes to run
-rule feature_classifier_fit_classifier_naive_bayes:
-    input:
-        seqs="01-imported/refseqs.qza",
-        tax="01-imported/reftax.qza"
-    output:
-        "01-imported/classifier.qza"
-    shell:
-        "qiime feature-classifier fit-classifier-naive-bayes "
-        "--i-reference-reads {input.seqs} "
-        "--i-reference-taxonomy {input.tax} "
-        "--o-classifier {output}"
+# rule feature_classifier_fit_classifier_naive_bayes:
+#     input:
+#         seqs="01-imported/refseqs.qza",
+#         tax="01-imported/reftax.qza"
+#     output:
+#         "01-imported/classifier.qza"
+#     shell:
+#         "qiime feature-classifier fit-classifier-naive-bayes "
+#         "--i-reference-reads {input.seqs} "
+#         "--i-reference-taxonomy {input.tax} "
+#         "--o-classifier {output}"
 
-rule feature_classifier_classify_sklearn:
+# this rule isn't needed if using blast classification
+# rule feature_classifier_classify_sklearn:
+#     input:
+#         classifier="01-imported/classifier.qza",
+#         repseqs="02-denoised/{method}/representative_sequences.qza"
+#     output:
+#         "03-repseqs/{method}/taxonomy.qza"
+#     shell:
+#         "qiime feature-classifier classify-sklearn "
+#         "--i-classifier {input.classifier} "
+#         "--i-reads {input.repseqs} "
+#         "--o-classification {output}"
+
+rule feature_classifier_classify_consensus_blast:
     input:
-        classifier="01-imported/classifier.qza",
-        repseqs="02-denoised/{method}/representative_sequences.qza"
+        query="02-denoised/{method}/representative_sequences.qza",
+        refseqs="01-imported/refseqs.qza",
+        reftax="01-imported/reftax.qza"
     output:
         "03-repseqs/{method}/taxonomy.qza"
     shell:
-        "qiime feature-classifier classify-sklearn "
-        "--i-classifier {input.classifier} "
-        "--i-reads {input.repseqs} "
+        "qiime feature-classifier classify-consensus-blast "
+        "--i-query {input.query} "
+        "--i-reference-reads {input.refseqs} "
+        "--i-reference-taxonomy {input.reftax} "
         "--o-classification {output}"
 
 rule visualize_taxonomy:
