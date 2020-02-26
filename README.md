@@ -272,6 +272,14 @@ Snakemake provides the command option `--dag` to generate a directed acyclic gra
 snakemake dada2_pe_denoise --dag | dot -Tpng > dag.png
 ```
 
+#### Dry Run and Print Shell Commands
+
+To see which jobs (rules) and commands will be run by the workflow, use the options `--dryrun` and `--printshellcmds`, respectively. `--dryrun` will prevent the workflow from being executed. `--printshellcmds` can be used with our without `--dryrun`:
+
+```
+snakemake dada2_pe_denoise --dryrun --printshellcmds
+```
+
 #### Tourmaline Rules
 
 Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2), the `diversity` rule does representative sequence curation and core diversity analyses (steps 3 and 4), the `stats` rule runs group significance and other tests (optional), and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
