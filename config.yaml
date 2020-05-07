@@ -11,7 +11,7 @@ pcr_primer_fwd: GTACACACCGCCCGTC
 pcr_primer_rev: TGATCCTTCTGCAGGTTCACCTAC
 
 # deblur
-deblur_trim_length: 150
+deblur_trim_length: 250
 deblur_sample_stats: --p-sample-stats
 deblur_mean_error: 0.005
 deblur_indel_prob: 0.01
@@ -33,8 +33,8 @@ dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 paired-end
-dada2pe_trunc_len_f: 0
-dada2pe_trunc_len_r: 0
+dada2pe_trunc_len_f: 250
+dada2pe_trunc_len_r: 200
 dada2pe_trim_left_f: 0
 dada2pe_trim_left_r: 0
 dada2pe_max_ee_f: 2
@@ -47,8 +47,8 @@ dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # subsampling
-alpha_max_depth: 5000
 core_sampling_depth: 5000
+alpha_max_depth: 5000
 
 # statistics
 beta_group_column: treatment
