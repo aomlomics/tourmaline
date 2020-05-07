@@ -53,7 +53,7 @@ conda activate qiime2-2019.7
 conda install -c bioconda snakemake
 ```
 
-Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this by "cloning" the GitHub repository.
+Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this in the next step by "cloning" the GitHub repository.
 
 ## Setup
 
@@ -262,7 +262,25 @@ Tourmaline steps covered in this section (logic described below):
 
 #### Rules
 
-Snakemake works by executing rules, defined in the `Snakefile`. Rules specify commands and outputs but most critically inputs, which dictate which other rules must be run beforehand to generate those inputs. By defining pseudo-rules at the beginning of the `Snakefile`, we can specify desired endpoints as "inputs" that force execution of the whole workflow or just part of it. When a Snakemake command is run, only those rules that need to be executed to produce the requested inputs will be run. Before proceeding, you should familiarize yourself with Snakemake using the [documentation](https://snakemake.readthedocs.io), and create your own simple Snakemake workflow to understand how it works.
+Snakemake works by executing rules, defined in the `Snakefile`. Rules specify commands and outputs but most critically inputs, which dictate which other rules must be run beforehand to generate those inputs. By defining pseudo-rules at the beginning of the `Snakefile`, we can specify desired endpoint targets as "inputs" that force execution of the whole workflow or just part of it. When a Snakemake command is run, only those rules that need to be executed to produce the requested target will be run. Before proceeding, you should familiarize yourself with Snakemake using the [documentation](https://snakemake.readthedocs.io) or follow the tutorial [here](https://github.com/cuttlefishh/tutorials/tree/master/snakemake) to create your own simple Snakemake workflow and understand how it works.
+
+#### Directed Acyclic Graph (DAG)
+
+Snakemake provides the command option `--dag` to generate a directed acyclic graph (DAG) of the jobs (rules) that will be run. The DAG is basically a graph that shows the flow and order of rules to reach your desired target. For example, to get a graph (PNG file) of the rules run when setting the rule `snakemake dada2_pe_denoise` as your target, run this command:
+
+```
+snakemake dada2_pe_denoise --dag | dot -Tpng > dag.png
+```
+
+#### Dry Run and Print Shell Commands
+
+To see which jobs (rules) and commands will be run by the workflow, use the options `--dryrun` and `--printshellcmds`, respectively. `--dryrun` will prevent the workflow from being executed. `--printshellcmds` can be used with our without `--dryrun`:
+
+```
+snakemake dada2_pe_denoise --dryrun --printshellcmds
+```
+
+#### Tourmaline Rules
 
 Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2), the `diversity` rule does representative sequence curation and core diversity analyses (steps 3 and 4), the `stats` rule runs group significance and other tests (optional), and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
 

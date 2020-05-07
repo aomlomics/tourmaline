@@ -9,6 +9,7 @@ configfile: "config.yaml"
 rule deblur_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe_count_describe.tsv",
         "02-denoised/deblur-se/table.qzv",
         "02-denoised/deblur-se/table_summary_samples.txt",
         "02-denoised/deblur-se/table_summary_features.txt",
@@ -32,7 +33,6 @@ rule deblur_se_stats:
 
 rule deblur_se_report:
     input:
-        "01-imported/fastq_pe_count_describe.tsv",
         "05-reports/report_deblur-se.txt"
 
 # -----------------------------------------------------------------------------
@@ -40,6 +40,7 @@ rule deblur_se_report:
 rule dada2_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe_count_describe.tsv",
         "02-denoised/dada2-se/table.qzv",
         "02-denoised/dada2-se/table_summary_samples.txt",
         "02-denoised/dada2-se/table_summary_features.txt",
@@ -63,7 +64,6 @@ rule dada2_se_stats:
 
 rule dada2_se_report:
     input:
-        "01-imported/fastq_pe_count_describe.tsv",
         "05-reports/report_dada2-se.txt"
 
 # -----------------------------------------------------------------------------
@@ -71,6 +71,7 @@ rule dada2_se_report:
 rule dada2_pe_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe_count_describe.tsv",
         "02-denoised/dada2-pe/table.qzv",
         "02-denoised/dada2-pe/table_summary_samples.txt",
         "02-denoised/dada2-pe/table_summary_features.txt",
@@ -94,7 +95,6 @@ rule dada2_pe_stats:
 
 rule dada2_pe_report:
     input:
-        "01-imported/fastq_pe_count_describe.tsv",
         "05-reports/report_dada2-pe.txt"
 
 # RULES -----------------------------------------------------------------------
