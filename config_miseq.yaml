@@ -11,7 +11,7 @@ pcr_primer_fwd: GTACACACCGCCCGTC
 pcr_primer_rev: TGATCCTTCTGCAGGTTCACCTAC
 
 # deblur
-deblur_trim_length: 100
+deblur_trim_length: 250
 deblur_sample_stats: --p-sample-stats
 deblur_mean_error: 0.005
 deblur_indel_prob: 0.01
@@ -22,7 +22,7 @@ deblur_jobs_to_start: 1
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 single-end
-dada2se_trunc_len: 0
+dada2se_trunc_len: 250
 dada2se_trim_left: 0
 dada2se_max_ee: 2
 dada2se_trunc_q: 2
@@ -33,8 +33,8 @@ dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 paired-end
-dada2pe_trunc_len_f: 0
-dada2pe_trunc_len_r: 0
+dada2pe_trunc_len_f: 250
+dada2pe_trunc_len_r: 200
 dada2pe_trim_left_f: 0
 dada2pe_trim_left_r: 0
 dada2pe_max_ee_f: 2
@@ -47,8 +47,8 @@ dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # subsampling
-core_sampling_depth: 50
-alpha_max_depth: 50
+core_sampling_depth: 5000
+alpha_max_depth: 5000
 
 # statistics
 beta_group_column: treatment
@@ -62,7 +62,7 @@ beta_group_column: treatment
 
 # WARNING: Snakemake will not automatically rerun if parameters change. It 
 # should rerun if input files change. To ensure that a file is regenerated,
-# you can delete it directly before re-running Snakemake. For Snakemake to 
+# you can delete it directly before re-running Snakemake. For Snakemake to
 # work with the symbolic links, you may first have to run:
 #
 #   snakemake --cleanup-metadata <filenames>
