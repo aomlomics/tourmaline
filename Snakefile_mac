@@ -25,15 +25,16 @@ rule deblur_se_diversity:
         "03-repseqs/deblur-se/rooted_tree.qza",
         "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/deblur-se/alpha_rarefaction.qzv",
-        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv"
-
-rule deblur_se_stats:
-    input:
+        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
+        "04-diversity/deblur-se/faith_pd_group_significance.qza",
+        "04-diversity/deblur-se/observed_otus_group_significance.qza",
+        "04-diversity/deblur-se/shannon_group_significance.qza",
+        "04-diversity/deblur-se/evenness_group_significance.qza",
         "04-diversity/deblur-se/unweighted_unifrac_group_significance.qzv"
 
 rule deblur_se_report:
     input:
-        "05-reports/report_deblur-se.txt"
+        "05-reports/report_deblur-se.html"
 
 # -----------------------------------------------------------------------------
 
@@ -56,15 +57,16 @@ rule dada2_se_diversity:
         "03-repseqs/dada2-se/rooted_tree.qza",
         "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-se/alpha_rarefaction.qzv",
-        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv"
-
-rule dada2_se_stats:
-    input:
+        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
+        "04-diversity/dada2-se/faith_pd_group_significance.qza",
+        "04-diversity/dada2-se/observed_otus_group_significance.qza",
+        "04-diversity/dada2-se/shannon_group_significance.qza",
+        "04-diversity/dada2-se/evenness_group_significance.qza",
         "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
 
 rule dada2_se_report:
     input:
-        "05-reports/report_dada2-se.txt"
+        "05-reports/report_dada2-se.html"
 
 # -----------------------------------------------------------------------------
 
@@ -87,15 +89,16 @@ rule dada2_pe_diversity:
         "03-repseqs/dada2-pe/rooted_tree.qza",
         "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-pe/alpha_rarefaction.qzv",
-        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv"
-
-rule dada2_pe_stats:
-    input:
+        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
+        "04-diversity/dada2-pe/faith_pd_group_significance.qza",
+        "04-diversity/dada2-pe/observed_otus_group_significance.qza",
+        "04-diversity/dada2-pe/shannon_group_significance.qza",
+        "04-diversity/dada2-pe/evenness_group_significance.qza",
         "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
 
 rule dada2_pe_report:
     input:
-        "05-reports/report_dada2-pe.txt"
+        "05-reports/report_dada2-pe.html"
 
 # RULES -----------------------------------------------------------------------
 
@@ -661,6 +664,18 @@ rule diversity_core_metrics_phylogenetic:
         "--o-jaccard-emperor {output.jaccardemperor} "
         "--o-bray-curtis-emperor {output.braycurtisemperor}"
 
+rule diversity_alpha_group_significance:
+    input:
+        alphadiversity="04-diversity/{method}/{metric}_vector.qza",
+        metadata=config["metadata"]
+    output:
+        "04-diversity/{method}/{metric}_group_significance.qzv"
+    shell:
+        "qiime diversity alpha-group-significance "
+        "--i-alpha-diversity {input.alphadiversity} "
+        "--m-metadata-file {input.metadata} "
+        "--o-visualization {output}"
+
 rule diversity_beta_group_significance:
     input:
         distancematrix="04-diversity/{method}/unweighted_unifrac_distance_matrix.qza",
@@ -701,20 +716,208 @@ rule summarize_processing_info:
                 ser.loc[col] = 'NOT PROVIDED'
         ser.to_csv(output[0], sep='\t')
 
-rule generate_report:
+rule generate_report_md:
     input:
+        configfile="config.yaml",
+        processing="05-reports/processing.txt",
         fastq="01-imported/fastq_pe_count_describe.tsv",
         run="01-imported/fastq_illumina_run.log",
-        samples="02-denoised/{method}/table_summary_samples.txt",
-        features="02-denoised/{method}/table_summary_features.txt",
         amplicontype="02-denoised/{method}/representative_sequences_amplicon_type.txt",
         repseqs="02-denoised/{method}/representative_sequences_lengths_describe.tsv",
         md5status="02-denoised/{method}/representative_sequences_md5_status.txt",
         alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.tsv",
-        processing="05-reports/processing.txt"
+        samples="02-denoised/{method}/table_summary_samples.txt",
+        features="02-denoised/{method}/table_summary_features.txt",
+        visrepseqs="02-denoised/{method}/representative_sequences.qzv",
+        vistaxonomy="03-repseqs/{method}/taxonomy.qzv",
+        vistable="02-denoised/{method}/table.qzv",
+        vistaxbar="04-diversity/{method}/taxa_barplot.qzv",
+        visalpharare="04-diversity/{method}/alpha_rarefaction.qzv",
+        visevengs="04-diversity/{method}/evenness_group_significance.qzv",
+        visfaithgs="04-diversity/{method}/faith_pd_group_significance.qzv",
+        visobsotusgs="04-diversity/{method}/observed_otus_group_significance.qzv",
+        visshannongs="04-diversity/{method}/shannon_group_significance.qzv",
+        visbcemp="04-diversity/{method}/bray_curtis_emperor.qzv",
+        visjacemp="04-diversity/{method}/jaccard_emperor.qzv",
+        viswuemp="04-diversity/{method}/weighted_unifrac_emperor.qzv",
+        visuwuemp="04-diversity/{method}/unweighted_unifrac_emperor.qzv",
+        visuwugs="04-diversity/{method}/unweighted_unifrac_group_significance.qzv"
     output:
-        "05-reports/report_{method}.txt"
+        "05-reports/report_{method}.md"
     shell:
-        "head -n 13 {input.processing} {input.fastq} {input.run} {input.samples} {input.features} "
-        "{input.amplicontype} {input.repseqs} {input.md5status} {input.alignment} > {output}"
+        "echo '# Tourmaline Report' > {output};"
+        "echo 'For information on Tourmaline outputs, visit https://github.com/aomlomics/tourmaline.' >> {output};"
+        "echo '' >> {output};"
+        "echo 'To view the QIIME 2 visualization (.qzv) files, click to download, then drag and drop in https://view.qiime2.org.' >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Processing Information' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.processing} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "head -n 20 {input.processing} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Fastq Sequences Information' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Number of fastq sequences per sample' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.fastq} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "tail -n +2 {input.fastq} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Number of Illumina runs' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.run} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "head -n 5 {input.run} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Representative Sequences Information' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Amplicon type' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.amplicontype} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "head -n 5 {input.amplicontype} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Sequence lengths' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.repseqs} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "tail -n +2 {input.repseqs} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### MD5 checksums' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.md5status} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "head -n 13 {input.md5status} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Alignment gaps' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.alignment} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "tail -n +2 {input.alignment} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Visualization of representative sequences' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visrepseqs}]\(../{input.visrepseqs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Visualization of taxonomy' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.vistaxonomy}]\(../{input.vistaxonomy}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Observation Table Information' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Table summary: Samples' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.samples} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "head -n 13 {input.samples} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Table summary: Features' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.features} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "head -n 13 {input.features} >> {output};"
+        "echo '```' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Table summary: QIIME 2 visualization' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.vistable}]\(../{input.vistable}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Taxonomic Diversity Results' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Taxonomy barplot' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.vistaxbar}]\(../{input.vistaxbar}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Alpha Diversity Results' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Alpha rarefaction' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visalpharare}]\(../{input.visalpharare}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Evenness group significance' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visevengs}]\(../{input.visevengs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Faith PD group significance' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visfaithgs}]\(../{input.visfaithgs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Observed OTUs/ASVs group significance' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visobsotusgs}]\(../{input.visobsotusgs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Shannon group significance' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visshannongs}]\(../{input.visshannongs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Beta Diversity Results' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Bray-Curtis PCoA' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visbcemp}]\(../{input.visbcemp}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Jaccard PCoA' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visjacemp}]\(../{input.visjacemp}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Weighted UniFrac PCoA' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.viswuemp}]\(../{input.viswuemp}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Unweighted UniFrac PCoA' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visuwuemp}]\(../{input.visuwuemp}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Unweighted UniFrac Group Significance' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: [{input.visuwugs}]\(../{input.visuwugs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '---' >> {output};"
+        "echo '' >> {output};"
+        "echo '## Tourmaline Config File' >> {output};"
+        "echo '' >> {output};"
+        "echo Filename: {input.configfile} >> {output};"
+        "echo '' >> {output};"
+        "echo '```' >> {output};"
+        "cat {input.configfile} >> {output};"
+        "echo '```' >> {output};"
 
+rule generate_report_html:
+    input:
+        "05-reports/report_{method}.md"
+    output:
+        "05-reports/report_{method}.html"
+    shell:
+        "pandoc -i {input} -o {output}"

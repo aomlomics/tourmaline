@@ -30,6 +30,8 @@ Tourmaline requires the following software:
 * Conda
 * QIIME 2 version 2020.2
 * Snakemake
+* Pandoc
+* Tabview
 
 ### Conda
 
@@ -44,13 +46,13 @@ wget https://data.qiime2.org/distro/core/qiime2-2020.2-py36-osx-conda.yml
 conda env create -n qiime2-2020.2 --file qiime2-2020.2-py36-osx-conda.yml
 ```
 
-### Snakemake
+### Snakemake and other dependencies
 
-Third, activate your QIIME 2 environment and install Snakemake:
+Third, activate your QIIME 2 environment and install Snakemake, Pandoc, and Tabview:
 
 ```
 conda activate qiime2-2020.2
-conda install -c bioconda snakemake
+conda install -c bioconda snakemake pandoc tabview
 ```
 
 Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this in the next step by "cloning" the GitHub repository.
@@ -134,12 +136,6 @@ If that works, try the next target rule in the DADA2 paired-end workflow, the Di
 
 ```
 snakemake dada2_pe_diversity
-```
-
-Then, try the Stats rule:
-
-```
-snakemake dada2_pe_stats
 ```
 
 Finally, try the Report rule:
@@ -301,7 +297,7 @@ snakemake dada2_pe_denoise --dryrun --printshellcmds
 
 #### Tourmaline rules
 
-Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2), the `diversity` rule does representative sequence curation and core diversity analyses (steps 3 and 4), the `stats` rule runs group significance and other tests (optional), and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
+Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2); the `diversity` rule does representative sequence curation, core diversity analyses, and alpha and beta group significance and other tests (steps 3 and 4); and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
 
 * Check the table summaries and representative sequence lengths to determine if Deblur or DADA2 parameters need to be modified. If so, you can rename the output directories and then rerun the `denoise` rule.
 * View the table visualization to decide an appropriate subsampling (rarefaction) depth. Then modify the parameters `alpha_max_depth` and `core_sampling_depth` in `config.yaml`.
@@ -316,9 +312,6 @@ snakemake dada2_pe_denoise
 # steps 3-4
 snakemake dada2_pe_diversity
 
-# step 4.1
-snakemake dada2_pe_stats
-
 # step 5
 snakemake dada2_pe_report
 ```
@@ -332,9 +325,6 @@ snakemake dada2_se_denoise
 # steps 3-4
 snakemake dada2_se_diversity
 
-# step 4.1
-snakemake dada2_se_stats
-
 # step 5
 snakemake dada2_se_report
 ```
@@ -347,9 +337,6 @@ snakemake deblur_se_denoise
 
 # steps 3-4
 snakemake deblur_se_diversity
-
-# step 4.1
-snakemake deblur_se_stats
 
 # step 5
 snakemake deblur_se_report
@@ -426,12 +413,8 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 04-diversity/dada2-pe/evenness_vector.qza
 04-diversity/dada2-pe/weighted_unifrac_emperor.qzv
 04-diversity/dada2-pe/alpha_rarefaction.qzv
-```
-
-##### dada2_pe_stats (step 4.1)
-
-```
 04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv
+# ADD OTHER ALPHA AND BETA DIVERSITY GROUP SIGNIFICANCE FILES
 ```
 
 ##### dada2_pe_report (step 5)
@@ -513,9 +496,7 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
 
-### Step 4.1: Statistical analyses
-
-Run statistical tests on your data, such as group significance tests. These rules are optional, and the output does not go into the QC report. (This functionality is currently minimal.)
+* Run group significance tests for alpha and beta diversity.
 
 ### Step 5: Quality control report
 
