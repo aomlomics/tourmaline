@@ -61,14 +61,18 @@ Finally, you will install Tourmaline. "Installation" here is really just copying
 
 ### Clone the Tourmaline repository
 
-Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "$HOME/workshop-2019.11"):
+Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "$HOME/workshop"):
 
 ```
-cd $HOME/workshop-2019.11
+cd $HOME/workshop
 git clone https://github.com/NOAA-AOML/tourmaline.git
 ```
 
-You might want to rename the directory `tourmaline` to something else before running the test data, for example (hint: you can do this with your projects to have different copies of Tourmaline with different sample sets or databases):
+It's a good idea to rename the `tourmaline` directory to something else before running the test data[^1].
+
+[^1]: In fact, it's always a good idea to rename the `tourmaline` directory after cloning it, because we'll want to clone a fresh copy of this directory whenever we want to preserve the previous output of a run, or run with different sample sets, parameters, or databases. To initialize a new `tourmaline` directory with the files and symlinks of an existing one, from the new `tourmaline` directory (renamed) run `scripts/copy_data_files_to_new_tourmaline_dir.sh /path/to/old/tourmaline`.
+
+For example:
 
 ```
 mv tourmaline tourmaline-test
@@ -99,13 +103,13 @@ The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence da
 
 #### Edit the fastq manifest files
 
-To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `$HOME/workshop-2019.11`, these commands will fix the manifest files (change `$HOME` to the absolute path of your home directory):
+To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `$HOME/workshop`, these commands will fix the manifest files (change `$HOME` to the absolute path of your home directory):
 
 ```
-cd $HOME/workshop-2019.11/tourmaline-test/00-data
-cat manifest_pe.csv | sed 's|/PATH/TO/PROJECT/tourmaline|$HOME/workshop-2019.11/tourmaline-test|' > temp
+cd /Users/myusername/workshop-2019.11/tourmaline-test/00-data
+cat manifest_pe.csv | sed 's|/PATH/TO/PROJECT/tourmaline|/Users/myusername/workshop-2019.11/tourmaline-test|' > temp
 mv temp manifest_pe.csv 
-cat manifest_se.csv | sed 's|/PATH/TO/PROJECT/tourmaline|$HOME/workshop-2019.11/tourmaline-test|' > temp
+cat manifest_se.csv | sed 's|/PATH/TO/PROJECT/tourmaline|/Users/myusername/workshop-2019.11/tourmaline-test|' > temp
 mv temp manifest_se.csv
 ```
 

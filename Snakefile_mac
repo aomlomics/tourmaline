@@ -746,9 +746,10 @@ rule generate_report_md:
         "05-reports/report_{method}.md"
     shell:
         "echo '# Tourmaline Report' > {output};"
-        "echo 'For information on Tourmaline outputs, visit https://github.com/aomlomics/tourmaline.' >> {output};"
         "echo '' >> {output};"
-        "echo 'To view the QIIME 2 visualization (.qzv) files, click to download, then drag and drop in https://view.qiime2.org.' >> {output};"
+        "echo 'For information on Tourmaline outputs, visit [https://github.com/aomlomics/tourmaline](https://github.com/aomlomics/tourmaline).' >> {output};"
+        "echo '' >> {output};"
+        "echo 'To view the QIIME 2 visualization (.qzv) files, click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org).' >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
