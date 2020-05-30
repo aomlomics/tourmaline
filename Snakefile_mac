@@ -1,4 +1,5 @@
 import pandas as pd
+from tabulate import tabulate
 
 # GLOBALS ---------------------------------------------------------------------
 
@@ -692,34 +693,41 @@ rule diversity_beta_group_significance:
         "--o-visualization {output} "
         "--p-pairwise"
 
-rule summarize_processing_info:
+rule summarize_metadata:
     input:
         metadata=config["metadata"]
     output:
-        "05-reports/processing.txt"
+        "05-reports/project_and_metadata_summary.md"
     run:
         df = pd.read_csv(input.metadata, sep='\t')
-        cols = ['project_name', 'experiment_design_description', 
-                'target_gene', 'target_subfragment', 'pcr_primers', 
-                'pcr_primer_names', 'platform', 'instrument_model',
-                'run_center', 'run_date']
-        ser = pd.Series()
+        cols1 = ['project_name', 'experiment_design_description', 
+                 'target_gene', 'target_subfragment', 'pcr_primers', 
+                 'pcr_primer_names', 'platform', 'instrument_model',
+                 'run_center', 'run_date']
+        cols2 = sorted(list(set(df.columns) - set(cols1)))
+        cols = cols1 + cols2
+        df2 = pd.DataFrame(columns =[0,1], index=cols)
         for col in cols:
             if col in df.columns:
                 vc = df[col].value_counts()
-                list = []
-                for index, value in vc.items():
-                    list.append('%s (%s)' % (index, value))
-                entry = ', '.join(list)
-                ser.loc[col] = entry
+                if vc.index.shape == (0,):
+                    df2.loc[col, 0] = '(no values in column)'
+                    df2.loc[col, 1] = '--'
+                else:
+                    df2.loc[col, 0] = vc.index[0]
+                    df2.loc[col, 1] = vc.values[0]
             else:
-                ser.loc[col] = 'NOT PROVIDED'
-        ser.to_csv(output[0], sep='\t')
+                df2.loc[col, 0] = '(column not provided)'
+                df2.loc[col, 1] = '--'
+        df2.columns = ['Most common value', 'Count']
+        outstr = tabulate(df2, tablefmt="pipe", headers="keys")
+        with open(output[0], 'w') as target:
+            target.write(outstr)
 
 rule generate_report_md:
     input:
         configfile="config.yaml",
-        processing="05-reports/processing.txt",
+        mdsummary="05-reports/project_and_metadata_summary.md",
         fastq="01-imported/fastq_pe_count_describe.tsv",
         run="01-imported/fastq_illumina_run.log",
         amplicontype="02-denoised/{method}/representative_sequences_amplicon_type.txt",
@@ -753,12 +761,13 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
-        "echo '## Processing Information' >> {output};"
+        "echo '## Project & Metadata Summary' >> {output};"
         "echo '' >> {output};"
-        "echo Filename: {input.processing} >> {output};"
+        "echo Filename: {input.mdsummary} >> {output};"
         "echo '' >> {output};"
         "echo '```' >> {output};"
-        "head -n 20 {input.processing} >> {output};"
+        "cat {input.mdsummary} >> {output};"
+        "echo '' >> {output};"
         "echo '```' >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
