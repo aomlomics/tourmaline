@@ -27,10 +27,10 @@ rule deblur_se_diversity:
         "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/deblur-se/alpha_rarefaction.qzv",
         "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/deblur-se/faith_pd_group_significance.qza",
-        "04-diversity/deblur-se/observed_otus_group_significance.qza",
-        "04-diversity/deblur-se/shannon_group_significance.qza",
-        "04-diversity/deblur-se/evenness_group_significance.qza",
+        "04-diversity/deblur-se/faith_pd_group_significance.qzv",
+        "04-diversity/deblur-se/observed_otus_group_significance.qzv",
+        "04-diversity/deblur-se/shannon_group_significance.qzv",
+        "04-diversity/deblur-se/evenness_group_significance.qzv",
         "04-diversity/deblur-se/unweighted_unifrac_group_significance.qzv"
 
 rule deblur_se_report:
@@ -59,10 +59,10 @@ rule dada2_se_diversity:
         "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-se/alpha_rarefaction.qzv",
         "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-se/faith_pd_group_significance.qza",
-        "04-diversity/dada2-se/observed_otus_group_significance.qza",
-        "04-diversity/dada2-se/shannon_group_significance.qza",
-        "04-diversity/dada2-se/evenness_group_significance.qza",
+        "04-diversity/dada2-se/faith_pd_group_significance.qzv",
+        "04-diversity/dada2-se/observed_otus_group_significance.qzv",
+        "04-diversity/dada2-se/shannon_group_significance.qzv",
+        "04-diversity/dada2-se/evenness_group_significance.qzv",
         "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
 
 rule dada2_se_report:
@@ -91,10 +91,10 @@ rule dada2_pe_diversity:
         "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
         "04-diversity/dada2-pe/alpha_rarefaction.qzv",
         "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-pe/faith_pd_group_significance.qza",
-        "04-diversity/dada2-pe/observed_otus_group_significance.qza",
-        "04-diversity/dada2-pe/shannon_group_significance.qza",
-        "04-diversity/dada2-pe/evenness_group_significance.qza",
+        "04-diversity/dada2-pe/faith_pd_group_significance.qzv",
+        "04-diversity/dada2-pe/observed_otus_group_significance.qzv",
+        "04-diversity/dada2-pe/shannon_group_significance.qzv",
+        "04-diversity/dada2-pe/evenness_group_significance.qzv",
         "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
 
 rule dada2_pe_report:
@@ -720,6 +720,7 @@ rule summarize_metadata:
                 df2.loc[col, 0] = '(column not provided)'
                 df2.loc[col, 1] = '--'
         df2.columns = ['Most common value', 'Count']
+        df2.index.name = 'Column name'
         outstr = tabulate(df2, tablefmt="pipe", headers="keys")
         with open(output[0], 'w') as target:
             target.write(outstr)

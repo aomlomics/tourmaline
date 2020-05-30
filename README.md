@@ -71,7 +71,7 @@ git clone https://github.com/NOAA-AOML/tourmaline.git
 
 It's a good idea to rename the `tourmaline` directory to something else before running the test data[^1].
 
-[^1]: In fact, it's always a good idea to rename the `tourmaline` directory after cloning it, because we'll want to clone a fresh copy of this directory whenever we want to preserve the previous output of a run, or run with different sample sets, parameters, or databases. To initialize a new `tourmaline` directory with the files and symlinks of an existing one, from the new `tourmaline` directory (renamed) run `scripts/copy_data_files_to_new_tourmaline_dir.sh /path/to/old/tourmaline`.
+[^1]: In fact, it's always a good idea to rename the `tourmaline` directory after cloning it, because we'll want to clone a fresh copy of this directory whenever we want to preserve the previous output of a run, or run with different sample sets, parameters, or databases. To initialize a new `tourmaline` directory with the files and symlinks of an existing one, from the new `tourmaline` directory (renamed) run `scripts/scripts/copy_symlinks_from_existing_tourmaline_dir.sh /path/to/existing/tourmaline`.
 
 For example:
 
