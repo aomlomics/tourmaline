@@ -10,13 +10,13 @@ configfile: "config.yaml"
 rule deblur_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
-        "01-imported/fastq_pe_count_describe.tsv",
+        "01-imported/fastq_pe_count_describe.md",
         "02-denoised/deblur-se/table.qzv",
         "02-denoised/deblur-se/table_summary_samples.txt",
         "02-denoised/deblur-se/table_summary_features.txt",
         "02-denoised/deblur-se/representative_sequences.qzv",
         "02-denoised/deblur-se/representative_sequences_amplicon_type.txt",
-        "02-denoised/deblur-se/representative_sequences_lengths_describe.tsv",
+        "02-denoised/deblur-se/representative_sequences_lengths_describe.md",
         "02-denoised/deblur-se/representative_sequences_md5_status.txt"
 
 rule deblur_se_diversity:
@@ -24,7 +24,7 @@ rule deblur_se_diversity:
         "03-repseqs/deblur-se/taxonomy.qzv",
         "04-diversity/deblur-se/taxa_barplot.qzv",
         "03-repseqs/deblur-se/rooted_tree.qza",
-        "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.tsv",
+        "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.md",
         "04-diversity/deblur-se/alpha_rarefaction.qzv",
         "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
         "04-diversity/deblur-se/faith_pd_group_significance.qzv",
@@ -42,13 +42,13 @@ rule deblur_se_report:
 rule dada2_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
-        "01-imported/fastq_pe_count_describe.tsv",
+        "01-imported/fastq_pe_count_describe.md",
         "02-denoised/dada2-se/table.qzv",
         "02-denoised/dada2-se/table_summary_samples.txt",
         "02-denoised/dada2-se/table_summary_features.txt",
         "02-denoised/dada2-se/representative_sequences.qzv",
         "02-denoised/dada2-se/representative_sequences_amplicon_type.txt",
-        "02-denoised/dada2-se/representative_sequences_lengths_describe.tsv",
+        "02-denoised/dada2-se/representative_sequences_lengths_describe.md",
         "02-denoised/dada2-se/representative_sequences_md5_status.txt"
 
 rule dada2_se_diversity:
@@ -56,7 +56,7 @@ rule dada2_se_diversity:
         "03-repseqs/dada2-se/taxonomy.qzv",
         "04-diversity/dada2-se/taxa_barplot.qzv",
         "03-repseqs/dada2-se/rooted_tree.qza",
-        "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.tsv",
+        "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.md",
         "04-diversity/dada2-se/alpha_rarefaction.qzv",
         "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
         "04-diversity/dada2-se/faith_pd_group_significance.qzv",
@@ -74,13 +74,13 @@ rule dada2_se_report:
 rule dada2_pe_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
-        "01-imported/fastq_pe_count_describe.tsv",
+        "01-imported/fastq_pe_count_describe.md",
         "02-denoised/dada2-pe/table.qzv",
         "02-denoised/dada2-pe/table_summary_samples.txt",
         "02-denoised/dada2-pe/table_summary_features.txt",
         "02-denoised/dada2-pe/representative_sequences.qzv",
         "02-denoised/dada2-pe/representative_sequences_amplicon_type.txt",
-        "02-denoised/dada2-pe/representative_sequences_lengths_describe.tsv",
+        "02-denoised/dada2-pe/representative_sequences_lengths_describe.md",
         "02-denoised/dada2-pe/representative_sequences_md5_status.txt"
 
 rule dada2_pe_diversity:
@@ -88,7 +88,7 @@ rule dada2_pe_diversity:
         "03-repseqs/dada2-pe/taxonomy.qzv",
         "04-diversity/dada2-pe/taxa_barplot.qzv",
         "03-repseqs/dada2-pe/rooted_tree.qza",
-        "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.tsv",
+        "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.md",
         "04-diversity/dada2-pe/alpha_rarefaction.qzv",
         "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
         "04-diversity/dada2-pe/faith_pd_group_significance.qzv",
@@ -162,11 +162,13 @@ rule fastq_pe_count_describe:
     input:
         "01-imported/fastq_pe_count.csv"
     output:
-        "01-imported/fastq_pe_count_describe.tsv"
+        "01-imported/fastq_pe_count_describe.md"
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        t.to_csv(output[0], sep='\t', header='sequences_per_sample')
+        outstr = tabulate(t, tablefmt="pipe", headers=['Statistic', 'Value'])
+        with open(output[0], 'w') as target:
+            target.write(outstr)
 
 rule import_ref_seqs:
     input:
@@ -388,11 +390,13 @@ rule repseq_length_distribution_describe:
     input:
         "02-denoised/{method}/representative_sequences_lengths.txt"
     output:
-        "02-denoised/{method}/representative_sequences_lengths_describe.tsv"
+        "02-denoised/{method}/representative_sequences_lengths_describe.md"
     run:
         s = pd.read_csv(input[0], header=None, index_col=0)
         t = s.describe()
-        t.to_csv(output[0], sep='\t', header='sequence_length_bp')
+        outstr = tabulate(t, tablefmt="pipe", headers=['Statistic', 'Value'])
+        with open(output[0], 'w') as target:
+            target.write(outstr)
 
 # mac: md5 / linux: md5sum
 rule check_repseq_md5:
@@ -589,11 +593,13 @@ rule alignment_gaps_distribution_describe:
     input:
         "03-repseqs/{method}/aligned_dna_sequences_gaps.txt"
     output:
-        "03-repseqs/{method}/aligned_dna_sequences_gaps_describe.tsv"
+        "03-repseqs/{method}/aligned_dna_sequences_gaps_describe.md"
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        t.to_csv(output[0], sep='\t', header='gaps_per_sequence')
+        outstr = tabulate(t, tablefmt="pipe", headers=['Statistic', 'Value'])
+        with open(output[0], 'w') as target:
+            target.write(outstr)
 
 rule diversity_alpha_rarefaction:
     input:
@@ -697,7 +703,7 @@ rule summarize_metadata:
     input:
         metadata=config["metadata"]
     output:
-        "05-reports/project_and_metadata_summary.md"
+        "05-reports/metadata_summary.md"
     run:
         df = pd.read_csv(input.metadata, sep='\t')
         cols1 = ['project_name', 'experiment_design_description', 
@@ -728,13 +734,13 @@ rule summarize_metadata:
 rule generate_report_md:
     input:
         configfile="config.yaml",
-        mdsummary="05-reports/project_and_metadata_summary.md",
-        fastq="01-imported/fastq_pe_count_describe.tsv",
+        mdsummary="05-reports/metadata_summary.md",
+        fastq="01-imported/fastq_pe_count_describe.md",
         run="01-imported/fastq_illumina_run.log",
         amplicontype="02-denoised/{method}/representative_sequences_amplicon_type.txt",
-        repseqs="02-denoised/{method}/representative_sequences_lengths_describe.tsv",
+        repseqs="02-denoised/{method}/representative_sequences_lengths_describe.md",
         md5status="02-denoised/{method}/representative_sequences_md5_status.txt",
-        alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.tsv",
+        alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.md",
         samples="02-denoised/{method}/table_summary_samples.txt",
         features="02-denoised/{method}/table_summary_features.txt",
         visrepseqs="02-denoised/{method}/representative_sequences.qzv",
@@ -762,14 +768,12 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
-        "echo '## Project & Metadata Summary' >> {output};"
+        "echo '## Metadata Summary' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.mdsummary} >> {output};"
         "echo '' >> {output};"
-        "echo '```' >> {output};"
         "cat {input.mdsummary} >> {output};"
         "echo '' >> {output};"
-        "echo '```' >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
@@ -779,9 +783,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Filename: {input.fastq} >> {output};"
         "echo '' >> {output};"
-        "echo '```' >> {output};"
-        "tail -n +2 {input.fastq} >> {output};"
-        "echo '```' >> {output};"
+        "cat {input.fastq} >> {output};"
         "echo '' >> {output};"
         "echo '### Number of Illumina runs' >> {output};"
         "echo '' >> {output};"
@@ -807,9 +809,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Filename: {input.repseqs} >> {output};"
         "echo '' >> {output};"
-        "echo '```' >> {output};"
-        "tail -n +2 {input.repseqs} >> {output};"
-        "echo '```' >> {output};"
+        "cat {input.repseqs} >> {output};"
         "echo '' >> {output};"
         "echo '### MD5 checksums' >> {output};"
         "echo '' >> {output};"
@@ -823,9 +823,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Filename: {input.alignment} >> {output};"
         "echo '' >> {output};"
-        "echo '```' >> {output};"
-        "tail -n +2 {input.alignment} >> {output};"
-        "echo '```' >> {output};"
+        "cat {input.alignment} >> {output};"
         "echo '' >> {output};"
         "echo '### Visualization of representative sequences' >> {output};"
         "echo '' >> {output};"
@@ -931,4 +929,20 @@ rule generate_report_html:
     output:
         "05-reports/report_{method}.html"
     shell:
-        "pandoc -i {input} -o {output}"
+        "pandoc -i {input} -o {output};"
+        "echo '<!DOCTYPE html>' > header.html;"
+        "echo '<html>' >> header.html;"
+        "echo '<head>' >> header.html;"
+        "echo '<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/github.css\">' >> header.html;"
+        "echo '</head>' >> header.html;"
+        "echo '<body>' >> header.html;"
+        "echo '' >> header.html;"
+        "cat header.html {output} > temp.html;"
+        "echo '' >> temp.html;"
+        "echo '</body>' >> temp.html;"
+        "echo '</html>' >> temp.html;"
+        "mv temp.html {output};"
+        "/bin/rm header.html"
+
+
+
