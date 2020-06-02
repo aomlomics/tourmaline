@@ -30,6 +30,9 @@ Tourmaline requires the following software:
 * Conda
 * QIIME 2 version 2020.2
 * Snakemake
+* Pandoc
+* Tabview
+* Tabulate
 
 ### Conda
 
@@ -44,13 +47,13 @@ wget https://data.qiime2.org/distro/core/qiime2-2020.2-py36-osx-conda.yml
 conda env create -n qiime2-2020.2 --file qiime2-2020.2-py36-osx-conda.yml
 ```
 
-### Snakemake
+### Snakemake and other dependencies
 
-Third, activate your QIIME 2 environment and install Snakemake:
+Third, activate your QIIME 2 environment and install Snakemake, Pandoc, Tabview, and Tabulate:
 
 ```
 conda activate qiime2-2020.2
-conda install -c bioconda snakemake
+conda install -c bioconda snakemake pandoc tabview tabulate
 ```
 
 Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this in the next step by "cloning" the GitHub repository.
@@ -59,14 +62,18 @@ Finally, you will install Tourmaline. "Installation" here is really just copying
 
 ### Clone the Tourmaline repository
 
-Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "$HOME/workshop-2019.11"):
+Navigate to your project directory and clone the Tourmaline repository there. In the example below and following steps, replace "/PATH/TO/PROJECT" with the full path to your project directory (e.g., "$HOME/workshop"):
 
 ```
-cd $HOME/workshop-2019.11
+cd $HOME/workshop
 git clone https://github.com/NOAA-AOML/tourmaline.git
 ```
 
-You might want to rename the directory `tourmaline` to something else before running the test data, for example (hint: you can do this with your projects to have different copies of Tourmaline with different sample sets or databases):
+It's a good idea to rename the `tourmaline` directory to something else before running the test data[^1].
+
+[^1]: In fact, it's always a good idea to rename the `tourmaline` directory after cloning it, because we'll want to clone a fresh copy of this directory whenever we want to preserve the previous output of a run, or run with different sample sets, parameters, or databases. To initialize a new `tourmaline` directory with the files and symlinks of an existing one, from the new `tourmaline` directory (renamed) run `scripts/scripts/copy_symlinks_from_existing_tourmaline_dir.sh /path/to/existing/tourmaline`.
+
+For example:
 
 ```
 mv tourmaline tourmaline-test
@@ -97,13 +104,13 @@ The Tourmaline repository comes ready to go with test 18S rRNA fastq sequence da
 
 #### Edit the fastq manifest files
 
-To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `$HOME/workshop-2019.11`, these commands will fix the manifest files (change `$HOME` to the absolute path of your home directory):
+To run the test data, you must edit the manifest files `00-data/manifest_se.csv` and `00-data/manifest_pe.csv` to point to the absolute filepaths of the sequences in your local copy of `tourmaline` (which you renamed to `tourmaline-test`). For example, if the filepath of your project is `$HOME/workshop`, these commands will fix the manifest files (change `$HOME` to the absolute path of your home directory):
 
 ```
-cd $HOME/workshop-2019.11/tourmaline-test/00-data
-cat manifest_pe.csv | sed 's|/PATH/TO/PROJECT/tourmaline|$HOME/workshop-2019.11/tourmaline-test|' > temp
+cd /Users/myusername/workshop-2019.11/tourmaline-test/00-data
+cat manifest_pe.csv | sed 's|/PATH/TO/PROJECT/tourmaline|/Users/myusername/workshop-2019.11/tourmaline-test|' > temp
 mv temp manifest_pe.csv 
-cat manifest_se.csv | sed 's|/PATH/TO/PROJECT/tourmaline|$HOME/workshop-2019.11/tourmaline-test|' > temp
+cat manifest_se.csv | sed 's|/PATH/TO/PROJECT/tourmaline|/Users/myusername/workshop-2019.11/tourmaline-test|' > temp
 mv temp manifest_se.csv
 ```
 
@@ -134,12 +141,6 @@ If that works, try the next target rule in the DADA2 paired-end workflow, the Di
 
 ```
 snakemake dada2_pe_diversity
-```
-
-Then, try the Stats rule:
-
-```
-snakemake dada2_pe_stats
 ```
 
 Finally, try the Report rule:
@@ -301,7 +302,7 @@ snakemake dada2_pe_denoise --dryrun --printshellcmds
 
 #### Tourmaline rules
 
-Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2), the `diversity` rule does representative sequence curation and core diversity analyses (steps 3 and 4), the `stats` rule runs group significance and other tests (optional), and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
+Tourmaline provides Snakemake rules for Deblur (single-end) and DADA2 (single-end and paired-end). For each type of processing, the `denoise` rule imports data and runs denoising (steps 1 and 2); the `diversity` rule does representative sequence curation, core diversity analyses, and alpha and beta group significance and other tests (steps 3 and 4); and the `report` rule generates the QC report (step 5). Pausing after step 2 allows you to make changes before proceeding:
 
 * Check the table summaries and representative sequence lengths to determine if Deblur or DADA2 parameters need to be modified. If so, you can rename the output directories and then rerun the `denoise` rule.
 * View the table visualization to decide an appropriate subsampling (rarefaction) depth. Then modify the parameters `alpha_max_depth` and `core_sampling_depth` in `config.yaml`.
@@ -316,9 +317,6 @@ snakemake dada2_pe_denoise
 # steps 3-4
 snakemake dada2_pe_diversity
 
-# step 4.1
-snakemake dada2_pe_stats
-
 # step 5
 snakemake dada2_pe_report
 ```
@@ -332,9 +330,6 @@ snakemake dada2_se_denoise
 # steps 3-4
 snakemake dada2_se_diversity
 
-# step 4.1
-snakemake dada2_se_stats
-
 # step 5
 snakemake dada2_se_report
 ```
@@ -347,9 +342,6 @@ snakemake deblur_se_denoise
 
 # steps 3-4
 snakemake deblur_se_diversity
-
-# step 4.1
-snakemake deblur_se_stats
 
 # step 5
 snakemake deblur_se_report
@@ -426,12 +418,8 @@ The output files of each command (shown for DADA2 paired-end) are as follows:
 04-diversity/dada2-pe/evenness_vector.qza
 04-diversity/dada2-pe/weighted_unifrac_emperor.qzv
 04-diversity/dada2-pe/alpha_rarefaction.qzv
-```
-
-##### dada2_pe_stats (step 4.1)
-
-```
 04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv
+# ADD OTHER ALPHA AND BETA DIVERSITY GROUP SIGNIFICANCE FILES
 ```
 
 ##### dada2_pe_report (step 5)
@@ -513,9 +501,7 @@ First consult table summary and run alpha rarefaction to decide on a rarefaction
 * Beta diversity: distance matrices (un/weighted UniFrac, Bray-Curtis, Jaccard), principal coordinates, Emperor plots, beta group significance.
 * Taxonomy barplots.
 
-### Step 4.1: Statistical analyses
-
-Run statistical tests on your data, such as group significance tests. These rules are optional, and the output does not go into the QC report. (This functionality is currently minimal.)
+* Run group significance tests for alpha and beta diversity.
 
 ### Step 5: Quality control report
 
