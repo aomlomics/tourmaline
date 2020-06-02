@@ -166,7 +166,7 @@ rule fastq_pe_count_describe:
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        outstr = tabulate(t, tablefmt="pipe", headers=['Statistic', 'Value'])
+        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Fastq sequences per sample'])
         with open(output[0], 'w') as target:
             target.write(outstr)
 
@@ -394,7 +394,7 @@ rule repseq_length_distribution_describe:
     run:
         s = pd.read_csv(input[0], header=None, index_col=0)
         t = s.describe()
-        outstr = tabulate(t, tablefmt="pipe", headers=['Statistic', 'Value'])
+        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Sequence length'])
         with open(output[0], 'w') as target:
             target.write(outstr)
 
@@ -597,7 +597,7 @@ rule alignment_gaps_distribution_describe:
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
-        outstr = tabulate(t, tablefmt="pipe", headers=['Statistic', 'Value'])
+        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
         with open(output[0], 'w') as target:
             target.write(outstr)
 
@@ -772,6 +772,8 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Filename: {input.mdsummary} >> {output};"
         "echo '' >> {output};"
+        "echo 'The first 10 columns are recommended by the Tourmaline developers but may not have been provided.' >> {output};"
+        "echo '' >> {output};"
         "cat {input.mdsummary} >> {output};"
         "echo '' >> {output};"
         "echo '' >> {output};"
@@ -779,7 +781,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '## Fastq Sequences Information' >> {output};"
         "echo '' >> {output};"
-        "echo '### Number of fastq sequences per sample' >> {output};"
+        "echo '### Fastq sequences per sample' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.fastq} >> {output};"
         "echo '' >> {output};"
@@ -805,7 +807,7 @@ rule generate_report_md:
         "head -n 5 {input.amplicontype} >> {output};"
         "echo '```' >> {output};"
         "echo '' >> {output};"
-        "echo '### Sequence lengths' >> {output};"
+        "echo '### Sequence length' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.repseqs} >> {output};"
         "echo '' >> {output};"
@@ -819,7 +821,7 @@ rule generate_report_md:
         "head -n 13 {input.md5status} >> {output};"
         "echo '```' >> {output};"
         "echo '' >> {output};"
-        "echo '### Alignment gaps' >> {output};"
+        "echo '### Alignment gaps per sequence' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.alignment} >> {output};"
         "echo '' >> {output};"
