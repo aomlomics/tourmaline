@@ -927,7 +927,9 @@ rule generate_report_md:
 
 rule generate_report_html:
     input:
-        "05-reports/report_{method}.md"
+        markdown="05-reports/report_{method}.md"
+    params:
+        theme=config["report_theme"]
     output:
         "05-reports/report_{method}.html"
     shell:
@@ -935,7 +937,7 @@ rule generate_report_html:
         "echo '<!DOCTYPE html>' > header.html;"
         "echo '<html>' >> header.html;"
         "echo '<head>' >> header.html;"
-        "echo '<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/github.css\">' >> header.html;"
+        "echo '<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/{params.theme`}.css\">' >> header.html;"
         "echo '</head>' >> header.html;"
         "echo '<body>' >> header.html;"
         "echo '' >> header.html;"
