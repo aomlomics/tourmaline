@@ -937,7 +937,7 @@ rule generate_report_html:
         "echo '<!DOCTYPE html>' > header.html;"
         "echo '<html>' >> header.html;"
         "echo '<head>' >> header.html;"
-        "echo '<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/{params.theme`}.css\">' >> header.html;"
+        "echo '<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/{params.theme}.css\">' >> header.html;"
         "echo '</head>' >> header.html;"
         "echo '<body>' >> header.html;"
         "echo '' >> header.html;"
