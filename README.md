@@ -1,8 +1,4 @@
-<img src="tourmaline_banner.png" width="100%">
-
 <img src="tourmaline_banner.png" alt="tourmaline_banner" width="100%"/>
-
-![banner](tourmaline_banner.png)
 
 # Tourmaline
 
