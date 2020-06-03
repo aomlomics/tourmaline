@@ -1,4 +1,8 @@
-<img src="./tourmaline_banner.pdf" width="100%">
+<img src="tourmaline_banner.pdf" width="100%">
+
+<img src="tourmaline_banner.pdf" alt="tourmaline_banner" width="100%"/>
+
+![banner](tourmaline_banner.pdf)
 
 # Tourmaline
 
