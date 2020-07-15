@@ -1,1 +1,0 @@
-Snakefile_mac
