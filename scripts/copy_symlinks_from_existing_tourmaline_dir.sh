@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: 
-# scripts/copy_data_files_to_new_tourmaline_dir.sh /path/to/old/tourmaline
+# scripts/copy_symlinks_from_existing_tourmaline_dir.sh /path/to/old/tourmaline
 #
 # From the main directory of a newly cloned tourmaline directory, run this
 # script to first remove the test files, then copy the data files and symlinks
