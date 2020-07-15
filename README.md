@@ -26,9 +26,10 @@ Tourmaline requires the following software:
 * Conda
 * QIIME 2 version 2020.2
 * Snakemake
+* BioPython
 * Pandoc
-* Tabview
 * Tabulate
+* Tabview
 
 ### Conda
 
@@ -45,11 +46,11 @@ conda env create -n qiime2-2020.2 --file qiime2-2020.2-py36-osx-conda.yml
 
 ### Snakemake and other dependencies
 
-Third, activate your QIIME 2 environment and install Snakemake, Pandoc, Tabview, and Tabulate:
+Third, activate your QIIME 2 environment and install Snakemake, BioPython, Pandoc, Tabulate, and Tabview:
 
 ```
 conda activate qiime2-2020.2
-conda install -c bioconda snakemake pandoc tabview tabulate
+conda install -c bioconda snakemake biopython pandoc tabulate tabview
 ```
 
 Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this in the next step by "cloning" the GitHub repository.

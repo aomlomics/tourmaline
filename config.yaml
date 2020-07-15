@@ -54,7 +54,7 @@ alpha_max_depth: 50
 beta_group_column: treatment
 
 # report theme (choose from: github, gothic, newsprint, night, pixyll, whitey)
-report_theme: gothic
+report_theme: github
 
 # NOTE: refseqs.fasta and reftax.tsv -- and/or their outputs refseqs.qza, 
 # reftax.qza, and classifier.qza -- should ideally be in an external directory.
