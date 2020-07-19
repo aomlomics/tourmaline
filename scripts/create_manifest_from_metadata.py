@@ -6,7 +6,7 @@ import pandas as pd
 
 # usage
 usage = '''
-match_manifest_to_metadata.py METADATA MANIFEST MANIFEST_PE MANIFEST_SE
+create_manifest_from_metadata.py METADATA MANIFEST MANIFEST_PE MANIFEST_SE
 
     METADATA - input metadata/mapping file with sample names in first column;
         tab-delimited format (metadata.tsv)

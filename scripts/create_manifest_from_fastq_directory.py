@@ -15,10 +15,10 @@ create_manifest_from_fastq_directory.py FASTQ_DIR MANIFEST_PE MANIFEST_SE
 	MANIFEST_SE - output path of manifest_se.csv
 
     This script makes the following assumptions:
-        - First bit after sample name is "_S[0-9]{1,3}""
-        - Only Lane 1 data is present "_L001"
-        - R1 and R2 files are both present "_R1"/_R2"
-        - Only one file "_001" for each of R1 and R2
+        - the first characters after the sample names are "_S[0-9]{1,3}"
+        - only Lane 1 data is present ("_L001")
+        - R1 and R2 files are both present
+        - only one file (with suffix "_001") is present for each of R1 and R2
 '''
 
 if len(sys.argv) < 2:

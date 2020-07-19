@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Usage: 
-# scripts/copy_symlinks_from_existing_tourmaline_dir.sh /path/to/old/tourmaline
+# scripts/initialize_dir_from_existing_tourmaline_dir.sh /path/to/old/tourmaline
 #
 # From the main directory of a newly cloned tourmaline directory, run this
-# script to first remove the test files, then copy the data files and symlinks
-# of an existing tourmaline directory on your system.
+# script to copy to config.yaml and Snakefile from an existing tourmaline
+# directory, remove the test files, then copy the data files and symlinks
+# from the existing tourmaline directory.
 
 cp -a $1/config.yaml .
 rsync -a $1/Snakefile .
