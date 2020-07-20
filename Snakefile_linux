@@ -28,7 +28,7 @@ rule deblur_se_diversity:
         "04-diversity/deblur-se/alpha_rarefaction.qzv",
         "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
         "04-diversity/deblur-se/faith_pd_group_significance.qzv",
-        "04-diversity/deblur-se/observed_otus_group_significance.qzv",
+        "04-diversity/deblur-se/observed_features_group_significance.qzv",
         "04-diversity/deblur-se/shannon_group_significance.qzv",
         "04-diversity/deblur-se/evenness_group_significance.qzv",
         "04-diversity/deblur-se/unweighted_unifrac_group_significance.qzv"
@@ -60,7 +60,7 @@ rule dada2_se_diversity:
         "04-diversity/dada2-se/alpha_rarefaction.qzv",
         "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
         "04-diversity/dada2-se/faith_pd_group_significance.qzv",
-        "04-diversity/dada2-se/observed_otus_group_significance.qzv",
+        "04-diversity/dada2-se/observed_features_group_significance.qzv",
         "04-diversity/dada2-se/shannon_group_significance.qzv",
         "04-diversity/dada2-se/evenness_group_significance.qzv",
         "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
@@ -92,7 +92,7 @@ rule dada2_pe_diversity:
         "04-diversity/dada2-pe/alpha_rarefaction.qzv",
         "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
         "04-diversity/dada2-pe/faith_pd_group_significance.qzv",
-        "04-diversity/dada2-pe/observed_otus_group_significance.qzv",
+        "04-diversity/dada2-pe/observed_features_group_significance.qzv",
         "04-diversity/dada2-pe/shannon_group_significance.qzv",
         "04-diversity/dada2-pe/evenness_group_significance.qzv",
         "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
@@ -632,7 +632,7 @@ rule diversity_core_metrics_phylogenetic:
     output:
         rarefiedtable="04-diversity/{method}/rarefied_table.qza",
         faithpdvector="04-diversity/{method}/faith_pd_vector.qza",        
-        observedotusvector="04-diversity/{method}/observed_otus_vector.qza",
+        observedfeaturesvector="04-diversity/{method}/observed_features_vector.qza",
         shannonvector="04-diversity/{method}/shannon_vector.qza",
         evennessvector="04-diversity/{method}/evenness_vector.qza",
         unweightedunifracdistancematrix="04-diversity/{method}/unweighted_unifrac_distance_matrix.qza",
@@ -655,7 +655,7 @@ rule diversity_core_metrics_phylogenetic:
         "--m-metadata-file {input.metadata} "
         "--o-rarefied-table {output.rarefiedtable} "
         "--o-faith-pd-vector {output.faithpdvector} "
-        "--o-observed-otus-vector {output.observedotusvector} "
+        "--o-observed-features-vector {output.observedfeaturesvector} "
         "--o-shannon-vector {output.shannonvector} "
         "--o-evenness-vector {output.evennessvector} "
         "--o-unweighted-unifrac-distance-matrix {output.unweightedunifracdistancematrix} "
@@ -750,7 +750,7 @@ rule generate_report_md:
         visalpharare="04-diversity/{method}/alpha_rarefaction.qzv",
         visevengs="04-diversity/{method}/evenness_group_significance.qzv",
         visfaithgs="04-diversity/{method}/faith_pd_group_significance.qzv",
-        visobsotusgs="04-diversity/{method}/observed_otus_group_significance.qzv",
+        visobsfeaturesgs="04-diversity/{method}/observed_features_group_significance.qzv",
         visshannongs="04-diversity/{method}/shannon_group_significance.qzv",
         visbcemp="04-diversity/{method}/bray_curtis_emperor.qzv",
         visjacemp="04-diversity/{method}/jaccard_emperor.qzv",
@@ -761,6 +761,8 @@ rule generate_report_md:
         "05-reports/report_{method}.md"
     shell:
         "echo '# Tourmaline Report' > {output};"
+        "echo '' >> {output};"
+        "echo Filename: {output} >> {output};"
         "echo '' >> {output};"
         "echo 'For information on Tourmaline outputs, visit [https://github.com/aomlomics/tourmaline](https://github.com/aomlomics/tourmaline).' >> {output};"
         "echo '' >> {output};"
@@ -883,9 +885,9 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Download file: [{input.visfaithgs}]\(../{input.visfaithgs}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Observed OTUs/ASVs group significance' >> {output};"
+        "echo '### Observed features group significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: [{input.visobsotusgs}]\(../{input.visobsotusgs}\) >> {output};"
+        "echo Download file: [{input.visobsfeaturesgs}]\(../{input.visobsfeaturesgs}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Shannon group significance' >> {output};"
         "echo '' >> {output};"

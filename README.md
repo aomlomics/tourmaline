@@ -24,7 +24,7 @@ Tourmaline is an alternative amplicon 'pipeline' to [Banzai](https://github.com/
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version 2020.2
+* QIIME 2 version 2020.6
 * Snakemake
 * BioPython
 * Pandoc
@@ -37,11 +37,11 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 ### QIIME 2
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2020.2/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2020.2` (for Linux, change "osx" to "linux"):
+Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2020.6/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2020.6` (for Linux, change "osx" to "linux"):
 
 ```
-wget https://data.qiime2.org/distro/core/qiime2-2020.2-py36-osx-conda.yml
-conda env create -n qiime2-2020.2 --file qiime2-2020.2-py36-osx-conda.yml
+wget https://data.qiime2.org/distro/core/qiime2-2020.6-py36-osx-conda.yml
+conda env create -n qiime2-2020.6 --file qiime2-2020.6-py36-osx-conda.yml
 ```
 
 ### Snakemake and other dependencies
@@ -49,7 +49,7 @@ conda env create -n qiime2-2020.2 --file qiime2-2020.2-py36-osx-conda.yml
 Third, activate your QIIME 2 environment and install Snakemake, BioPython, Pandoc, Tabulate, and Tabview:
 
 ```
-conda activate qiime2-2020.2
+conda activate qiime2-2020.6
 conda install -c bioconda snakemake biopython pandoc tabulate tabview
 ```
 
@@ -204,11 +204,11 @@ Your metadata should ideally include all of the following columns. These will be
 * `run_center`
 * `run_date`
 
-The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2020.2/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp), and NMDC's [Introduction to Metadata and Ontologies](https://microbiomedata.org/introduction-to-metadata-and-ontologies/) for help formatting your metadata.
+The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help see [Metadata in QIIME 2](https://docs.qiime2.org/2020.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp), and NMDC's [Introduction to Metadata and Ontologies](https://microbiomedata.org/introduction-to-metadata-and-ontologies/) for help formatting your metadata.
 
 #### Format sequence data
 
-Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2020.2/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `create_manifest_from_metadata.py` can help with this).
+Tourmaline supports amplicon sequence data that is already demultiplexed (fastq manifest format). Using the sample names in your metadata file and the absolute filepaths to the forward and reverse demultiplexed sequence files (`.fastq.gz`) for each sample, create a fastq manifest file. See [Fastq Manifest Formats](https://docs.qiime2.org/2020.6/tutorials/importing/#fastq-manifest-formats) (QIIME 2) for instructions for creating this file. If your sequences are not already demultiplexed (e.g., they need to be imported as type `EMPPairedEndSequences`), you can use the commands `qiime tools import` and `qiime demux emp-paired` to demuliplex them, then unzip the archives and merge the manifest files, taking care to change the second column to `absolute-filepath` and ensure the sample IDs match those in your metadata file (the included script `create_manifest_from_metadata.py` can help with this).
 
 Note: While `qiime tools import` supports both `.fastq` and `.fastq.gz` formats, using `.fastq.gz` format is strongly recommended because it is $HOME5x faster and minimizes disk usage. (Hint: Gzipped files can still be viewed using `zcat` with `less` or `head`.)
 
@@ -461,8 +461,8 @@ Answer the following questions to determine the best parameters for processing a
 
 #### Format metadata and sequence data
 
-* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2020.2/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
-* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2020.2/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
+* Is my metadata file properly formatted? See [Metadata in QIIME 2](https://docs.qiime2.org/2020.6/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), and [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp) for help formatting your metadata.
+* Is my sequence data demultiplexed, in `.fastq.gz` format, and described in a QIIME 2 fastq manifest file? See [Fastq Manifest Formats](https://docs.qiime2.org/2020.6/tutorials/importing/#fastq-manifest-formats) from QIIME 2 for instructions for creating this file.
 * Are my reference sequences and taxonomy properly formatted for QIIME 2?
 * Is my config file updated with the file paths and parameters I want to use?
 
