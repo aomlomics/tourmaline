@@ -12,8 +12,8 @@ import pandas as pd
               "Read 1 or Read 2. File is usually in directory 'multiqc_data' and named "
               "'mqc_fastqc_per_base_sequence_quality_plot_1.txt'")
 @click.option('--cutoff', '-c', required=False, type=float, default=0.9,
-              help="Minimum fraction of sequences required to match "
-                   "a diagnostic 5' tetramer [default: 0.5]")
+              help="Fraction of maximum median per base sequence quality "
+                   "at which point sequence should be truncated [default: 0.9]")
 
 def calculate_fastqc_dropoff(input_file, cutoff):
     """Determine the position where median per base sequence quality drops below

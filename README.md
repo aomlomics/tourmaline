@@ -53,6 +53,8 @@ conda activate qiime2-2020.6
 conda install -c bioconda snakemake biopython pandoc tabulate tabview
 ```
 
+Note: Tabview is not technically a dependency of Tourmaline, but it's incredibly useful for viewing tab- or comma-delimited files in your Terminal. It works like `less`; just type `tabview FILE` instead of `less FILE`. Once you've used it, you'll want to install it in every Conda environment you make!
+
 Finally, you will install Tourmaline. "Installation" here is really just copying the files to your computer. You will do this in the next step by "cloning" the GitHub repository.
 
 ## Setup
