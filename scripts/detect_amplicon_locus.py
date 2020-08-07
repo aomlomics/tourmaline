@@ -36,7 +36,7 @@ def count_starting_kmers(input_file, file_type, num_seqs, seed):
     return(starting_kmer_value_counts)
 
 @click.command()
-@click.option('--input_file', '-f', required=True,
+@click.option('--input_file', '-i', required=True,
               type=click.Path(resolve_path=True, readable=True, exists=True,
               file_okay=True), 
               help="Input sequence file (.fa, .fna, .fasta, .fq, .fastq)")
