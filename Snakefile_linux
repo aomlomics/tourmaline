@@ -11,30 +11,30 @@ rule deblur_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
         "01-imported/fastq_pe_count_describe.md",
-        "02-denoised/deblur-se/table.qzv",
-        "02-denoised/deblur-se/table_summary_samples.txt",
-        "02-denoised/deblur-se/table_summary_features.txt",
-        "02-denoised/deblur-se/representative_sequences.qzv",
-        "02-denoised/deblur-se/representative_sequences_amplicon_type.txt",
-        "02-denoised/deblur-se/representative_sequences_lengths_describe.md"
+        "02-output-deblur-se/00-table-repseqs/table.qzv",
+        "02-output-deblur-se/00-table-repseqs/table_summary_samples.txt",
+        "02-output-deblur-se/00-table-repseqs/table_summary_features.txt",
+        "02-output-deblur-se/00-table-repseqs/representative_sequences.qzv",
+        "02-output-deblur-se/00-table-repseqs/representative_sequences_amplicon_type.txt",
+        "02-output-deblur-se/00-table-repseqs/representative_sequences_lengths_describe.md"
 
 rule deblur_se_diversity:
     input:
-        "03-repseqs/deblur-se/taxonomy.qzv",
-        "04-diversity/deblur-se/taxa_barplot.qzv",
-        "03-repseqs/deblur-se/rooted_tree.qza",
-        "03-repseqs/deblur-se/aligned_dna_sequences_gaps_describe.md",
-        "04-diversity/deblur-se/alpha_rarefaction.qzv",
-        "04-diversity/deblur-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/deblur-se/faith_pd_group_significance.qzv",
-        "04-diversity/deblur-se/observed_features_group_significance.qzv",
-        "04-diversity/deblur-se/shannon_group_significance.qzv",
-        "04-diversity/deblur-se/evenness_group_significance.qzv",
-        "04-diversity/deblur-se/unweighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se/01-alignment-tree-taxonomy/taxonomy.qzv",
+        "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qza",
+        "02-output-deblur-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-deblur-se/02-tax-diversity/taxa_barplot.qzv",
+        "02-output-deblur-se/03-alpha-diversity/alpha_rarefaction.qzv",
+        "02-output-deblur-se/03-alpha-diversity/faith_pd_group_significance.qzv",
+        "02-output-deblur-se/03-alpha-diversity/observed_features_group_significance.qzv",
+        "02-output-deblur-se/03-alpha-diversity/shannon_group_significance.qzv",
+        "02-output-deblur-se/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-deblur-se/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        "02-output-deblur-se/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
 
 rule deblur_se_report:
     input:
-        "05-reports/report_deblur-se.html"
+        "03-reports/report_deblur-se.html"
 
 # -----------------------------------------------------------------------------
 
@@ -42,30 +42,30 @@ rule dada2_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
         "01-imported/fastq_pe_count_describe.md",
-        "02-denoised/dada2-se/table.qzv",
-        "02-denoised/dada2-se/table_summary_samples.txt",
-        "02-denoised/dada2-se/table_summary_features.txt",
-        "02-denoised/dada2-se/representative_sequences.qzv",
-        "02-denoised/dada2-se/representative_sequences_amplicon_type.txt",
-        "02-denoised/dada2-se/representative_sequences_lengths_describe.md"
+        "02-output-dada2-se/00-table-repseqs/table.qzv",
+        "02-output-dada2-se/00-table-repseqs/table_summary_samples.txt",
+        "02-output-dada2-se/00-table-repseqs/table_summary_features.txt",
+        "02-output-dada2-se/00-table-repseqs/representative_sequences.qzv",
+        "02-output-dada2-se/00-table-repseqs/representative_sequences_amplicon_type.txt",
+        "02-output-dada2-se/00-table-repseqs/representative_sequences_lengths_describe.md"
 
 rule dada2_se_diversity:
     input:
-        "03-repseqs/dada2-se/taxonomy.qzv",
-        "04-diversity/dada2-se/taxa_barplot.qzv",
-        "03-repseqs/dada2-se/rooted_tree.qza",
-        "03-repseqs/dada2-se/aligned_dna_sequences_gaps_describe.md",
-        "04-diversity/dada2-se/alpha_rarefaction.qzv",
-        "04-diversity/dada2-se/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-se/faith_pd_group_significance.qzv",
-        "04-diversity/dada2-se/observed_features_group_significance.qzv",
-        "04-diversity/dada2-se/shannon_group_significance.qzv",
-        "04-diversity/dada2-se/evenness_group_significance.qzv",
-        "04-diversity/dada2-se/unweighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se/01-alignment-tree-taxonomy/taxonomy.qzv",
+        "02-output-dada2-se/01-alignment-tree-taxonomy/rooted_tree.qza",
+        "02-output-dada2-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-dada2-se/02-tax-diversity/taxa_barplot.qzv",
+        "02-output-dada2-se/03-alpha-diversity/alpha_rarefaction.qzv",
+        "02-output-dada2-se/03-alpha-diversity/faith_pd_group_significance.qzv",
+        "02-output-dada2-se/03-alpha-diversity/observed_features_group_significance.qzv",
+        "02-output-dada2-se/03-alpha-diversity/shannon_group_significance.qzv",
+        "02-output-dada2-se/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-se/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        "02-output-dada2-se/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
 
 rule dada2_se_report:
     input:
-        "05-reports/report_dada2-se.html"
+        "03-reports/report_dada2-se.html"
 
 # -----------------------------------------------------------------------------
 
@@ -73,30 +73,30 @@ rule dada2_pe_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
         "01-imported/fastq_pe_count_describe.md",
-        "02-denoised/dada2-pe/table.qzv",
-        "02-denoised/dada2-pe/table_summary_samples.txt",
-        "02-denoised/dada2-pe/table_summary_features.txt",
-        "02-denoised/dada2-pe/representative_sequences.qzv",
-        "02-denoised/dada2-pe/representative_sequences_amplicon_type.txt",
-        "02-denoised/dada2-pe/representative_sequences_lengths_describe.md"
+        "02-output-dada2-pe/00-table-repseqs/table.qzv",
+        "02-output-dada2-pe/00-table-repseqs/table_summary_samples.txt",
+        "02-output-dada2-pe/00-table-repseqs/table_summary_features.txt",
+        "02-output-dada2-pe/00-table-repseqs/representative_sequences.qzv",
+        "02-output-dada2-pe/00-table-repseqs/representative_sequences_amplicon_type.txt",
+        "02-output-dada2-pe/00-table-repseqs/representative_sequences_lengths_describe.md"
 
 rule dada2_pe_diversity:
     input:
-        "03-repseqs/dada2-pe/taxonomy.qzv",
-        "04-diversity/dada2-pe/taxa_barplot.qzv",
-        "03-repseqs/dada2-pe/rooted_tree.qza",
-        "03-repseqs/dada2-pe/aligned_dna_sequences_gaps_describe.md",
-        "04-diversity/dada2-pe/alpha_rarefaction.qzv",
-        "04-diversity/dada2-pe/unweighted_unifrac_emperor.qzv",
-        "04-diversity/dada2-pe/faith_pd_group_significance.qzv",
-        "04-diversity/dada2-pe/observed_features_group_significance.qzv",
-        "04-diversity/dada2-pe/shannon_group_significance.qzv",
-        "04-diversity/dada2-pe/evenness_group_significance.qzv",
-        "04-diversity/dada2-pe/unweighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe/01-alignment-tree-taxonomy/taxonomy.qzv",
+        "02-output-dada2-pe/01-alignment-tree-taxonomy/rooted_tree.qza",
+        "02-output-dada2-pe/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-dada2-pe/02-tax-diversity/taxa_barplot.qzv",
+        "02-output-dada2-pe/03-alpha-diversity/alpha_rarefaction.qzv",
+        "02-output-dada2-pe/03-alpha-diversity/faith_pd_group_significance.qzv",
+        "02-output-dada2-pe/03-alpha-diversity/observed_features_group_significance.qzv",
+        "02-output-dada2-pe/03-alpha-diversity/shannon_group_significance.qzv",
+        "02-output-dada2-pe/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-pe/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        "02-output-dada2-pe/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
 
 rule dada2_pe_report:
     input:
-        "05-reports/report_dada2-pe.html"
+        "03-reports/report_dada2-pe.html"
 
 # RULES -----------------------------------------------------------------------
 
@@ -205,9 +205,9 @@ rule denoise_deblur_se:
         jobstostart=config["deblur_jobs_to_start"],
         hashedfeatureids=config["deblur_hashed_feature_ids"]
     output:
-        table="02-denoised/deblur-se/table.qza",
-        repseqs="02-denoised/deblur-se/representative_sequences.qza",
-        stats="02-denoised/deblur-se/stats.qza"
+        table="02-output-deblur-se/00-table-repseqs/table.qza",
+        repseqs="02-output-deblur-se/00-table-repseqs/representative_sequences.qza",
+        stats="02-output-deblur-se/00-table-repseqs/stats.qza"
     shell:
         "qiime deblur denoise-other "
         "--i-demultiplexed-seqs {input.seqs} "
@@ -240,9 +240,9 @@ rule denoise_dada2_se:
         nreadslearn=config["dada2se_n_reads_learn"],
         hashedfeatureids=config["dada2se_hashed_feature_ids"]
     output:
-        table="02-denoised/dada2-se/table.qza",
-        repseqs="02-denoised/dada2-se/representative_sequences.qza",
-        stats="02-denoised/dada2-se/stats.qza"
+        table="02-output-dada2-se/00-table-repseqs/table.qza",
+        repseqs="02-output-dada2-se/00-table-repseqs/representative_sequences.qza",
+        stats="02-output-dada2-se/00-table-repseqs/stats.qza"
     shell:
         "qiime dada2 denoise-single "
         "--i-demultiplexed-seqs {input} "
@@ -277,9 +277,9 @@ rule denoise_dada2_pe:
         nreadslearn=config["dada2pe_n_reads_learn"],
         hashedfeatureids=config["dada2pe_hashed_feature_ids"]
     output:
-        table="02-denoised/dada2-pe/table.qza",
-        repseqs="02-denoised/dada2-pe/representative_sequences.qza",
-        stats="02-denoised/dada2-pe/stats.qza"
+        table="02-output-dada2-pe/00-table-repseqs/table.qza",
+        repseqs="02-output-dada2-pe/00-table-repseqs/representative_sequences.qza",
+        stats="02-output-dada2-pe/00-table-repseqs/stats.qza"
     shell:
         "qiime dada2 denoise-paired "
         "--i-demultiplexed-seqs {input} "
@@ -302,10 +302,10 @@ rule denoise_dada2_pe:
 
 rule visualize_table:
     input:
-        table="02-denoised/{method}/table.qza",
+        table="02-output-{method}/00-table-repseqs/table.qza",
         metadata=config["metadata"]
     output:
-        "02-denoised/{method}/table.qzv"
+        "02-output-{method}/00-table-repseqs/table.qzv"
     shell:
         "qiime feature-table summarize "
         "--i-table {input.table} "
@@ -314,9 +314,9 @@ rule visualize_table:
 
 rule unzip_table_to_biom:
     input:
-        "02-denoised/{method}/table.qza"
+        "02-output-{method}/00-table-repseqs/table.qza"
     output:
-        "02-denoised/{method}/table.biom"
+        "02-output-{method}/00-table-repseqs/table.biom"
     shell:
         "unzip -o {input} -d temp; "
         "mv temp/*/data/feature-table.biom {output}; "
@@ -324,9 +324,9 @@ rule unzip_table_to_biom:
 
 rule summarize_biom_samples:
     input:
-        "02-denoised/{method}/table.biom"
+        "02-output-{method}/00-table-repseqs/table.biom"
     output:
-        "02-denoised/{method}/table_summary_samples.txt"
+        "02-output-{method}/00-table-repseqs/table_summary_samples.txt"
     shell:
         "biom summarize-table "
         "--input-fp {input} "
@@ -336,9 +336,9 @@ rule summarize_biom_samples:
 
 rule summarize_biom_features:
     input:
-        "02-denoised/{method}/table.biom"
+        "02-output-{method}/00-table-repseqs/table.biom"
     output:
-        "02-denoised/{method}/table_summary_features.txt"
+        "02-output-{method}/00-table-repseqs/table_summary_features.txt"
     shell:
         "biom summarize-table "
         "--observations "
@@ -349,9 +349,9 @@ rule summarize_biom_features:
 
 rule visualize_repseqs:
     input:
-        "02-denoised/{method}/representative_sequences.qza"
+        "02-output-{method}/00-table-repseqs/representative_sequences.qza"
     output:
-        "02-denoised/{method}/representative_sequences.qzv"
+        "02-output-{method}/00-table-repseqs/representative_sequences.qzv"
     shell:
         "qiime feature-table tabulate-seqs "
         "--i-data {input} "
@@ -359,9 +359,9 @@ rule visualize_repseqs:
 
 rule unzip_repseq_to_fasta:
     input:
-        "02-denoised/{method}/representative_sequences.qza"
+        "02-output-{method}/00-table-repseqs/representative_sequences.qza"
     output:
-        "02-denoised/{method}/representative_sequences.fasta"
+        "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     shell:
         "unzip -o {input} -d temp; "
         "mv temp/*/data/dna-sequences.fasta {output}; "
@@ -369,25 +369,25 @@ rule unzip_repseq_to_fasta:
 
 rule repseq_detect_amplicon_type:
     input:
-        "02-denoised/{method}/representative_sequences.fasta"
+        "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     output:
-        "02-denoised/{method}/representative_sequences_amplicon_type.txt"
+        "02-output-{method}/00-table-repseqs/representative_sequences_amplicon_type.txt"
     shell:
-        "python scripts/detect_amplicon_locus.py -f {input} > {output}"
+        "python scripts/detect_amplicon_locus.py -i {input} > {output}"
 
 rule repseq_length_distribution:
     input:
-        "02-denoised/{method}/representative_sequences.fasta"
+        "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     output:
-        "02-denoised/{method}/representative_sequences_lengths.txt"
+        "02-output-{method}/00-table-repseqs/representative_sequences_lengths.txt"
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
 rule repseq_length_distribution_describe:
     input:
-        "02-denoised/{method}/representative_sequences_lengths.txt"
+        "02-output-{method}/00-table-repseqs/representative_sequences_lengths.txt"
     output:
-        "02-denoised/{method}/representative_sequences_lengths_describe.md"
+        "02-output-{method}/00-table-repseqs/representative_sequences_lengths_describe.md"
     run:
         s = pd.read_csv(input[0], header=None, index_col=0)
         t = s.describe()
@@ -399,9 +399,9 @@ rule repseq_length_distribution_describe:
 # mac: md5 / linux: md5sum
 # rule check_repseq_md5:
 #     input:
-#         "02-denoised/{method}/representative_sequences.fasta"
+#         "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
 #     output:
-#         "02-denoised/{method}/representative_sequences_md5_status.txt"
+#         "02-output-{method}/00-table-repseqs/representative_sequences_md5_status.txt"
 #     shell:
 #         "seq1id=`head -n 1 {input} | sed 's/^>//'`; "
 #         "seq1md5=`head -n 2 {input} | tail -n 1 | md5sum | awk '{{ print $1 }}'`; "
@@ -474,9 +474,9 @@ rule repseq_length_distribution_describe:
 # rule feature_classifier_classify_sklearn:
 #     input:
 #         classifier="01-imported/classifier.qza",
-#         repseqs="02-denoised/{method}/representative_sequences.qza"
+#         repseqs="02-output-{method}/00-table-repseqs/representative_sequences.qza"
 #     output:
-#         "03-repseqs/{method}/taxonomy.qza"
+#         "02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
 #     shell:
 #         "qiime feature-classifier classify-sklearn "
 #         "--i-classifier {input.classifier} "
@@ -485,11 +485,11 @@ rule repseq_length_distribution_describe:
 
 rule feature_classifier_classify_consensus_blast:
     input:
-        query="02-denoised/{method}/representative_sequences.qza",
+        query="02-output-{method}/00-table-repseqs/representative_sequences.qza",
         refseqs="01-imported/refseqs.qza",
         reftax="01-imported/reftax.qza"
     output:
-        "03-repseqs/{method}/taxonomy.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
     shell:
         "qiime feature-classifier classify-consensus-blast "
         "--i-query {input.query} "
@@ -499,9 +499,9 @@ rule feature_classifier_classify_consensus_blast:
 
 rule visualize_taxonomy:
     input:
-        "03-repseqs/{method}/taxonomy.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
     output:
-        "03-repseqs/{method}/taxonomy.qzv"
+        "02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qzv"
     shell:
         "qiime metadata tabulate "
         "--m-input-file {input} "
@@ -509,11 +509,11 @@ rule visualize_taxonomy:
 
 rule taxa_barplot:
     input:
-        table="02-denoised/{method}/table.qza",
-        taxonomy="03-repseqs/{method}/taxonomy.qza",
+        table="02-output-{method}/00-table-repseqs/table.qza",
+        taxonomy="02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza",
         metadata=config["metadata"]
     output:
-        "04-diversity/{method}/taxa_barplot.qzv"
+        "02-output-{method}/02-tax-diversity/taxa_barplot.qzv"
     shell:
         "qiime taxa barplot "
         "--i-table {input.table} "
@@ -523,9 +523,9 @@ rule taxa_barplot:
 
 rule alignment_mafft:
     input:
-        "02-denoised/{method}/representative_sequences.qza"
+        "02-output-{method}/00-table-repseqs/representative_sequences.qza"
     output:
-        "03-repseqs/{method}/aligned_representative_sequences.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_representative_sequences.qza"
     shell:
         "qiime alignment mafft "
         "--i-sequences {input} "
@@ -533,9 +533,9 @@ rule alignment_mafft:
 
 rule alignment_mask:
     input:
-        "03-repseqs/{method}/aligned_representative_sequences.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_representative_sequences.qza"
     output:
-        "03-repseqs/{method}/masked_aligned_representative_sequences.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/masked_aligned_representative_sequences.qza"
     shell:
         "qiime alignment mask "
         "--i-alignment {input} "
@@ -543,9 +543,9 @@ rule alignment_mask:
 
 rule phylogeny_fasttree:
     input:
-        "03-repseqs/{method}/masked_aligned_representative_sequences.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/masked_aligned_representative_sequences.qza"
     output:
-        "03-repseqs/{method}/unrooted_tree.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/unrooted_tree.qza"
     shell:
         "qiime phylogeny fasttree "
         "--i-alignment {input} "
@@ -553,9 +553,9 @@ rule phylogeny_fasttree:
 
 rule phylogeny_midpoint_root:
     input:
-        "03-repseqs/{method}/unrooted_tree.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/unrooted_tree.qza"
     output:
-        "03-repseqs/{method}/rooted_tree.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qza"
     shell:
         "qiime phylogeny midpoint-root "
         "--i-tree {input} "
@@ -564,16 +564,16 @@ rule phylogeny_midpoint_root:
 # skipping this step because tree visualization in q2 is still under construction
 # rule visualize_tree:
 #     input:
-#         "03-repseqs/{method}/rooted_tree.qza"
+#         "02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qza"
 #     output:
-#         "03-repseqs/{method}/rooted_tree.qzv"
+#         "02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qzv"
 #     shell:
 
 rule unzip_alignment_to_fasta:
     input:
-        "03-repseqs/{method}/masked_aligned_representative_sequences.qza"
+        "02-output-{method}/01-alignment-tree-taxonomy/masked_aligned_representative_sequences.qza"
     output:
-        "03-repseqs/{method}/aligned_dna_sequences.fasta"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences.fasta"
     shell:
         "unzip -o {input} -d temp; "
         "mv temp/*/data/aligned-dna-sequences.fasta {output}; "
@@ -581,17 +581,17 @@ rule unzip_alignment_to_fasta:
 
 rule alignment_count_gaps:
     input:
-        "03-repseqs/{method}/aligned_dna_sequences.fasta"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences.fasta"
     output:
-        "03-repseqs/{method}/aligned_dna_sequences_gaps.txt"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps.txt"
     shell:
         "cat {input} | grep -v '>' | sed 's/[^-]//g' | awk '{{ print length }}' > {output}"
 
 rule alignment_gaps_distribution_describe:
     input:
-        "03-repseqs/{method}/aligned_dna_sequences_gaps.txt"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps.txt"
     output:
-        "03-repseqs/{method}/aligned_dna_sequences_gaps_describe.md"
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md"
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
@@ -601,13 +601,13 @@ rule alignment_gaps_distribution_describe:
 
 rule diversity_alpha_rarefaction:
     input:
-        table="02-denoised/{method}/table.qza",
-        phylogeny="03-repseqs/{method}/rooted_tree.qza",
+        table="02-output-{method}/00-table-repseqs/table.qza",
+        phylogeny="02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qza",
         metadata=config["metadata"]
     params:
         maxdepth=config["alpha_max_depth"]
     output:
-        "04-diversity/{method}/alpha_rarefaction.qzv"
+        "02-output-{method}/03-alpha-diversity/alpha_rarefaction.qzv"
     shell:
         "qiime diversity alpha-rarefaction "
         "--i-table {input.table} "
@@ -622,29 +622,29 @@ rule diversity_alpha_rarefaction:
 
 rule diversity_core_metrics_phylogenetic:
     input:
-        table="02-denoised/{method}/table.qza",
-        phylogeny="03-repseqs/{method}/rooted_tree.qza",
+        table="02-output-{method}/00-table-repseqs/table.qza",
+        phylogeny="02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qza",
         metadata=config["metadata"]
     params:
         samplingdepth=config["core_sampling_depth"]
     output:
-        rarefiedtable="04-diversity/{method}/rarefied_table.qza",
-        faithpdvector="04-diversity/{method}/faith_pd_vector.qza",        
-        observedfeaturesvector="04-diversity/{method}/observed_features_vector.qza",
-        shannonvector="04-diversity/{method}/shannon_vector.qza",
-        evennessvector="04-diversity/{method}/evenness_vector.qza",
-        unweightedunifracdistancematrix="04-diversity/{method}/unweighted_unifrac_distance_matrix.qza",
-        weightedunifracdistancematrix="04-diversity/{method}/weighted_unifrac_distance_matrix.qza",
-        jaccarddistancematrix="04-diversity/{method}/jaccard_distance_matrix.qza",
-        braycurtisdistancematrix="04-diversity/{method}/bray_curtis_distance_matrix.qza",
-        unweightedunifracpcoaresults="04-diversity/{method}/unweighted_unifrac_pcoa_results.qza",
-        weightedunifracpcoaresults="04-diversity/{method}/weighted_unifrac_pcoa_results.qza",
-        jaccardpcoaresults="04-diversity/{method}/jaccard_pcoa_results.qza",
-        braycurtispcoaresults="04-diversity/{method}/bray_curtis_pcoa_results.qza",
-        unweightedunifracemperor="04-diversity/{method}/unweighted_unifrac_emperor.qzv",
-        weightedunifracemperor="04-diversity/{method}/weighted_unifrac_emperor.qzv",
-        jaccardemperor="04-diversity/{method}/jaccard_emperor.qzv",
-        braycurtisemperor="04-diversity/{method}/bray_curtis_emperor.qzv"
+        rarefiedtable="02-output-{method}/03-alpha-diversity/rarefied_table.qza",
+        faithpdvector="02-output-{method}/03-alpha-diversity/faith_pd_vector.qza",        
+        observedfeaturesvector="02-output-{method}/03-alpha-diversity/observed_features_vector.qza",
+        shannonvector="02-output-{method}/03-alpha-diversity/shannon_vector.qza",
+        evennessvector="02-output-{method}/03-alpha-diversity/evenness_vector.qza",
+        unweightedunifracdistancematrix="02-output-{method}/04-beta-diversity/unweighted_unifrac_distance_matrix.qza",
+        weightedunifracdistancematrix="02-output-{method}/04-beta-diversity/weighted_unifrac_distance_matrix.qza",
+        jaccarddistancematrix="02-output-{method}/04-beta-diversity/jaccard_distance_matrix.qza",
+        braycurtisdistancematrix="02-output-{method}/04-beta-diversity/bray_curtis_distance_matrix.qza",
+        unweightedunifracpcoaresults="02-output-{method}/04-beta-diversity/unweighted_unifrac_pcoa_results.qza",
+        weightedunifracpcoaresults="02-output-{method}/04-beta-diversity/weighted_unifrac_pcoa_results.qza",
+        jaccardpcoaresults="02-output-{method}/04-beta-diversity/jaccard_pcoa_results.qza",
+        braycurtispcoaresults="02-output-{method}/04-beta-diversity/bray_curtis_pcoa_results.qza",
+        unweightedunifracemperor="02-output-{method}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        weightedunifracemperor="02-output-{method}/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        jaccardemperor="02-output-{method}/04-beta-diversity/jaccard_emperor.qzv",
+        braycurtisemperor="02-output-{method}/04-beta-diversity/bray_curtis_emperor.qzv"
     shell:
         "qiime diversity core-metrics-phylogenetic "
         "--i-table {input.table} "
@@ -671,10 +671,10 @@ rule diversity_core_metrics_phylogenetic:
 
 rule diversity_alpha_group_significance:
     input:
-        alphadiversity="04-diversity/{method}/{metric}_vector.qza",
+        alphadiversity="02-output-{method}/03-alpha-diversity/{metric}_vector.qza",
         metadata=config["metadata"]
     output:
-        "04-diversity/{method}/{metric}_group_significance.qzv"
+        "02-output-{method}/03-alpha-diversity/{metric}_group_significance.qzv"
     shell:
         "qiime diversity alpha-group-significance "
         "--i-alpha-diversity {input.alphadiversity} "
@@ -683,12 +683,12 @@ rule diversity_alpha_group_significance:
 
 rule diversity_beta_group_significance:
     input:
-        distancematrix="04-diversity/{method}/unweighted_unifrac_distance_matrix.qza",
+        distancematrix="02-output-{method}/04-beta-diversity/unweighted_unifrac_distance_matrix.qza",
         metadata=config["metadata"]
     params:
         column=config["beta_group_column"]
     output:
-        "04-diversity/{method}/unweighted_unifrac_group_significance.qzv"
+        "02-output-{method}/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
     shell:
         "qiime diversity beta-group-significance "
         "--i-distance-matrix {input.distancematrix} "
@@ -701,7 +701,7 @@ rule summarize_metadata:
     input:
         metadata=config["metadata"]
     output:
-        "05-reports/metadata_summary.md"
+        "03-reports/metadata_summary.md"
     run:
         df = pd.read_csv(input.metadata, sep='\t')
         cols1 = ['project_name', 'experiment_design_description', 
@@ -732,30 +732,30 @@ rule summarize_metadata:
 rule generate_report_md:
     input:
         configfile="config.yaml",
-        mdsummary="05-reports/metadata_summary.md",
+        mdsummary="03-reports/metadata_summary.md",
         fastq="01-imported/fastq_pe_count_describe.md",
         run="01-imported/fastq_illumina_run.log",
-        amplicontype="02-denoised/{method}/representative_sequences_amplicon_type.txt",
-        repseqs="02-denoised/{method}/representative_sequences_lengths_describe.md",
-        alignment="03-repseqs/{method}/aligned_dna_sequences_gaps_describe.md",
-        samples="02-denoised/{method}/table_summary_samples.txt",
-        features="02-denoised/{method}/table_summary_features.txt",
-        visrepseqs="02-denoised/{method}/representative_sequences.qzv",
-        vistaxonomy="03-repseqs/{method}/taxonomy.qzv",
-        vistable="02-denoised/{method}/table.qzv",
-        vistaxbar="04-diversity/{method}/taxa_barplot.qzv",
-        visalpharare="04-diversity/{method}/alpha_rarefaction.qzv",
-        visevengs="04-diversity/{method}/evenness_group_significance.qzv",
-        visfaithgs="04-diversity/{method}/faith_pd_group_significance.qzv",
-        visobsfeaturesgs="04-diversity/{method}/observed_features_group_significance.qzv",
-        visshannongs="04-diversity/{method}/shannon_group_significance.qzv",
-        visbcemp="04-diversity/{method}/bray_curtis_emperor.qzv",
-        visjacemp="04-diversity/{method}/jaccard_emperor.qzv",
-        viswuemp="04-diversity/{method}/weighted_unifrac_emperor.qzv",
-        visuwuemp="04-diversity/{method}/unweighted_unifrac_emperor.qzv",
-        visuwugs="04-diversity/{method}/unweighted_unifrac_group_significance.qzv"
+        amplicontype="02-output-{method}/00-table-repseqs/representative_sequences_amplicon_type.txt",
+        repseqs="02-output-{method}/00-table-repseqs/representative_sequences_lengths_describe.md",
+        alignment="02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        samples="02-output-{method}/00-table-repseqs/table_summary_samples.txt",
+        features="02-output-{method}/00-table-repseqs/table_summary_features.txt",
+        visrepseqs="02-output-{method}/00-table-repseqs/representative_sequences.qzv",
+        vistaxonomy="02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qzv",
+        vistable="02-output-{method}/00-table-repseqs/table.qzv",
+        vistaxbar="02-output-{method}/02-tax-diversity/taxa_barplot.qzv",
+        visalpharare="02-output-{method}/03-alpha-diversity/alpha_rarefaction.qzv",
+        visevengs="02-output-{method}/03-alpha-diversity/evenness_group_significance.qzv",
+        visfaithgs="02-output-{method}/03-alpha-diversity/faith_pd_group_significance.qzv",
+        visobsfeaturesgs="02-output-{method}/03-alpha-diversity/observed_features_group_significance.qzv",
+        visshannongs="02-output-{method}/03-alpha-diversity/shannon_group_significance.qzv",
+        visbcemp="02-output-{method}/04-beta-diversity/bray_curtis_emperor.qzv",
+        visjacemp="02-output-{method}/04-beta-diversity/jaccard_emperor.qzv",
+        viswuemp="02-output-{method}/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        visuwuemp="02-output-{method}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        visuwugs="02-output-{method}/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
     output:
-        "05-reports/report_{method}.md"
+        "03-reports/report_{method}.md"
     shell:
         "echo '# Tourmaline Report' > {output};"
         "echo '' >> {output};"
@@ -918,11 +918,11 @@ rule generate_report_md:
 
 rule generate_report_html:
     input:
-        markdown="05-reports/report_{method}.md"
+        markdown="03-reports/report_{method}.md"
     params:
         theme=config["report_theme"]
     output:
-        "05-reports/report_{method}.html"
+        "03-reports/report_{method}.html"
     shell:
         "pandoc -i {input} -o {output};"
         "echo '<!DOCTYPE html>' > header.html;"
