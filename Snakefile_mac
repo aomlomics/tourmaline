@@ -7,37 +7,6 @@ configfile: "config.yaml"
 
 # PSEUDO-RULES ----------------------------------------------------------------
 
-rule deblur_se_denoise:
-    input:
-        "01-imported/fastq_illumina_run.log",
-        "01-imported/fastq_pe_count_describe.md",
-        "02-output-deblur-se/00-table-repseqs/table.qzv",
-        "02-output-deblur-se/00-table-repseqs/table_summary_samples.txt",
-        "02-output-deblur-se/00-table-repseqs/table_summary_features.txt",
-        "02-output-deblur-se/00-table-repseqs/representative_sequences.qzv",
-        "02-output-deblur-se/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-deblur-se/00-table-repseqs/representative_sequences_lengths_describe.md"
-
-rule deblur_se_diversity:
-    input:
-        "02-output-deblur-se/01-alignment-tree-taxonomy/taxonomy.qzv",
-        "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qza",
-        "02-output-deblur-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
-        "02-output-deblur-se/02-tax-diversity/taxa_barplot.qzv",
-        "02-output-deblur-se/03-alpha-diversity/alpha_rarefaction.qzv",
-        "02-output-deblur-se/03-alpha-diversity/faith_pd_group_significance.qzv",
-        "02-output-deblur-se/03-alpha-diversity/observed_features_group_significance.qzv",
-        "02-output-deblur-se/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-deblur-se/03-alpha-diversity/evenness_group_significance.qzv",
-        "02-output-deblur-se/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-deblur-se/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
-
-rule deblur_se_report:
-    input:
-        "03-reports/report_deblur-se.html"
-
-# -----------------------------------------------------------------------------
-
 rule dada2_se_denoise:
     input:
         "01-imported/fastq_illumina_run.log",
@@ -97,6 +66,37 @@ rule dada2_pe_diversity:
 rule dada2_pe_report:
     input:
         "03-reports/report_dada2-pe.html"
+
+# -----------------------------------------------------------------------------
+
+rule deblur_se_denoise:
+    input:
+        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe_count_describe.md",
+        "02-output-deblur-se/00-table-repseqs/table.qzv",
+        "02-output-deblur-se/00-table-repseqs/table_summary_samples.txt",
+        "02-output-deblur-se/00-table-repseqs/table_summary_features.txt",
+        "02-output-deblur-se/00-table-repseqs/representative_sequences.qzv",
+        "02-output-deblur-se/00-table-repseqs/representative_sequences_amplicon_type.txt",
+        "02-output-deblur-se/00-table-repseqs/representative_sequences_lengths_describe.md"
+
+rule deblur_se_diversity:
+    input:
+        "02-output-deblur-se/01-alignment-tree-taxonomy/taxonomy.qzv",
+        "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qza",
+        "02-output-deblur-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-deblur-se/02-tax-diversity/taxa_barplot.qzv",
+        "02-output-deblur-se/03-alpha-diversity/alpha_rarefaction.qzv",
+        "02-output-deblur-se/03-alpha-diversity/faith_pd_group_significance.qzv",
+        "02-output-deblur-se/03-alpha-diversity/observed_features_group_significance.qzv",
+        "02-output-deblur-se/03-alpha-diversity/shannon_group_significance.qzv",
+        "02-output-deblur-se/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-deblur-se/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        "02-output-deblur-se/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+
+rule deblur_se_report:
+    input:
+        "03-reports/report_deblur-se.html"
 
 # RULES -----------------------------------------------------------------------
 
