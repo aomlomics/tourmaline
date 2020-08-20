@@ -11,7 +11,7 @@ pcr_primer_fwd: GTACACACCGCCCGTC
 pcr_primer_rev: TGATCCTTCTGCAGGTTCACCTAC
 
 # deblur
-deblur_trim_length: 100
+deblur_trim_length: 240
 deblur_sample_stats: --p-sample-stats
 deblur_mean_error: 0.005
 deblur_indel_prob: 0.01
@@ -22,7 +22,7 @@ deblur_jobs_to_start: 1
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 single-end
-dada2se_trunc_len: 0
+dada2se_trunc_len: 240
 dada2se_trim_left: 0
 dada2se_max_ee: 2
 dada2se_trunc_q: 2
@@ -33,8 +33,8 @@ dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 paired-end
-dada2pe_trunc_len_f: 0
-dada2pe_trunc_len_r: 0
+dada2pe_trunc_len_f: 240
+dada2pe_trunc_len_r: 190
 dada2pe_trim_left_f: 0
 dada2pe_trim_left_r: 0
 dada2pe_max_ee_f: 2
@@ -47,14 +47,14 @@ dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # subsampling
-core_sampling_depth: 50
-alpha_max_depth: 50
+core_sampling_depth: 500
+alpha_max_depth: 500
 
 # statistics
-beta_group_column: treatment
+beta_group_column: region
 
 # report theme (choose from: github, gothic, newsprint, night, pixyll, whitey)
-report_theme: gothic
+report_theme: github
 
 # NOTE: refseqs.fasta and reftax.tsv -- and/or their outputs refseqs.qza, 
 # reftax.qza, and classifier.qza -- should ideally be in an external directory.
