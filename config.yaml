@@ -47,8 +47,8 @@ dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # subsampling
-core_sampling_depth: 50
-alpha_max_depth: 50
+core_sampling_depth: 500
+alpha_max_depth: 500
 
 # statistics
 beta_group_column: region
