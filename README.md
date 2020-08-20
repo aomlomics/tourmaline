@@ -12,7 +12,7 @@ Tourmaline is an amplicon (metabarcoding) sequence processing workflow for Illum
 * **Parameter optimization.** The configuaration file and standard directory structure make it simple to test and compare different parameter sets to optimize your workflow.
 * **Reports.** Every Tourmaline run produces an HTML report containing a summary of your metadata and outputs, with links to web-viewable QIIME 2 visualization files.
 
-Visit the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed guide on using Tourmaline. If you want to get started right away, check out the Quick Start instructions below.
+Visit the [Wiki](https://github.com/lukenoaa/tourmaline/wiki) for a detailed guide on using Tourmaline. If you want to get started right away, check out the Quick Start instructions below.
 
 ## Quick Start
 
