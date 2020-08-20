@@ -1,2 +1,0 @@
-Could not determine amplicon locus.
-Most frequent starting tetramer was TGGT (100.0% of sequences).
