@@ -26,7 +26,7 @@ Start by cloning the Tourmaline directory and files:
 git clone https://github.com/aomlomics/tourmaline.git
 ```
 
-If this is your first time running Tourmaline, you'll need to set up your directory. See the section **Setup** for instructions.
+If this is your first time running Tourmaline, you'll need to set up your directory. See the [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for instructions.
 
 If you've run Tourmaline on your dataset before, you can initialize a new Tourmaline directory with the files and symlinks of an existing one using the command below:
 
