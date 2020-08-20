@@ -61,7 +61,7 @@ Finally, run the "report" rule:
 snakemake dada2_pe_report
 ```
 
-If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated. Example output from the above commands is found in the directory `example-output`.
+If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
 
 If you want to make a fresh run and not save the previous output, simply delete the output directories (`01-imported`, `02-denoised`, `03-repseqs`, `04-diversity`, `05-reports`) generated in the previous run.
 
