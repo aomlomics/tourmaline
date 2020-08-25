@@ -6,20 +6,9 @@ metadata: 00-data/metadata.tsv
 # reference sequences
 refseqs: 00-data/refseqs.fna
 reftax: 00-data/reftax.tsv
-pcr_locus: 18S-EMP
-pcr_primer_fwd: GTACACACCGCCCGTC
-pcr_primer_rev: TGATCCTTCTGCAGGTTCACCTAC
-
-# deblur
-deblur_trim_length: 240
-deblur_sample_stats: --p-sample-stats
-deblur_mean_error: 0.005
-deblur_indel_prob: 0.01
-deblur_indel_max: 3
-deblur_min_reads: 10
-deblur_min_size: 2
-deblur_jobs_to_start: 1
-deblur_hashed_feature_ids: --p-hashed-feature-ids
+pcr_locus: 16S-EMP
+pcr_primer_fwd: GTGYCAGCMGCCGCGGTAA
+pcr_primer_rev: GGACTACNVGGGTWTCTAAT
 
 # dada2 single-end
 dada2se_trunc_len: 240
@@ -45,6 +34,17 @@ dada2pe_min_fold_parent_over_abundance: 1
 dada2pe_n_threads: 8
 dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
+
+# deblur single-end
+deblur_trim_length: 240
+deblur_sample_stats: --p-sample-stats
+deblur_mean_error: 0.005
+deblur_indel_prob: 0.01
+deblur_indel_max: 3
+deblur_min_reads: 10
+deblur_min_size: 2
+deblur_jobs_to_start: 1
+deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # subsampling
 core_sampling_depth: 500

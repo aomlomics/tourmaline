@@ -706,7 +706,8 @@ rule summarize_metadata:
         df = pd.read_csv(input.metadata, sep='\t')
         cols1 = ['project_name', 'experiment_design_description', 
                  'target_gene', 'target_subfragment', 'pcr_primers', 
-                 'pcr_primer_names', 'platform', 'instrument_model',
+                 'pcr_primer_names', 'seq_platform', 'seq_model',
+                 'seq_chemistry', 'seq_meth',
                  'run_center', 'run_date']
         cols2 = sorted(list(set(df.columns) - set(cols1)))
         cols = cols1 + cols2
@@ -771,7 +772,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Filename: {input.mdsummary} >> {output};"
         "echo '' >> {output};"
-        "echo 'The first 10 columns are recommended by the Tourmaline developers but may not have been provided.' >> {output};"
+        "echo 'The first 12 columns are recommended by the Tourmaline developers but may not have been provided.' >> {output};"
         "echo '' >> {output};"
         "cat {input.mdsummary} >> {output};"
         "echo '' >> {output};"
