@@ -615,7 +615,7 @@ rule diversity_alpha_rarefaction:
         "--p-max-depth {params.maxdepth} "
         "--p-metrics faith_pd "
         "--p-metrics shannon "
-        "--p-metrics observed_otus "
+        "--p-metrics observed_features "
         "--p-metrics chao1 "
         "--m-metadata-file {input.metadata} "
         "--o-visualization {output}"
