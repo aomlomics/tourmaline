@@ -10,12 +10,9 @@
 
 cp -a $1/config.yaml .
 rsync -a $1/Snakefile .
-/bin/rm 00-data/*
+/bin/rm -r 00-data/*
 cp -a $1/00-data/manifest_pe.csv 00-data/manifest_pe.csv
 cp -a $1/00-data/manifest_se.csv 00-data/manifest_se.csv
 cp -a $1/00-data/metadata.tsv 00-data/metadata.tsv
-cp -a $1/00-data/refseqs.fna 00-data/refseqs.fna
-cp -a $1/00-data/reftax.tsv 00-data/reftax.tsv
-mkdir 01-imported
 cp -a $1/01-imported/refseqs.qza 01-imported/refseqs.qza
 cp -a $1/01-imported/reftax.qza 01-imported/reftax.qza
