@@ -166,6 +166,7 @@ rule fastq_pe_count_describe:
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Fastq sequences per sample'])
         with open(output[0], 'w') as target:
             target.write(outstr)
+            target.write('\n')
 
 rule import_ref_seqs:
     input:
@@ -394,6 +395,7 @@ rule repseq_length_distribution_describe:
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Sequence length'])
         with open(output[0], 'w') as target:
             target.write(outstr)
+            target.write('\n')
 
 # rule not working properly
 # mac: md5 / linux: md5sum
@@ -598,6 +600,7 @@ rule alignment_gaps_distribution_describe:
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
         with open(output[0], 'w') as target:
             target.write(outstr)
+            target.write('\n')
 
 rule diversity_alpha_rarefaction:
     input:
@@ -729,6 +732,7 @@ rule summarize_metadata:
         outstr = tabulate(df2, tablefmt="pipe", headers="keys")
         with open(output[0], 'w') as target:
             target.write(outstr)
+            target.write('\n')
 
 rule generate_report_md:
     input:
