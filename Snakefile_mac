@@ -332,7 +332,7 @@ rule summarize_biom_samples:
         "biom summarize-table "
         "--input-fp {input} "
         "--output-fp {output}; "
-        "cat {output} | sed 's/observation/feature/g' > temp; "
+        "cat {output} | sed 's/observation/feature/g' | sed 's/.000$//' > temp; "
         "mv temp {output}"
 
 rule summarize_biom_features:
@@ -345,7 +345,7 @@ rule summarize_biom_features:
         "--observations "
         "--input-fp {input} "
         "--output-fp {output}; "
-        "cat {output} | sed 's/observation/feature/g' | sed 's/Counts\/sample/Counts\/feature/g' > temp; "
+        "cat {output} | sed 's/observation/feature/g' | sed 's/Counts\/sample/Counts\/feature/g' | sed 's/.000$//' > temp; "
         "mv temp {output}"
 
 rule visualize_repseqs:
