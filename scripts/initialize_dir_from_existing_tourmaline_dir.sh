@@ -16,3 +16,4 @@ cp -a $1/00-data/manifest_se.csv 00-data/manifest_se.csv
 cp -a $1/00-data/metadata.tsv 00-data/metadata.tsv
 cp -a $1/01-imported/refseqs.qza 01-imported/refseqs.qza
 cp -a $1/01-imported/reftax.qza 01-imported/reftax.qza
+cp -a $1/01-imported/classifier.qza 01-imported/classifier.qza

@@ -368,7 +368,7 @@ rule unzip_repseq_to_fasta:
         "mv temp/*/data/dna-sequences.fasta {output}; "
         "/bin/rm -r temp"
 
-rule repseq_detect_amplicon_type:
+rule repseq_detect_amplicon_locus:
     input:
         "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     output:
@@ -397,107 +397,33 @@ rule repseq_length_distribution_describe:
             target.write(outstr)
             target.write('\n')
 
-# rule not working properly
-# mac: md5 / linux: md5sum
-# rule check_repseq_md5:
-#     input:
-#         "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
-#     output:
-#         "02-output-{method}/00-table-repseqs/representative_sequences_md5_status.txt"
-#     shell:
-#         "seq1id=`head -n 1 {input} | sed 's/^>//'`; "
-#         "seq1md5=`head -n 2 {input} | tail -n 1 | md5sum | awk '{{ print $1 }}'`; "
-#         "echo -n First representative sequence ID..... > {output}; "
-#         "echo $seq1id >> {output}; "
-#         "echo -n First representative sequence MD5.... >> {output}; "
-#         "echo $seq1md5 >> {output}; "
-#         "if [ '$seq1id' == '$seq1md5' ]; "
-#         "then echo 'First representative sequence has ID matching MD5 :)'; "
-#         "else echo 'First representative sequence has ID *not* matching MD5 :('; "
-#         "fi >> {output}; "
-#         "seq2id=`tail -n 2 {input} | head -n 1 | sed 's/^>//'`; "
-#         "seq2md5=`tail -n 1 {input} | md5sum | awk '{{ print $1 }}'`; "
-#         "echo -n Last representative sequence ID..... >> {output}; "
-#         "echo $seq2id >> {output}; "
-#         "echo -n Last representative sequence MD5.... >> {output}; "
-#         "echo $seq2md5 >> {output}; "
-#         "if [ '$seq2id' == '$seq2md5' ]; "
-#         "then echo 'Last representative sequence has ID matching MD5 :)'; "
-#         "else echo 'Last representative sequence has ID *not* matching MD5 :('; "
-#         "fi >> {output}"
-
-# add this rule later (to be run after step 2)
-# rule filter_chloroplasts_mitochondria:
-#     input:
-#         [biom]
-#         [repseqs]
-#     output:
-#         [biom]
-#         [repseqs]
-#     shell:
-#         [filter biom based on specific sequences]
-#         [filter repseqs based on specific sequences]
-
-# this rule isn't needed if using blast classification
-# rule feature_classifier_extract_reads (slow) will be skipped
-# unless next rule feature_classifier_fit_classifier_naive_bayes
-# takes input refseqs_extracted.qza
-# rule feature_classifier_extract_reads:
-#     input:
-#         "01-imported/refseqs.qza"
-#     params:
-#         fprimer=config["pcr_primer_fwd"],
-#         rprimer=config["pcr_primer_rev"]
-#     output:
-#         "01-imported/refseqs_extracted.qza"
-#     shell:
-#         "qiime feature-classifier extract-reads "
-#         "--i-sequences {input} "
-#         "--p-f-primer {params.fprimer} "
-#         "--p-r-primer {params.rprimer} "
-#         "--o-reads {output}"
-
-# this rule isn't needed if using blast classification
-# change refseqs.qza to refseqs_extracted.qza
-# for rule feature_classifier_fit_classifier_naive_bayes to run
-# rule feature_classifier_fit_classifier_naive_bayes:
-#     input:
-#         seqs="01-imported/refseqs.qza",
-#         tax="01-imported/reftax.qza"
-#     output:
-#         "01-imported/classifier.qza"
-#     shell:
-#         "qiime feature-classifier fit-classifier-naive-bayes "
-#         "--i-reference-reads {input.seqs} "
-#         "--i-reference-taxonomy {input.tax} "
-#         "--o-classifier {output}"
-
-# this rule isn't needed if using blast classification
-# rule feature_classifier_classify_sklearn:
-#     input:
-#         classifier="01-imported/classifier.qza",
-#         repseqs="02-output-{method}/00-table-repseqs/representative_sequences.qza"
-#     output:
-#         "02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
-#     shell:
-#         "qiime feature-classifier classify-sklearn "
-#         "--i-classifier {input.classifier} "
-#         "--i-reads {input.repseqs} "
-#         "--o-classification {output}"
-
-rule feature_classifier_classify_consensus_blast:
+rule feature_classifier:
     input:
-        query="02-output-{method}/00-table-repseqs/representative_sequences.qza",
         refseqs="01-imported/refseqs.qza",
-        reftax="01-imported/reftax.qza"
+        reftax="01-imported/reftax.qza",
+        repseqs="02-output-{method}/00-table-repseqs/representative_sequences.qza"
     output:
         "02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
+    params:
+        classifymethod=config["classify_method"]
     shell:
-        "qiime feature-classifier classify-consensus-blast "
-        "--i-query {input.query} "
+        "echo classify_method: {params.classifymethod}; "
+        "if [ {params.classifymethod} = 'naive-bayes' ]; then "
+        "qiime feature-classifier fit-classifier-naive-bayes "
         "--i-reference-reads {input.refseqs} "
         "--i-reference-taxonomy {input.reftax} "
-        "--o-classification {output}"
+        "--o-classifier 01-imported/classifier.qza; "
+        "qiime feature-classifier classify-sklearn "
+        "--i-classifier 01-imported/classifier.qza "
+        "--i-reads {input.repseqs} "
+        "--o-classification {output}; "
+        "elif [ {params.classifymethod} = 'consensus-blast' ]; then "
+        "qiime feature-classifier classify-consensus-blast "
+        "--i-reference-reads {input.refseqs} "
+        "--i-reference-taxonomy {input.reftax} "
+        "--i-query {input.repseqs} "
+        "--o-classification {output}; "
+        "fi"
 
 rule visualize_taxonomy:
     input:

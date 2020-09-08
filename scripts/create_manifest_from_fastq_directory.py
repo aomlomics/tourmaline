@@ -7,12 +7,12 @@ import re
 
 # usage
 usage = '''
-create_manifest_from_fastq_directory.py FASTQ_DIR MANIFEST_PE MANIFEST_SE
+create_manifest_from_fastq_directory.py fastq_dir_in manifest_out_pe manifest_out_se
 
-    FASTQ_DIR - full path of directory containing fastq.gz files
+    fastq_dir_in - full path of directory containing fastq.gz files
         of the form CN18SESPkoa_SC36_S80_L001_R1_001.fastq.
-    MANIFEST_PE - output path of manifest_pe.csv
-    MANIFEST_SE - output path of manifest_se.csv
+    manifest_out_pe - output path of manifest_pe.csv
+    manifest_out_se - output path of manifest_se.csv
 
     This script makes the following assumptions:
         - the first characters after the sample names are "_S[0-9]{1,3}"
