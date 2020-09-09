@@ -10,17 +10,6 @@ pcr_locus: 16S-EMP
 pcr_primer_fwd: GTGYCAGCMGCCGCGGTAA
 pcr_primer_rev: GGACTACNVGGGTWTCTAAT
 
-# dada2 single-end
-dada2se_trunc_len: 240
-dada2se_trim_left: 0
-dada2se_max_ee: 2
-dada2se_trunc_q: 2
-dada2se_chimera_method: consensus
-dada2se_min_fold_parent_over_abundance: 1
-dada2se_n_threads: 8
-dada2se_n_reads_learn: 1000000
-dada2se_hashed_feature_ids: --p-hashed-feature-ids
-
 # dada2 paired-end
 dada2pe_trunc_len_f: 240
 dada2pe_trunc_len_r: 190
@@ -35,6 +24,17 @@ dada2pe_n_threads: 8
 dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
+# dada2 single-end
+dada2se_trunc_len: 240
+dada2se_trim_left: 0
+dada2se_max_ee: 2
+dada2se_trunc_q: 2
+dada2se_chimera_method: consensus
+dada2se_min_fold_parent_over_abundance: 1
+dada2se_n_threads: 8
+dada2se_n_reads_learn: 1000000
+dada2se_hashed_feature_ids: --p-hashed-feature-ids
+
 # deblur single-end
 deblur_trim_length: 240
 deblur_sample_stats: --p-sample-stats
@@ -45,6 +45,9 @@ deblur_min_reads: 10
 deblur_min_size: 2
 deblur_jobs_to_start: 1
 deblur_hashed_feature_ids: --p-hashed-feature-ids
+
+# classify method (choose from: consensus-blast, naive-bayes)
+classify_method: naive-bayes
 
 # subsampling
 core_sampling_depth: 500
@@ -67,6 +70,4 @@ report_theme: github
 # should rerun if input files change. To ensure that a file is regenerated,
 # you can delete it directly before re-running Snakemake. For Snakemake to 
 # work with the symbolic links, you may first have to run:
-#
-#   snakemake --cleanup-metadata <filenames>
-#
+#     snakemake --cleanup-metadata <filenames>

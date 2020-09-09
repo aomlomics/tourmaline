@@ -6,15 +6,15 @@ import pandas as pd
 
 # usage
 usage = '''
-create_manifest_from_metadata.py METADATA MANIFEST MANIFEST_PE MANIFEST_SE
+create_manifest_from_metadata.py metadata_in manifest_in_pe manifest_out_pe manifest_out_se
 
-    METADATA - input metadata/mapping file with sample names in first column;
+    metadata_in - input metadata/mapping file with sample names in first column;
         tab-delimited format (metadata.tsv)
-    MANIFEST - input manifest containing all sequences files, forward and reverse;
+    manifest_in_pe - input manifest containing all sequences files, forward and reverse;
         paths must be absolute filepaths; csv format (manifest.csv)
-    MANIFEST_PE - output manifest file containing only sequence files found in 
+    manifest_out_pe - output manifest file containing only sequence files found in 
         metadata file, forward and reverse; csv format (manifest_pe.csv)
-    MANIFEST_SE - output manifest file containing only sequence files found in
+    manifest_out_se - output manifest file containing only sequence files found in
         metadata file, forward only; csv format (manifest_se.csv)
 '''
 

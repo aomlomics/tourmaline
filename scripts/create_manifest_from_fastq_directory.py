@@ -7,12 +7,12 @@ import re
 
 # usage
 usage = '''
-create_manifest_from_fastq_directory.py FASTQ_DIR MANIFEST_PE MANIFEST_SE
+create_manifest_from_fastq_directory.py fastq_dir_in manifest_out_pe manifest_out_se
 
-    FASTQ_DIR - full path of directory containing fastq.gz files
+    fastq_dir_in - full path of directory containing fastq.gz files
         of the form CN18SESPkoa_SC36_S80_L001_R1_001.fastq.
-	MANIFEST_PE - output path of manifest_pe.csv
-	MANIFEST_SE - output path of manifest_se.csv
+    manifest_out_pe - output path of manifest_pe.csv
+    manifest_out_se - output path of manifest_se.csv
 
     This script makes the following assumptions:
         - the first characters after the sample names are "_S[0-9]{1,3}"
@@ -45,9 +45,9 @@ list_fwdrev = ['forward', 'reverse'] * int(len(list_samples)/2)
 
 # write manifest_pe
 with open(path_manifest_pe, 'w') as target:
-	target.write('sample-id,absolute-filepath,direction\n')
-	for i in range(len(list_samples)):
-		target.write('%s,%s,%s\n' % (list_samples[i], list_fastq_full[i], list_fwdrev[i]))
+    target.write('sample-id,absolute-filepath,direction\n')
+    for i in range(len(list_samples)):
+        target.write('%s,%s,%s\n' % (list_samples[i], list_fastq_full[i], list_fwdrev[i]))
 
 # get alternate rows for manifest_se
 list_samples_se = list_samples[::2]
@@ -56,6 +56,6 @@ list_fwdrev_se = list_fwdrev[::2]
 
 # write manifest_se
 with open(path_manifest_se, 'w') as target:
-	target.write('sample-id,absolute-filepath,direction\n')
-	for i in range(len(list_samples_se)):
-		target.write('%s,%s,%s\n' % (list_samples_se[i], list_fastq_full_se[i], list_fwdrev_se[i]))
+    target.write('sample-id,absolute-filepath,direction\n')
+    for i in range(len(list_samples_se)):
+        target.write('%s,%s,%s\n' % (list_samples_se[i], list_fastq_full_se[i], list_fwdrev_se[i]))

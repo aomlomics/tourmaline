@@ -19,7 +19,7 @@ Ready to get started? Visit the [Wiki](https://github.com/lukenoaa/tourmaline/wi
 
 ## Quick Start
 
-Tourmaline provides Snakemake rules for DADA2 (single-end and paired-end) and Deblur (single-end). For each type of processing, the "denoise" rule imports data and runs denoising; the "diversity" rule does representative sequence curation, core diversity analyses, and alpha and beta group significance; and the "report" rule generates the QC report. 
+Tourmaline provides Snakemake rules for DADA2 (paired-end and single-end) and Deblur (single-end). For each type of processing, the "denoise" rule imports data and runs denoising; the "diversity" rule does representative sequence curation, core diversity analyses, and alpha and beta group significance; and the "report" rule generates the QC report. 
 
 ### Setup
 
