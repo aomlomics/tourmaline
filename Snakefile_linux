@@ -409,10 +409,12 @@ rule feature_classifier:
     shell:
         "echo classify_method: {params.classifymethod}; "
         "if [ {params.classifymethod} = 'naive-bayes' ]; then "
+        "if [ ! -f 01-imported/classifier.qza ]; then "
         "qiime feature-classifier fit-classifier-naive-bayes "
         "--i-reference-reads {input.refseqs} "
         "--i-reference-taxonomy {input.reftax} "
         "--o-classifier 01-imported/classifier.qza; "
+        "fi; "
         "qiime feature-classifier classify-sklearn "
         "--i-classifier 01-imported/classifier.qza "
         "--i-reads {input.repseqs} "
