@@ -7,41 +7,11 @@ configfile: "config.yaml"
 
 # PSEUDO-RULES ----------------------------------------------------------------
 
-rule dada2_se_denoise:
-    input:
-        "01-imported/fastq_illumina_run.log",
-        "01-imported/fastq_pe_count_describe.md",
-        "02-output-dada2-se/00-table-repseqs/table.qzv",
-        "02-output-dada2-se/00-table-repseqs/table_summary_samples.txt",
-        "02-output-dada2-se/00-table-repseqs/table_summary_features.txt",
-        "02-output-dada2-se/00-table-repseqs/representative_sequences.qzv",
-        "02-output-dada2-se/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-dada2-se/00-table-repseqs/representative_sequences_lengths_describe.md"
-
-rule dada2_se_diversity:
-    input:
-        "02-output-dada2-se/01-alignment-tree-taxonomy/taxonomy.qzv",
-        "02-output-dada2-se/01-alignment-tree-taxonomy/rooted_tree.qza",
-        "02-output-dada2-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
-        "02-output-dada2-se/02-tax-diversity/taxa_barplot.qzv",
-        "02-output-dada2-se/03-alpha-diversity/alpha_rarefaction.qzv",
-        "02-output-dada2-se/03-alpha-diversity/faith_pd_group_significance.qzv",
-        "02-output-dada2-se/03-alpha-diversity/observed_features_group_significance.qzv",
-        "02-output-dada2-se/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-dada2-se/03-alpha-diversity/evenness_group_significance.qzv",
-        "02-output-dada2-se/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-dada2-se/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
-
-rule dada2_se_report:
-    input:
-        "03-reports/report_dada2-se.html"
-
-# -----------------------------------------------------------------------------
-
 rule dada2_pe_denoise:
     input:
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe.qzv",
         "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_illumina_run.log",
         "02-output-dada2-pe/00-table-repseqs/table.qzv",
         "02-output-dada2-pe/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe/00-table-repseqs/table_summary_features.txt",
@@ -53,6 +23,7 @@ rule dada2_pe_diversity:
     input:
         "02-output-dada2-pe/01-alignment-tree-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe/01-alignment-tree-taxonomy/rooted_tree.qza",
+        # "02-output-dada2-pe/01-alignment-tree-taxonomy/rooted_tree.qzv",
         "02-output-dada2-pe/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
         "02-output-dada2-pe/02-tax-diversity/taxa_barplot.qzv",
         "02-output-dada2-pe/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -69,10 +40,44 @@ rule dada2_pe_report:
 
 # -----------------------------------------------------------------------------
 
+rule dada2_se_denoise:
+    input:
+        "01-imported/fastq_pe.qzv",
+        "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_illumina_run.log",
+        "02-output-dada2-se/00-table-repseqs/table.qzv",
+        "02-output-dada2-se/00-table-repseqs/table_summary_samples.txt",
+        "02-output-dada2-se/00-table-repseqs/table_summary_features.txt",
+        "02-output-dada2-se/00-table-repseqs/representative_sequences.qzv",
+        "02-output-dada2-se/00-table-repseqs/representative_sequences_amplicon_type.txt",
+        "02-output-dada2-se/00-table-repseqs/representative_sequences_lengths_describe.md"
+
+rule dada2_se_diversity:
+    input:
+        "02-output-dada2-se/01-alignment-tree-taxonomy/taxonomy.qzv",
+        "02-output-dada2-se/01-alignment-tree-taxonomy/rooted_tree.qza",
+        # "02-output-dada2-se/01-alignment-tree-taxonomy/rooted_tree.qzv"
+        "02-output-dada2-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-dada2-se/02-tax-diversity/taxa_barplot.qzv",
+        "02-output-dada2-se/03-alpha-diversity/alpha_rarefaction.qzv",
+        "02-output-dada2-se/03-alpha-diversity/faith_pd_group_significance.qzv",
+        "02-output-dada2-se/03-alpha-diversity/observed_features_group_significance.qzv",
+        "02-output-dada2-se/03-alpha-diversity/shannon_group_significance.qzv",
+        "02-output-dada2-se/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-se/04-beta-diversity/unweighted_unifrac_emperor.qzv",
+        "02-output-dada2-se/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+
+rule dada2_se_report:
+    input:
+        "03-reports/report_dada2-se.html"
+
+# -----------------------------------------------------------------------------
+
 rule deblur_se_denoise:
     input:
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe.qzv",
         "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_illumina_run.log",
         "02-output-deblur-se/00-table-repseqs/table.qzv",
         "02-output-deblur-se/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se/00-table-repseqs/table_summary_features.txt",
@@ -84,6 +89,7 @@ rule deblur_se_diversity:
     input:
         "02-output-deblur-se/01-alignment-tree-taxonomy/taxonomy.qzv",
         "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qza",
+        # "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qzv",
         "02-output-deblur-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
         "02-output-deblur-se/02-tax-diversity/taxa_barplot.qzv",
         "02-output-deblur-se/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -124,6 +130,43 @@ rule import_fastq_pe_demux:
         "--output-path {output} "
         "--input-format PairedEndFastqManifestPhred33"
 
+rule summarize_fastq_pe_demux:
+    input:
+        "01-imported/fastq_pe.qza"
+    output:
+        "01-imported/fastq_pe.qzv"
+    shell:
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
+
+# mac: gzcat (zcat requires extension .Z) / linux: zcat
+# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
+rule count_fastq_pe_demux:
+    input:
+        config["manifest_pe"]
+    output:
+        "01-imported/fastq_pe_count.csv"
+    shell:
+        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
+        "do echo -n $line; "
+        "echo -n ','; "
+        "gzcat $line | awk 'END {{l=NR; print l/4}}'; "
+        "done > {output}"
+
+rule fastq_pe_count_describe:
+    input:
+        "01-imported/fastq_pe_count.csv"
+    output:
+        "01-imported/fastq_pe_count_describe.md"
+    run:
+        s = pd.read_csv(input[0], header=None)
+        t = s.describe()
+        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Fastq sequences per sample'])
+        with open(output[0], 'w') as target:
+            target.write(outstr)
+            target.write('\n')
+
 # mac: gzcat (zcat requires extension .Z) / linux: zcat
 # change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
 rule check_illumina_run:
@@ -140,33 +183,6 @@ rule check_illumina_run:
         "gzcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
         "done > {output.runs}; "
         "echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
-
-# mac: gzcat (zcat requires extension .Z) / linux: zcat
-# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule count_fastq_pe_demux:
-    input:
-        config["manifest_pe"]
-    output:
-        "01-imported/fastq_pe_count.csv"
-    shell:
-        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
-        "do echo -n $line; "
-        "echo -n ','; "
-        "gzcat $line | echo $((`wc -l`/4)); "
-        "done > {output}"
-
-rule fastq_pe_count_describe:
-    input:
-        "01-imported/fastq_pe_count.csv"
-    output:
-        "01-imported/fastq_pe_count_describe.md"
-    run:
-        s = pd.read_csv(input[0], header=None)
-        t = s.describe()
-        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Fastq sequences per sample'])
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
 
 rule import_ref_seqs:
     input:
@@ -190,76 +206,6 @@ rule import_ref_tax:
         '--input-format HeaderlessTSVTaxonomyFormat '
         "--input-path {input} "
         "--output-path {output}"
-
-rule denoise_deblur_se:
-    input:
-        seqs="01-imported/fastq_se.qza",
-        refseqs="01-imported/refseqs.qza"
-    params:
-        trimlength=config["deblur_trim_length"],
-        samplestats=config["deblur_sample_stats"],
-        meanerror=config["deblur_mean_error"],
-        indelprob=config["deblur_indel_prob"],
-        indelmax=config["deblur_indel_max"],
-        minreads=config["deblur_min_reads"],
-        minsize=config["deblur_min_size"],
-        jobstostart=config["deblur_jobs_to_start"],
-        hashedfeatureids=config["deblur_hashed_feature_ids"]
-    output:
-        table="02-output-deblur-se/00-table-repseqs/table.qza",
-        repseqs="02-output-deblur-se/00-table-repseqs/representative_sequences.qza",
-        stats="02-output-deblur-se/00-table-repseqs/stats.qza"
-    shell:
-        "qiime deblur denoise-other "
-        "--i-demultiplexed-seqs {input.seqs} "
-        "--i-reference-seqs {input.refseqs} "
-        "--p-trim-length {params.trimlength} "
-        "{params.samplestats} "
-        "--p-mean-error {params.meanerror} "
-        "--p-indel-prob {params.indelprob} "
-        "--p-indel-max {params.indelmax} "
-        "--p-min-reads {params.minreads} "
-        "--p-min-size {params.minsize} "
-        "--p-jobs-to-start {params.jobstostart} "
-        "{params.hashedfeatureids} "        
-        "--o-table {output.table} "
-        "--o-representative-sequences {output.repseqs} "
-        "--o-stats {output.stats} "
-        "--verbose"
-
-rule denoise_dada2_se:
-    input:
-        "01-imported/fastq_se.qza"
-    params:
-        trunclen=config["dada2se_trunc_len"],
-        trimleft=config["dada2se_trim_left"],
-        maxee=config["dada2se_max_ee"],
-        truncq=config["dada2se_trunc_q"],
-        chimeramethod=config["dada2se_chimera_method"],
-        minfoldparentoverabundance=config["dada2se_min_fold_parent_over_abundance"],
-        nthreads=config["dada2se_n_threads"],
-        nreadslearn=config["dada2se_n_reads_learn"],
-        hashedfeatureids=config["dada2se_hashed_feature_ids"]
-    output:
-        table="02-output-dada2-se/00-table-repseqs/table.qza",
-        repseqs="02-output-dada2-se/00-table-repseqs/representative_sequences.qza",
-        stats="02-output-dada2-se/00-table-repseqs/stats.qza"
-    shell:
-        "qiime dada2 denoise-single "
-        "--i-demultiplexed-seqs {input} "
-        "--p-trunc-len {params.trunclen} "
-        "--p-trim-left {params.trimleft} "
-        "--p-max-ee {params.maxee} "
-        "--p-trunc-q {params.truncq} "
-        "--p-chimera-method {params.chimeramethod} "
-        "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
-        "--p-n-threads {params.nthreads} "
-        "--p-n-reads-learn {params.nreadslearn} "
-        "{params.hashedfeatureids} "
-        "--o-table {output.table} "
-        "--o-representative-sequences {output.repseqs} "
-        "--o-denoising-stats {output.stats} "
-        "--verbose"
 
 rule denoise_dada2_pe:
     input:
@@ -301,7 +247,77 @@ rule denoise_dada2_pe:
         "--o-denoising-stats {output.stats} "
         "--verbose"
 
-rule visualize_table:
+rule denoise_dada2_se:
+    input:
+        "01-imported/fastq_se.qza"
+    params:
+        trunclen=config["dada2se_trunc_len"],
+        trimleft=config["dada2se_trim_left"],
+        maxee=config["dada2se_max_ee"],
+        truncq=config["dada2se_trunc_q"],
+        chimeramethod=config["dada2se_chimera_method"],
+        minfoldparentoverabundance=config["dada2se_min_fold_parent_over_abundance"],
+        nthreads=config["dada2se_n_threads"],
+        nreadslearn=config["dada2se_n_reads_learn"],
+        hashedfeatureids=config["dada2se_hashed_feature_ids"]
+    output:
+        table="02-output-dada2-se/00-table-repseqs/table.qza",
+        repseqs="02-output-dada2-se/00-table-repseqs/representative_sequences.qza",
+        stats="02-output-dada2-se/00-table-repseqs/stats.qza"
+    shell:
+        "qiime dada2 denoise-single "
+        "--i-demultiplexed-seqs {input} "
+        "--p-trunc-len {params.trunclen} "
+        "--p-trim-left {params.trimleft} "
+        "--p-max-ee {params.maxee} "
+        "--p-trunc-q {params.truncq} "
+        "--p-chimera-method {params.chimeramethod} "
+        "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
+        "--p-n-threads {params.nthreads} "
+        "--p-n-reads-learn {params.nreadslearn} "
+        "{params.hashedfeatureids} "
+        "--o-table {output.table} "
+        "--o-representative-sequences {output.repseqs} "
+        "--o-denoising-stats {output.stats} "
+        "--verbose"
+
+rule denoise_deblur_se:
+    input:
+        seqs="01-imported/fastq_se.qza",
+        refseqs="01-imported/refseqs.qza"
+    params:
+        trimlength=config["deblur_trim_length"],
+        samplestats=config["deblur_sample_stats"],
+        meanerror=config["deblur_mean_error"],
+        indelprob=config["deblur_indel_prob"],
+        indelmax=config["deblur_indel_max"],
+        minreads=config["deblur_min_reads"],
+        minsize=config["deblur_min_size"],
+        jobstostart=config["deblur_jobs_to_start"],
+        hashedfeatureids=config["deblur_hashed_feature_ids"]
+    output:
+        table="02-output-deblur-se/00-table-repseqs/table.qza",
+        repseqs="02-output-deblur-se/00-table-repseqs/representative_sequences.qza",
+        stats="02-output-deblur-se/00-table-repseqs/stats.qza"
+    shell:
+        "qiime deblur denoise-other "
+        "--i-demultiplexed-seqs {input.seqs} "
+        "--i-reference-seqs {input.refseqs} "
+        "--p-trim-length {params.trimlength} "
+        "{params.samplestats} "
+        "--p-mean-error {params.meanerror} "
+        "--p-indel-prob {params.indelprob} "
+        "--p-indel-max {params.indelmax} "
+        "--p-min-reads {params.minreads} "
+        "--p-min-size {params.minsize} "
+        "--p-jobs-to-start {params.jobstostart} "
+        "{params.hashedfeatureids} "        
+        "--o-table {output.table} "
+        "--o-representative-sequences {output.repseqs} "
+        "--o-stats {output.stats} "
+        "--verbose"
+
+rule summarize_feature_table:
     input:
         table="02-output-{method}/00-table-repseqs/table.qza",
         metadata=config["metadata"]
@@ -491,13 +507,22 @@ rule phylogeny_midpoint_root:
         "--i-tree {input} "
         "--o-rooted-tree {output}"
 
-# skipping this step because tree visualization in q2 is still under construction
+# skipping tree visualization until empress is part of core q2 release
 # rule visualize_tree:
 #     input:
-#         "02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qza"
+#         tree="02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qza",
+#         table="02-output-{method}/00-table-repseqs/table.qza",
+#         metadata=config["metadata"],
+#         taxonomy="02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
 #     output:
 #         "02-output-{method}/01-alignment-tree-taxonomy/rooted_tree.qzv"
 #     shell:
+#         "qiime empress plot "
+#         "--i-tree {input.tree} "
+#         "--i-feature-table {input.table} "
+#         "--m-sample-metadata-file {input.metadata} "
+#         "--m-feature-metadata-file {input.taxonomy} "
+#         "--o-visualization {output}"
 
 rule unzip_alignment_to_fasta:
     input:
