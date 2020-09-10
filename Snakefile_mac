@@ -9,8 +9,9 @@ configfile: "config.yaml"
 
 rule dada2_se_denoise:
     input:
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe.qzv",
         "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_illumina_run.log",
         "02-output-dada2-se/00-table-repseqs/table.qzv",
         "02-output-dada2-se/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se/00-table-repseqs/table_summary_features.txt",
@@ -40,8 +41,9 @@ rule dada2_se_report:
 
 rule dada2_pe_denoise:
     input:
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe.qzv",
         "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_illumina_run.log",
         "02-output-dada2-pe/00-table-repseqs/table.qzv",
         "02-output-dada2-pe/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe/00-table-repseqs/table_summary_features.txt",
@@ -71,8 +73,9 @@ rule dada2_pe_report:
 
 rule deblur_se_denoise:
     input:
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_pe.qzv",
         "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_illumina_run.log",
         "02-output-deblur-se/00-table-repseqs/table.qzv",
         "02-output-deblur-se/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se/00-table-repseqs/table_summary_features.txt",
@@ -124,22 +127,15 @@ rule import_fastq_pe_demux:
         "--output-path {output} "
         "--input-format PairedEndFastqManifestPhred33"
 
-# mac: gzcat (zcat requires extension .Z) / linux: zcat
-# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule check_illumina_run:
+rule summarize_fastq_pe_demux:
     input:
-        config["manifest_pe"]
+        "01-imported/fastq_pe.qza"
     output:
-        runs="01-imported/fastq_illumina_run.txt",
-        log="01-imported/fastq_illumina_run.log"
+        "01-imported/fastq_pe.qzv"
     shell:
-        "set +o pipefail; "
-        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
-        "do echo -n $line; "
-        "echo -n ','; "
-        "gzcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
-        "done > {output.runs}; "
-        "echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
 
 # mac: gzcat (zcat requires extension .Z) / linux: zcat
 # change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
@@ -167,6 +163,23 @@ rule fastq_pe_count_describe:
         with open(output[0], 'w') as target:
             target.write(outstr)
             target.write('\n')
+
+# mac: gzcat (zcat requires extension .Z) / linux: zcat
+# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
+rule check_illumina_run:
+    input:
+        config["manifest_pe"]
+    output:
+        runs="01-imported/fastq_illumina_run.txt",
+        log="01-imported/fastq_illumina_run.log"
+    shell:
+        "set +o pipefail; "
+        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
+        "do echo -n $line; "
+        "echo -n ','; "
+        "gzcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
+        "done > {output.runs}; "
+        "echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
 
 rule import_ref_seqs:
     input:
