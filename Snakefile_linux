@@ -152,7 +152,7 @@ rule count_fastq_pe_demux:
         "for line in `tail -n +2 {input} | cut -d',' -f2`; "
         "do echo -n $line; "
         "echo -n ','; "
-        "zcat $line | echo $((`wc -l`/4)); "
+        "zcat $line | awk 'END {{l=NR; print l/4}}'; "
         "done > {output}"
 
 rule fastq_pe_count_describe:
