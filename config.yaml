@@ -47,7 +47,7 @@ deblur_jobs_to_start: 1
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # classify method (choose from: consensus-blast, naive-bayes)
-classify_method: naive-bayes
+classify_method: consensus-blast
 
 # subsampling
 core_sampling_depth: 500
