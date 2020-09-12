@@ -7,8 +7,9 @@ configfile: "config.yaml"
 
 # RULEORDER DIRECTIVES --------------------------------------------------------
 
-ruleorder: count_fastq_pe_demux > count_fastq_se_demux
-ruleorder: summarize_fastq_pe_demux > summarize_fastq_se_demux
+ruleorder: count_fastq_demux_pe > count_fastq_demux_se
+ruleorder: summarize_fastq_demux_pe > summarize_fastq_demux_se
+ruleorder: check_illumina_run_pe > check_illumina_run_se
 
 # PSEUDO-RULES ----------------------------------------------------------------
 
@@ -138,7 +139,7 @@ rule import_fastq_se_demux:
         "--output-path {output} "
         "--input-format SingleEndFastqManifestPhred33"
 
-rule summarize_fastq_pe_demux:
+rule summarize_fastq_demux_pe:
     input:
         "01-imported/fastq_pe.qza"
     output:
@@ -148,7 +149,7 @@ rule summarize_fastq_pe_demux:
         "--i-data {input} "
         "--o-visualization {output}"
 
-rule summarize_fastq_se_demux:
+rule summarize_fastq_demux_se:
     input:
         "01-imported/fastq_se.qza"
     output:
@@ -160,7 +161,7 @@ rule summarize_fastq_se_demux:
 
 # mac: gzcat (zcat requires extension .Z) / linux: zcat
 # change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule count_fastq_pe_demux:
+rule count_fastq_demux_pe:
     input:
         config["manifest_pe"]
     output:
@@ -174,7 +175,7 @@ rule count_fastq_pe_demux:
 
 # mac: gzcat (zcat requires extension .Z) / linux: zcat
 # change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule count_fastq_se_demux:
+rule count_fastq_demux_se:
     input:
         config["manifest_se"]
     output:
@@ -201,9 +202,26 @@ rule describe_count_fastq:
 
 # mac: gzcat (zcat requires extension .Z) / linux: zcat
 # change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule check_illumina_run:
+rule check_illumina_run_pe:
     input:
         config["manifest_pe"]
+    output:
+        runs="01-imported/fastq_illumina_run.txt",
+        log="01-imported/fastq_illumina_run.log"
+    shell:
+        "set +o pipefail; "
+        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
+        "do echo -n $line; "
+        "echo -n ','; "
+        "zcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
+        "done > {output.runs}; "
+        "echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
+
+# mac: gzcat (zcat requires extension .Z) / linux: zcat
+# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
+rule check_illumina_run_se:
+    input:
+        config["manifest_se"]
     output:
         runs="01-imported/fastq_illumina_run.txt",
         log="01-imported/fastq_illumina_run.log"
