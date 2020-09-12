@@ -115,7 +115,7 @@ rule deblur_se_report:
 
 # RULES -----------------------------------------------------------------------
 
-rule import_fastq_pe_demux:
+rule import_fastq_demux_pe:
     input:
         config["manifest_pe"]
     output:
@@ -127,7 +127,7 @@ rule import_fastq_pe_demux:
         "--output-path {output} "
         "--input-format PairedEndFastqManifestPhred33"
 
-rule import_fastq_se_demux:
+rule import_fastq_demux_se:
     input:
         config["manifest_se"]
     output:
