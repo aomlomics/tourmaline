@@ -5,12 +5,18 @@ from tabulate import tabulate
 
 configfile: "config.yaml"
 
+# RULEORDER DIRECTIVES --------------------------------------------------------
+
+ruleorder: count_fastq_pe_demux > count_fastq_se_demux
+ruleorder: summarize_fastq_pe_demux > summarize_fastq_se_demux
+
 # PSEUDO-RULES ----------------------------------------------------------------
 
 rule dada2_pe_denoise:
     input:
-        "01-imported/fastq_pe.qzv",
-        "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_pe.qza",
+        "01-imported/fastq_summary.qzv",
+        "01-imported/fastq_count_describe.md",
         "01-imported/fastq_illumina_run.log",
         "02-output-dada2-pe/00-table-repseqs/table.qzv",
         "02-output-dada2-pe/00-table-repseqs/table_summary_samples.txt",
@@ -42,8 +48,9 @@ rule dada2_pe_report:
 
 rule dada2_se_denoise:
     input:
-        "01-imported/fastq_pe.qzv",
-        "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_se.qza",
+        "01-imported/fastq_summary.qzv",
+        "01-imported/fastq_count_describe.md",
         "01-imported/fastq_illumina_run.log",
         "02-output-dada2-se/00-table-repseqs/table.qzv",
         "02-output-dada2-se/00-table-repseqs/table_summary_samples.txt",
@@ -75,8 +82,9 @@ rule dada2_se_report:
 
 rule deblur_se_denoise:
     input:
-        "01-imported/fastq_pe.qzv",
-        "01-imported/fastq_pe_count_describe.md",
+        "01-imported/fastq_se.qza",
+        "01-imported/fastq_summary.qzv",
+        "01-imported/fastq_count_describe.md",
         "01-imported/fastq_illumina_run.log",
         "02-output-deblur-se/00-table-repseqs/table.qzv",
         "02-output-deblur-se/00-table-repseqs/table_summary_samples.txt",
@@ -106,18 +114,6 @@ rule deblur_se_report:
 
 # RULES -----------------------------------------------------------------------
 
-rule import_fastq_se_demux:
-    input:
-        config["manifest_se"]
-    output:
-        "01-imported/fastq_se.qza"
-    shell:
-        "qiime tools import "
-        "--type 'SampleData[SequencesWithQuality]' "
-        "--input-path {input} "
-        "--output-path {output} "
-        "--input-format SingleEndFastqManifestPhred33"
-
 rule import_fastq_pe_demux:
     input:
         config["manifest_pe"]
@@ -130,11 +126,33 @@ rule import_fastq_pe_demux:
         "--output-path {output} "
         "--input-format PairedEndFastqManifestPhred33"
 
+rule import_fastq_se_demux:
+    input:
+        config["manifest_se"]
+    output:
+        "01-imported/fastq_se.qza"
+    shell:
+        "qiime tools import "
+        "--type 'SampleData[SequencesWithQuality]' "
+        "--input-path {input} "
+        "--output-path {output} "
+        "--input-format SingleEndFastqManifestPhred33"
+
 rule summarize_fastq_pe_demux:
     input:
         "01-imported/fastq_pe.qza"
     output:
-        "01-imported/fastq_pe.qzv"
+        "01-imported/fastq_summary.qzv"
+    shell:
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
+
+rule summarize_fastq_se_demux:
+    input:
+        "01-imported/fastq_se.qza"
+    output:
+        "01-imported/fastq_summary.qzv"
     shell:
         "qiime demux summarize "
         "--i-data {input} "
@@ -146,7 +164,7 @@ rule count_fastq_pe_demux:
     input:
         config["manifest_pe"]
     output:
-        "01-imported/fastq_pe_count.csv"
+        "01-imported/fastq_count.csv"
     shell:
         "for line in `tail -n +2 {input} | cut -d',' -f2`; "
         "do echo -n $line; "
@@ -154,11 +172,25 @@ rule count_fastq_pe_demux:
         "gzcat $line | awk 'END {{l=NR; print l/4}}'; "
         "done > {output}"
 
-rule fastq_pe_count_describe:
+# mac: gzcat (zcat requires extension .Z) / linux: zcat
+# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
+rule count_fastq_se_demux:
     input:
-        "01-imported/fastq_pe_count.csv"
+        config["manifest_se"]
     output:
-        "01-imported/fastq_pe_count_describe.md"
+        "01-imported/fastq_count.csv"
+    shell:
+        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
+        "do echo -n $line; "
+        "echo -n ','; "
+        "gzcat $line | awk 'END {{l=NR; print l/4}}'; "
+        "done > {output}"
+
+rule describe_count_fastq:
+    input:
+        "01-imported/fastq_count.csv"
+    output:
+        "01-imported/fastq_count_describe.md"
     run:
         s = pd.read_csv(input[0], header=None)
         t = s.describe()
@@ -691,13 +723,14 @@ rule generate_report_md:
     input:
         configfile="config.yaml",
         mdsummary="03-reports/metadata_summary.md",
-        fastq="01-imported/fastq_pe_count_describe.md",
+        fastq="01-imported/fastq_count_describe.md",
         run="01-imported/fastq_illumina_run.log",
         amplicontype="02-output-{method}/00-table-repseqs/representative_sequences_amplicon_type.txt",
         repseqs="02-output-{method}/00-table-repseqs/representative_sequences_lengths_describe.md",
         alignment="02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
         samples="02-output-{method}/00-table-repseqs/table_summary_samples.txt",
         features="02-output-{method}/00-table-repseqs/table_summary_features.txt",
+        visfastq="01-imported/fastq_summary.qzv",
         visrepseqs="02-output-{method}/00-table-repseqs/representative_sequences.qzv",
         vistaxonomy="02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qzv",
         vistable="02-output-{method}/00-table-repseqs/table.qzv",
@@ -775,6 +808,10 @@ rule generate_report_md:
         "echo Filename: {input.alignment} >> {output};"
         "echo '' >> {output};"
         "cat {input.alignment} >> {output};"
+        "echo '' >> {output};"
+        "echo '### Visualization of fastq sequences' >> {output};"
+        "echo '' >> {output};"
+        "echo Download file: \[{input.visfastq}\]\(../{input.visfastq}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Visualization of representative sequences' >> {output};"
         "echo '' >> {output};"
