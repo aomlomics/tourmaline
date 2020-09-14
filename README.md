@@ -21,6 +21,18 @@ Ready to get started? Visit the [Wiki](https://github.com/lukenoaa/tourmaline/wi
 
 Tourmaline provides Snakemake rules for DADA2 (paired-end and single-end) and Deblur (single-end). For each type of processing, the "denoise" rule imports data and runs denoising; the "diversity" rule does representative sequence curation, core diversity analyses, and alpha and beta group significance; and the "report" rule generates the QC report. 
 
+### Install
+
+Tourmaline requires a Conda installation of QIIME 2, Snakemake, and other dependencies:
+
+```
+wget https://data.qiime2.org/distro/core/qiime2-2020.8-py36-osx-conda.yml
+conda env create -n qiime2-2020.8 --file qiime2-2020.8-py36-osx-conda.yml
+conda activate qiime2-2020.8
+conda install -c bioconda snakemake biopython tabulate pandoc tabview
+conda install -c bioconda bioconductor-msa bioconductor-odseq
+```
+
 ### Setup
 
 Start by cloning the Tourmaline directory and files:

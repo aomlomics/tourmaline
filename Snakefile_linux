@@ -1,4 +1,7 @@
 import pandas as pd
+from qiime2 import Artifact
+import matplotlib.pyplot as plt
+import seaborn as sns
 from tabulate import tabulate
 
 # GLOBALS ---------------------------------------------------------------------
@@ -32,6 +35,7 @@ rule dada2_pe_diversity:
         "02-output-dada2-pe/01-alignment-tree-taxonomy/rooted_tree.qza",
         # "02-output-dada2-pe/01-alignment-tree-taxonomy/rooted_tree.qzv",
         "02-output-dada2-pe/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-dada2-pe/01-alignment-tree-taxonomy/representative_sequences_properties.pdf",
         "02-output-dada2-pe/02-tax-diversity/taxa_barplot.qzv",
         "02-output-dada2-pe/03-alpha-diversity/alpha_rarefaction.qzv",
         "02-output-dada2-pe/03-alpha-diversity/faith_pd_group_significance.qzv",
@@ -66,6 +70,7 @@ rule dada2_se_diversity:
         "02-output-dada2-se/01-alignment-tree-taxonomy/rooted_tree.qza",
         # "02-output-dada2-se/01-alignment-tree-taxonomy/rooted_tree.qzv"
         "02-output-dada2-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-dada2-se/01-alignment-tree-taxonomy/representative_sequences_properties.pdf",
         "02-output-dada2-se/02-tax-diversity/taxa_barplot.qzv",
         "02-output-dada2-se/03-alpha-diversity/alpha_rarefaction.qzv",
         "02-output-dada2-se/03-alpha-diversity/faith_pd_group_significance.qzv",
@@ -100,6 +105,7 @@ rule deblur_se_diversity:
         "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qza",
         # "02-output-deblur-se/01-alignment-tree-taxonomy/rooted_tree.qzv",
         "02-output-deblur-se/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        "02-output-deblur-se/01-alignment-tree-taxonomy/representative_sequences_properties.pdf",
         "02-output-deblur-se/02-tax-diversity/taxa_barplot.qzv",
         "02-output-deblur-se/03-alpha-diversity/alpha_rarefaction.qzv",
         "02-output-deblur-se/03-alpha-diversity/faith_pd_group_significance.qzv",
@@ -424,7 +430,7 @@ rule visualize_repseqs:
         "--i-data {input} "
         "--o-visualization {output}"
 
-rule unzip_repseq_to_fasta:
+rule unzip_repseqs_to_fasta:
     input:
         "02-output-{method}/00-table-repseqs/representative_sequences.qza"
     output:
@@ -434,7 +440,7 @@ rule unzip_repseq_to_fasta:
         "mv temp/*/data/dna-sequences.fasta {output}; "
         "/bin/rm -r temp"
 
-rule repseq_detect_amplicon_locus:
+rule repseqs_detect_amplicon_locus:
     input:
         "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     output:
@@ -442,7 +448,7 @@ rule repseq_detect_amplicon_locus:
     shell:
         "python scripts/detect_amplicon_locus.py -i {input} > {output}"
 
-rule repseq_length_distribution:
+rule repseqs_lengths:
     input:
         "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     output:
@@ -450,7 +456,7 @@ rule repseq_length_distribution:
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
-rule repseq_length_distribution_describe:
+rule repseqs_lengths_describe:
     input:
         "02-output-{method}/00-table-repseqs/representative_sequences_lengths.txt"
     output:
@@ -592,18 +598,54 @@ rule alignment_count_gaps:
     shell:
         "cat {input} | grep -v '>' | sed 's/[^-]//g' | awk '{{ print length }}' > {output}"
 
-rule alignment_gaps_distribution_describe:
+rule alignment_gaps_describe:
     input:
         "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps.txt"
     output:
         "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md"
     run:
-        s = pd.read_csv(input[0], header=None)
-        t = s.describe()
+        gaps = pd.read_csv(input[0], header=None)
+        t = gaps.describe()
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
         with open(output[0], 'w') as target:
             target.write(outstr)
             target.write('\n')
+
+rule alignment_detect_outliers:
+    input:
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences.fasta"
+    params:
+        metric = config["odseq_distance_metric"],
+        replicates = config["odseq_bootstrap_replicates"],
+        threshold = config["odseq_threshold"]
+    output:
+        "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_outliers.csv"
+    script:
+        "scripts/detect_outliers.R"
+
+rule alignment_plot_outliers:
+    input:
+        lengths="02-output-{method}/00-table-repseqs/representative_sequences_lengths.txt",
+        gaps="02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps.txt",
+        outliers="02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_outliers.csv",
+        taxonomy="02-output-{method}/01-alignment-tree-taxonomy/taxonomy.qza"
+    output:
+        csv="02-output-{method}/01-alignment-tree-taxonomy/representative_sequences_properties.csv",
+        pdf="02-output-{method}/01-alignment-tree-taxonomy/representative_sequences_properties.pdf"
+    run:
+        lengths = pd.read_csv(input['lengths'], header=None)
+        gaps = pd.read_csv(input['gaps'], header=None)
+        outliers = pd.read_csv(input['outliers'], header=None)
+        taxonomy = Artifact.load(input['taxonomy'])
+        taxonomydf = taxonomy.view(view_type=pd.DataFrame)
+        taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
+        merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['level_1'].reset_index(drop=True)], 
+                           axis=1, ignore_index=True)
+        merged.columns = ['representative_sequence', 'length', 'gaps', 'outlier', 'taxonomy_level_1']
+        merged.to_csv(output['csv'], index=False)
+        fig, ax = plt.subplots()
+        sns.scatterplot(ax=ax, data=merged, x='length', y='gaps', style='outlier', hue='taxonomy_level_1')
+        plt.savefig(output['pdf'])
 
 rule diversity_alpha_rarefaction:
     input:
@@ -744,8 +786,8 @@ rule generate_report_md:
         fastq="01-imported/fastq_count_describe.md",
         run="01-imported/fastq_illumina_run.log",
         amplicontype="02-output-{method}/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        repseqs="02-output-{method}/00-table-repseqs/representative_sequences_lengths_describe.md",
-        alignment="02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_gaps_describe.md",
+        repseqscsv="02-output-{method}/01-alignment-tree-taxonomy/representative_sequences_properties.csv",
+        repseqspdf="02-output-{method}/01-alignment-tree-taxonomy/representative_sequences_properties.pdf",
         samples="02-output-{method}/00-table-repseqs/table_summary_samples.txt",
         features="02-output-{method}/00-table-repseqs/table_summary_features.txt",
         visfastq="01-imported/fastq_summary.qzv",
@@ -797,7 +839,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '### Visualization of fastq sequences' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visfastq}\]\(../{input.visfastq}\) >> {output};"
+        "echo Download QZV: \[{input.visfastq}\]\(../{input.visfastq}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Number of Illumina runs' >> {output};"
         "echo '' >> {output};"
@@ -811,33 +853,27 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '## Representative Sequences Information' >> {output};"
         "echo '' >> {output};"
-        "echo '### Amplicon type' >> {output};"
+        "echo '### Representative sequences properties (length, gaps, outliers, taxonomy)' >> {output};"
+        "echo '' >> {output};"
+        "echo Download CSV: \[{input.repseqscsv}\]\(../{input.repseqscsv}\) >> {output};"
+        "echo '' >> {output};"
+        "echo Download PDF: \[{input.repseqspdf}\]\(../{input.repseqspdf}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Visualization of representative sequences' >> {output};"
+        "echo '' >> {output};"
+        "echo Download QZV: \[{input.visrepseqs}\]\(../{input.visrepseqs}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Visualization of taxonomy' >> {output};"
+        "echo '' >> {output};"
+        "echo Download QZV: \[{input.vistaxonomy}\]\(../{input.vistaxonomy}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Predicted amplicon type' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.amplicontype} >> {output};"
         "echo '' >> {output};"
         "echo '```' >> {output};"
         "head -n 5 {input.amplicontype} >> {output};"
         "echo '```' >> {output};"
-        "echo '' >> {output};"
-        "echo '### Sequence length' >> {output};"
-        "echo '' >> {output};"
-        "echo Filename: {input.repseqs} >> {output};"
-        "echo '' >> {output};"
-        "cat {input.repseqs} >> {output};"
-        "echo '' >> {output};"
-        "echo '### Alignment gaps per sequence' >> {output};"
-        "echo '' >> {output};"
-        "echo Filename: {input.alignment} >> {output};"
-        "echo '' >> {output};"
-        "cat {input.alignment} >> {output};"
-        "echo '' >> {output};"
-        "echo '### Visualization of representative sequences' >> {output};"
-        "echo '' >> {output};"
-        "echo Download file: \[{input.visrepseqs}\]\(../{input.visrepseqs}\) >> {output};"
-        "echo '' >> {output};"
-        "echo '### Visualization of taxonomy' >> {output};"
-        "echo '' >> {output};"
-        "echo Download file: \[{input.vistaxonomy}\]\(../{input.vistaxonomy}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
@@ -861,7 +897,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '### Visualization of table summary' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.vistable}\]\(../{input.vistable}\) >> {output};"
+        "echo Download QZV: \[{input.vistable}\]\(../{input.vistable}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
@@ -869,7 +905,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '### Taxonomy barplot' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.vistaxbar}\]\(../{input.vistaxbar}\) >> {output};"
+        "echo Download QZV: \[{input.vistaxbar}\]\(../{input.vistaxbar}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
@@ -877,23 +913,23 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '### Alpha rarefaction' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visalpharare}\]\(../{input.visalpharare}\) >> {output};"
+        "echo Download QZV: \[{input.visalpharare}\]\(../{input.visalpharare}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Evenness group significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visevengs}\]\(../{input.visevengs}\) >> {output};"
+        "echo Download QZV: \[{input.visevengs}\]\(../{input.visevengs}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Faith PD group significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visfaithgs}\]\(../{input.visfaithgs}\) >> {output};"
+        "echo Download QZV: \[{input.visfaithgs}\]\(../{input.visfaithgs}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Observed features group significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visobsfeaturesgs}\]\(../{input.visobsfeaturesgs}\) >> {output};"
+        "echo Download QZV: \[{input.visobsfeaturesgs}\]\(../{input.visobsfeaturesgs}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Shannon group significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visshannongs}\]\(../{input.visshannongs}\) >> {output};"
+        "echo Download QZV: \[{input.visshannongs}\]\(../{input.visshannongs}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
@@ -901,23 +937,23 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '### Bray-Curtis PCoA' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visbcemp}\]\(../{input.visbcemp}\) >> {output};"
+        "echo Download QZV: \[{input.visbcemp}\]\(../{input.visbcemp}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Jaccard PCoA' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visjacemp}\]\(../{input.visjacemp}\) >> {output};"
+        "echo Download QZV: \[{input.visjacemp}\]\(../{input.visjacemp}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Weighted UniFrac PCoA' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.viswuemp}\]\(../{input.viswuemp}\) >> {output};"
+        "echo Download QZV: \[{input.viswuemp}\]\(../{input.viswuemp}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Unweighted UniFrac PCoA' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visuwuemp}\]\(../{input.visuwuemp}\) >> {output};"
+        "echo Download QZV: \[{input.visuwuemp}\]\(../{input.visuwuemp}\) >> {output};"
         "echo '' >> {output};"
         "echo '### Unweighted UniFrac Group Significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download file: \[{input.visuwugs}\]\(../{input.visuwugs}\) >> {output};"
+        "echo Download QZV: \[{input.visuwugs}\]\(../{input.visuwugs}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
