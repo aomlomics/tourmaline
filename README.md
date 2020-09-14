@@ -6,12 +6,12 @@ Tourmaline is an amplicon (metabarcoding) sequence processing workflow for Illum
 
 ### Why should I use Tourmaline?
 
-* **QIIME 2.** The core commands of Tourmaline are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools availalbe. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
+* **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) package, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
 * **Snakemake.** Managing the workflow with Snakemake provides several benefits: 
   - **Configuration file** contains all parameters in one file, so you can see what your workflow is doing and make changes for a subsequent run.
   - **Directory structure** is the same for every Tourmaline run, so you always know where your outputs are.
   - **On-demand commands** mean that only the commands required for output files not yet generated are run, saving time and computation when re-running part of a workflow.
-* **Parameter optimization.** The configuaration file and standard directory structure make it simple to test and compare different parameter sets to optimize your workflow.
+* **Parameter optimization.** The configuration file and standard directory structure make it simple to test and compare different parameter sets to optimize your workflow. Included code helps choose read truncation parameters and identify outliers in representative sequences (ASVs).
 * **Reports.** Every Tourmaline run produces an HTML report containing a summary of your metadata and outputs, with links to web-viewable QIIME 2 visualization files.
 * **Tourmaline Toolkit.** Analyze multiple outputs programmatically using the provided code and notebooks written in R and Python.
 
@@ -20,6 +20,18 @@ Ready to get started? Visit the [Wiki](https://github.com/lukenoaa/tourmaline/wi
 ## Quick Start
 
 Tourmaline provides Snakemake rules for DADA2 (paired-end and single-end) and Deblur (single-end). For each type of processing, the "denoise" rule imports data and runs denoising; the "diversity" rule does representative sequence curation, core diversity analyses, and alpha and beta group significance; and the "report" rule generates the QC report. 
+
+### Install
+
+Tourmaline requires a Conda installation of QIIME 2, Snakemake, and other dependencies:
+
+```
+wget https://data.qiime2.org/distro/core/qiime2-2020.8-py36-osx-conda.yml
+conda env create -n qiime2-2020.8 --file qiime2-2020.8-py36-osx-conda.yml
+conda activate qiime2-2020.8
+conda install -c bioconda snakemake biopython tabulate pandoc tabview
+conda install -c bioconda bioconductor-msa bioconductor-odseq
+```
 
 ### Setup
 

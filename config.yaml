@@ -46,8 +46,19 @@ deblur_min_size: 2
 deblur_jobs_to_start: 1
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
-# classify method (choose from: consensus-blast, naive-bayes)
+# taxonomic classification method (choose from: consensus-blast, naive-bayes)
 classify_method: consensus-blast
+
+# representative sequence outlier detection using odseq
+#     odseq_distance_metric: type of distance metric to be computed
+#         (choose from: linear, affine)
+#     odseq_bootstrap_replicates: number of bootstrap replicates to be run
+#         (integer)
+#     odseq_threshold: probability to be left at the right of the bootstrap
+#         scores distribution when computing outliers (float)
+odseq_distance_metric: affine
+odseq_bootstrap_replicates: 1000
+odseq_threshold: 0.025
 
 # subsampling
 core_sampling_depth: 500
