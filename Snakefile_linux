@@ -391,7 +391,7 @@ rule unzip_table_to_biom:
     output:
         "02-output-{method}/00-table-repseqs/table.biom"
     shell:
-        "unzip -o {input} -d temp; "
+        "unzip -qq -o {input} -d temp; "
         "mv temp/*/data/feature-table.biom {output}; "
         "/bin/rm -r temp"
 
@@ -436,7 +436,7 @@ rule unzip_repseqs_to_fasta:
     output:
         "02-output-{method}/00-table-repseqs/representative_sequences.fasta"
     shell:
-        "unzip -o {input} -d temp; "
+        "unzip -qq -o {input} -d temp; "
         "mv temp/*/data/dna-sequences.fasta {output}; "
         "/bin/rm -r temp"
 
@@ -586,7 +586,7 @@ rule unzip_alignment_to_fasta:
     output:
         "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences.fasta"
     shell:
-        "unzip -o {input} -d temp; "
+        "unzip -qq -o {input} -d temp; "
         "mv temp/*/data/aligned-dna-sequences.fasta {output}; "
         "/bin/rm -r temp"
 
