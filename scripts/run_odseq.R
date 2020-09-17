@@ -1,16 +1,18 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
 library(msa)
 library(odseq)
 myAlignment = readDNAMultipleAlignment(
-	filepath = snakemake@input[[1]],
+	filepath = args[1],
 	format = "fasta")
 myOutliers = odseq(
 	myAlignment,
-	distance_metric = snakemake@params[["metric"]],
-	B = snakemake@params[["replicates"]],
-	threshold = snakemake@params[["threshold"]])
+	distance_metric = args[2],
+	B = as.numeric(args[3]),
+	threshold = as.numeric(args[4]))
 write.table(
 	myOutliers,
-	snakemake@output[[1]],
+	args[5],
 	sep = ",",
 	col.names = FALSE,
 	quote = FALSE)

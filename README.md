@@ -89,11 +89,15 @@ Finally, run the "report" rule:
 snakemake dada2_pe_report
 ```
 
-The whole workflow should take ~3-5 minutes to complete with the test data.
+#### Troubleshooting
 
-If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
+* The whole workflow should take ~3–5 minutes to complete with the test data. A normal dataset may take several hours to complete.
+* If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
 
-If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}` and `03-report`) generated in the previous run.
+#### Power tips
+
+* The whole workflow can be run with just the command `snakemake dada2_pe_report`. This is advisable only if your parameters are already optimized.
+* If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}` and `03-report`) generated in the previous run.
 
 ## Disclaimer
 

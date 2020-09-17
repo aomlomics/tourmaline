@@ -50,12 +50,9 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 classify_method: consensus-blast
 
 # representative sequence outlier detection using odseq
-#     odseq_distance_metric: type of distance metric to be computed
-#         (choose from: linear, affine)
-#     odseq_bootstrap_replicates: number of bootstrap replicates to be run
-#         (integer)
-#     odseq_threshold: probability to be left at the right of the bootstrap
-#         scores distribution when computing outliers (float)
+# odseq_distance_metric: type of distance metric to be computed (choose from: linear, affine)
+# odseq_bootstrap_replicates: number of bootstrap replicates to be run (integer)
+# odseq_threshold: probability to remain at the right of the bootstrap scores distribution when computing outliers (float)
 odseq_distance_metric: affine
 odseq_bootstrap_replicates: 1000
 odseq_threshold: 0.025

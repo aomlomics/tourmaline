@@ -620,8 +620,8 @@ rule alignment_detect_outliers:
         threshold = config["odseq_threshold"]
     output:
         "02-output-{method}/01-alignment-tree-taxonomy/aligned_dna_sequences_outliers.csv"
-    script:
-        "scripts/detect_outliers.R"
+    shell:
+        "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} {output}"
 
 rule alignment_plot_outliers:
     input:
