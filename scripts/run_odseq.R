@@ -13,6 +13,6 @@ myOutliers = odseq(
 write.table(
 	myOutliers,
 	args[5],
-	sep = ",",
+	sep = "\t",
 	col.names = FALSE,
 	quote = FALSE)

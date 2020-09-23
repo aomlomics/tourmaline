@@ -49,6 +49,12 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 # taxonomic classification method (choose from: consensus-blast, naive-bayes)
 classify_method: consensus-blast
 
+# filter table and representative sequences by taxonomy (separate terms with commas; use nonsense word or don't run filter rule for no filtering)
+exclude_terms: mitochondria,chloroplast,eukaryota
+
+# filter representative sequences by featureid (feature metadata tsv file with two columns: first column is "featureid", second column can be anything)
+repseqs_to_filter: 00-data/repseqs_to_filter.tsv
+
 # representative sequence outlier detection using odseq
 # odseq_distance_metric: type of distance metric to be computed (choose from: linear, affine)
 # odseq_bootstrap_replicates: number of bootstrap replicates to be run (integer)
