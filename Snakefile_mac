@@ -799,7 +799,7 @@ rule filter_sequences_by_taxonomy:
 rule filter_sequences_by_id:
     input:
         repseqs="02-output-{method}-filtered/00-table-repseqs/representative_sequences_pre_id_filtering.qza",
-        seqmetadata=config["repseqs_to_filter"]
+        seqmetadata="00-data/repseqs_to_filter_{method}.tsv"
     output:
         "02-output-{method}-filtered/00-table-repseqs/representative_sequences.qza"
     shell:

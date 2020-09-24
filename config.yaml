@@ -53,7 +53,10 @@ classify_method: consensus-blast
 exclude_terms: mitochondria,chloroplast,eukaryota
 
 # filter representative sequences by featureid (feature metadata tsv file with two columns: first column is "featureid", second column can be anything)
-repseqs_to_filter: 00-data/repseqs_to_filter.tsv
+# files must be named
+# 00-data/repseqs_to_filter_dada2-pe.tsv
+# 00-data/repseqs_to_filter_dada2-se.tsv
+# 00-data/repseqs_to_filter_deblur-se.tsv
 
 # representative sequence outlier detection using odseq
 # odseq_distance_metric: type of distance metric to be computed (choose from: linear, affine)
