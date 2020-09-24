@@ -14,6 +14,9 @@ rsync -a $1/Snakefile .
 cp -a $1/00-data/manifest_pe.csv 00-data/manifest_pe.csv
 cp -a $1/00-data/manifest_se.csv 00-data/manifest_se.csv
 cp -a $1/00-data/metadata.tsv 00-data/metadata.tsv
+cp -a $1/00-data/repseqs_to_filter_dada2-pe.tsv 00-data/repseqs_to_filter_dada2-pe.tsv
+cp -a $1/00-data/repseqs_to_filter_dada2-se.tsv 00-data/repseqs_to_filter_dada2-se.tsv
+cp -a $1/00-data/repseqs_to_filter_deblur-se.tsv 00-data/repseqs_to_filter_deblur-se.tsv
 cp -a $1/01-imported/refseqs.qza 01-imported/refseqs.qza
 cp -a $1/01-imported/reftax.qza 01-imported/reftax.qza
 cp -a $1/01-imported/classifier.qza 01-imported/classifier.qza

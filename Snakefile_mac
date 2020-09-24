@@ -380,13 +380,13 @@ rule denoise_dada2_pe:
         truncq=config["dada2pe_trunc_q"],
         chimeramethod=config["dada2pe_chimera_method"],
         minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
-        nthreads=config["dada2pe_n_threads"],
         nreadslearn=config["dada2pe_n_reads_learn"],
         hashedfeatureids=config["dada2pe_hashed_feature_ids"]
     output:
         table="02-output-dada2-pe-unfiltered/00-table-repseqs/table.qza",
         repseqs="02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences.qza",
         stats="02-output-dada2-pe-unfiltered/00-table-repseqs/dada2_stats.qza"
+    threads: config["dada2pe_threads"]
     shell:
         "qiime dada2 denoise-paired "
         "--i-demultiplexed-seqs {input} "
@@ -399,9 +399,9 @@ rule denoise_dada2_pe:
         "--p-trunc-q {params.truncq} "
         "--p-chimera-method {params.chimeramethod} "
         "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
-        "--p-n-threads {params.nthreads} "
         "--p-n-reads-learn {params.nreadslearn} "
         "{params.hashedfeatureids} "
+        "--p-n-threads {threads} "
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-denoising-stats {output.stats} "
@@ -417,13 +417,13 @@ rule denoise_dada2_se:
         truncq=config["dada2se_trunc_q"],
         chimeramethod=config["dada2se_chimera_method"],
         minfoldparentoverabundance=config["dada2se_min_fold_parent_over_abundance"],
-        nthreads=config["dada2se_n_threads"],
         nreadslearn=config["dada2se_n_reads_learn"],
         hashedfeatureids=config["dada2se_hashed_feature_ids"]
     output:
         table="02-output-dada2-se-unfiltered/00-table-repseqs/table.qza",
         repseqs="02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences.qza",
         stats="02-output-dada2-se-unfiltered/00-table-repseqs/dada2_stats.qza"
+    threads: config["dada2se_threads"]
     shell:
         "qiime dada2 denoise-single "
         "--i-demultiplexed-seqs {input} "
@@ -433,9 +433,9 @@ rule denoise_dada2_se:
         "--p-trunc-q {params.truncq} "
         "--p-chimera-method {params.chimeramethod} "
         "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
-        "--p-n-threads {params.nthreads} "
         "--p-n-reads-learn {params.nreadslearn} "
         "{params.hashedfeatureids} "
+        "--p-n-threads {threads} "
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-denoising-stats {output.stats} "
@@ -453,12 +453,12 @@ rule denoise_deblur_se:
         indelmax=config["deblur_indel_max"],
         minreads=config["deblur_min_reads"],
         minsize=config["deblur_min_size"],
-        jobstostart=config["deblur_jobs_to_start"],
         hashedfeatureids=config["deblur_hashed_feature_ids"]
     output:
         table="02-output-deblur-se-unfiltered/00-table-repseqs/table.qza",
         repseqs="02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences.qza",
         stats="02-output-deblur-se-unfiltered/00-table-repseqs/deblur_stats.qza"
+    threads: config["deblur_threads"]
     shell:
         "qiime deblur denoise-other "
         "--i-demultiplexed-seqs {input.seqs} "
@@ -475,6 +475,7 @@ rule denoise_deblur_se:
         "--o-table {output.table} "
         "--o-representative-sequences {output.repseqs} "
         "--o-stats {output.stats} "
+        "--p-jobs-to-start {threads} "
         "--verbose"
 
 # RULES: SUMMARIZE -------------------------------------------------------------
@@ -586,6 +587,7 @@ rule feature_classifier:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
         classifymethod=config["classify_method"]
+    threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
         "if [ {params.classifymethod} = 'naive-bayes' ]; then "
@@ -598,7 +600,8 @@ rule feature_classifier:
         "qiime feature-classifier classify-sklearn "
         "--i-classifier 01-imported/classifier.qza "
         "--i-reads {input.repseqs} "
-        "--o-classification {output}; "
+        "--o-classification {output} "
+        "--p-n-jobs {threads}; "
         "elif [ {params.classifymethod} = 'consensus-blast' ]; then "
         "qiime feature-classifier classify-consensus-blast "
         "--i-reference-reads {input.refseqs} "
@@ -646,10 +649,12 @@ rule alignment_mafft:
         "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_representative_sequences.qza"
+    threads: config["alignment_mafft_threads"]
     shell:
         "qiime alignment mafft "
         "--i-sequences {input} "
-        "--o-alignment {output}"
+        "--o-alignment {output} "
+        "--p-n-threads {threads}"
 
 rule alignment_mask:
     input:
@@ -666,10 +671,12 @@ rule phylogeny_fasttree:
         "02-output-{method}-{filter}/02-alignment-tree/masked_aligned_representative_sequences.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/unrooted_tree.qza"
+    threads: config["phylogeny_fasttree_threads"]
     shell:
         "qiime phylogeny fasttree "
         "--i-alignment {input} "
-        "--o-tree {output}"
+        "--o-tree {output} "
+        "--p-n-threads {threads}"
 
 rule phylogeny_midpoint_root:
     input:
@@ -869,6 +876,7 @@ rule diversity_core_metrics_phylogenetic:
         weightedunifracemperor="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_emperor.qzv",
         jaccardemperor="02-output-{method}-{filter}/04-beta-diversity/jaccard_emperor.qzv",
         braycurtisemperor="02-output-{method}-{filter}/04-beta-diversity/bray_curtis_emperor.qzv"
+    threads: config["diversity_core_metrics_phylogenetic_threads"]
     shell:
         "qiime diversity core-metrics-phylogenetic "
         "--i-table {input.table} "
@@ -891,7 +899,8 @@ rule diversity_core_metrics_phylogenetic:
         "--o-unweighted-unifrac-emperor {output.unweightedunifracemperor} "
         "--o-weighted-unifrac-emperor {output.weightedunifracemperor} "
         "--o-jaccard-emperor {output.jaccardemperor} "
-        "--o-bray-curtis-emperor {output.braycurtisemperor}"
+        "--o-bray-curtis-emperor {output.braycurtisemperor} "
+        "--p-n-jobs-or-threads {threads}"
 
 rule diversity_alpha_group_significance:
     input:
@@ -1173,6 +1182,3 @@ rule generate_report_html:
         "echo '</html>' >> temp.html;"
         "mv temp.html {output};"
         "/bin/rm header.html"
-
-
-
