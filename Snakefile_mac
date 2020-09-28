@@ -29,7 +29,7 @@ rule dada2_pe_denoise:
         "02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences_amplicon_type.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences_lengths_describe.md"
 
-rule dada2_pe_taxonomy:
+rule dada2_pe_taxonomy_unfiltered:
     input:
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv"
@@ -53,7 +53,7 @@ rule dada2_pe_report_unfiltered:
     input:
         "03-reports/report_dada2-pe_unfiltered.html"
 
-rule dada2_pe_filter:
+rule dada2_pe_taxonomy_filtered:
     input:
         "02-output-dada2-pe-filtered/00-table-repseqs/table.qzv",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_samples.txt",
@@ -98,7 +98,7 @@ rule dada2_se_denoise:
         "02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences_amplicon_type.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences_lengths_describe.md"
 
-rule dada2_se_taxonomy:
+rule dada2_se_taxonomy_unfiltered:
     input:
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
@@ -122,7 +122,7 @@ rule dada2_se_report_unfiltered:
     input:
         "03-reports/report_dada2-se_unfiltered.html"
 
-rule dada2_se_filter:
+rule dada2_se_taxonomy_filtered:
     input:
         "02-output-dada2-se-filtered/00-table-repseqs/table.qzv",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_samples.txt",
@@ -167,7 +167,7 @@ rule deblur_se_denoise:
         "02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences_amplicon_type.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences_lengths_describe.md"
 
-rule deblur_se_taxonomy:
+rule deblur_se_taxonomy_unfiltered:
     input:
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
@@ -191,7 +191,7 @@ rule deblur_se_report_unfiltered:
     input:
         "03-reports/report_deblur-se_unfiltered.html"
 
-rule deblur_se_filter:
+rule deblur_se_taxonomy_filtered:
     input:
         "02-output-deblur-se-filtered/00-table-repseqs/table.qzv",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_samples.txt",
