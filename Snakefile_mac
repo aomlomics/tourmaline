@@ -25,9 +25,9 @@ rule dada2_pe_denoise:
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table.qzv",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_features.txt",
-        "02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences.qzv",
-        "02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences_lengths_describe.md"
+        "02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs.qzv",
+        "02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs_amplicon_type.txt",
+        "02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs_lengths_describe.md"
 
 rule dada2_pe_taxonomy_unfiltered:
     input:
@@ -37,8 +37,8 @@ rule dada2_pe_taxonomy_unfiltered:
 rule dada2_pe_diversity_unfiltered:
     input:
         "02-output-dada2-pe-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-pe-unfiltered/02-alignment-tree/aligned_dna_sequences_gaps_describe.md",
-        "02-output-dada2-pe-unfiltered/02-alignment-tree/representative_sequences_properties.pdf",
+        "02-output-dada2-pe-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -58,17 +58,17 @@ rule dada2_pe_taxonomy_filtered:
         "02-output-dada2-pe-filtered/00-table-repseqs/table.qzv",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_features.txt",
-        "02-output-dada2-pe-filtered/00-table-repseqs/representative_sequences.qzv",
-        "02-output-dada2-pe-filtered/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-dada2-pe-filtered/00-table-repseqs/representative_sequences_lengths_describe.md",
+        "02-output-dada2-pe-filtered/00-table-repseqs/repseqs.qzv",
+        "02-output-dada2-pe-filtered/00-table-repseqs/repseqs_amplicon_type.txt",
+        "02-output-dada2-pe-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv"
 
 rule dada2_pe_diversity_filtered:
     input:
         "02-output-dada2-pe-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-pe-filtered/02-alignment-tree/aligned_dna_sequences_gaps_describe.md",
-        "02-output-dada2-pe-filtered/02-alignment-tree/representative_sequences_properties.pdf",
+        "02-output-dada2-pe-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         "02-output-dada2-pe-filtered/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -94,9 +94,9 @@ rule dada2_se_denoise:
         "02-output-dada2-se-unfiltered/00-table-repseqs/table.qzv",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_features.txt",
-        "02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences.qzv",
-        "02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences_lengths_describe.md"
+        "02-output-dada2-se-unfiltered/00-table-repseqs/repseqs.qzv",
+        "02-output-dada2-se-unfiltered/00-table-repseqs/repseqs_amplicon_type.txt",
+        "02-output-dada2-se-unfiltered/00-table-repseqs/repseqs_lengths_describe.md"
 
 rule dada2_se_taxonomy_unfiltered:
     input:
@@ -106,8 +106,8 @@ rule dada2_se_taxonomy_unfiltered:
 rule dada2_se_diversity_unfiltered:
     input:
         "02-output-dada2-se-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-se-unfiltered/02-alignment-tree/aligned_dna_sequences_gaps_describe.md",
-        "02-output-dada2-se-unfiltered/02-alignment-tree/representative_sequences_properties.pdf",
+        "02-output-dada2-se-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         "02-output-dada2-se-unfiltered/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -127,17 +127,17 @@ rule dada2_se_taxonomy_filtered:
         "02-output-dada2-se-filtered/00-table-repseqs/table.qzv",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_features.txt",
-        "02-output-dada2-se-filtered/00-table-repseqs/representative_sequences.qzv",
-        "02-output-dada2-se-filtered/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-dada2-se-filtered/00-table-repseqs/representative_sequences_lengths_describe.md",
+        "02-output-dada2-se-filtered/00-table-repseqs/repseqs.qzv",
+        "02-output-dada2-se-filtered/00-table-repseqs/repseqs_amplicon_type.txt",
+        "02-output-dada2-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv"
 
 rule dada2_se_diversity_filtered:
     input:
         "02-output-dada2-se-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-se-filtered/02-alignment-tree/aligned_dna_sequences_gaps_describe.md",
-        "02-output-dada2-se-filtered/02-alignment-tree/representative_sequences_properties.pdf",
+        "02-output-dada2-se-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-se-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         "02-output-dada2-se-filtered/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -163,9 +163,9 @@ rule deblur_se_denoise:
         "02-output-deblur-se-unfiltered/00-table-repseqs/table.qzv",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_features.txt",
-        "02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences.qzv",
-        "02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences_lengths_describe.md"
+        "02-output-deblur-se-unfiltered/00-table-repseqs/repseqs.qzv",
+        "02-output-deblur-se-unfiltered/00-table-repseqs/repseqs_amplicon_type.txt",
+        "02-output-deblur-se-unfiltered/00-table-repseqs/repseqs_lengths_describe.md"
 
 rule deblur_se_taxonomy_unfiltered:
     input:
@@ -175,8 +175,8 @@ rule deblur_se_taxonomy_unfiltered:
 rule deblur_se_diversity_unfiltered:
     input:
         "02-output-deblur-se-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-deblur-se-unfiltered/02-alignment-tree/aligned_dna_sequences_gaps_describe.md",
-        "02-output-deblur-se-unfiltered/02-alignment-tree/representative_sequences_properties.pdf",
+        "02-output-deblur-se-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         "02-output-deblur-se-unfiltered/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -196,17 +196,17 @@ rule deblur_se_taxonomy_filtered:
         "02-output-deblur-se-filtered/00-table-repseqs/table.qzv",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_features.txt",
-        "02-output-deblur-se-filtered/00-table-repseqs/representative_sequences.qzv",
-        "02-output-deblur-se-filtered/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        "02-output-deblur-se-filtered/00-table-repseqs/representative_sequences_lengths_describe.md",
+        "02-output-deblur-se-filtered/00-table-repseqs/repseqs.qzv",
+        "02-output-deblur-se-filtered/00-table-repseqs/repseqs_amplicon_type.txt",
+        "02-output-deblur-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv"
 
 rule deblur_se_diversity_filtered:
     input:
         "02-output-deblur-se-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-deblur-se-filtered/02-alignment-tree/aligned_dna_sequences_gaps_describe.md",
-        "02-output-deblur-se-filtered/02-alignment-tree/representative_sequences_properties.pdf",
+        "02-output-deblur-se-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-deblur-se-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         "02-output-deblur-se-filtered/03-alpha-diversity/alpha_rarefaction.qzv",
@@ -384,7 +384,7 @@ rule denoise_dada2_pe:
         hashedfeatureids=config["dada2pe_hashed_feature_ids"]
     output:
         table="02-output-dada2-pe-unfiltered/00-table-repseqs/table.qza",
-        repseqs="02-output-dada2-pe-unfiltered/00-table-repseqs/representative_sequences.qza",
+        repseqs="02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs.qza",
         stats="02-output-dada2-pe-unfiltered/00-table-repseqs/dada2_stats.qza"
     threads: config["dada2pe_threads"]
     shell:
@@ -421,7 +421,7 @@ rule denoise_dada2_se:
         hashedfeatureids=config["dada2se_hashed_feature_ids"]
     output:
         table="02-output-dada2-se-unfiltered/00-table-repseqs/table.qza",
-        repseqs="02-output-dada2-se-unfiltered/00-table-repseqs/representative_sequences.qza",
+        repseqs="02-output-dada2-se-unfiltered/00-table-repseqs/repseqs.qza",
         stats="02-output-dada2-se-unfiltered/00-table-repseqs/dada2_stats.qza"
     threads: config["dada2se_threads"]
     shell:
@@ -456,7 +456,7 @@ rule denoise_deblur_se:
         hashedfeatureids=config["deblur_hashed_feature_ids"]
     output:
         table="02-output-deblur-se-unfiltered/00-table-repseqs/table.qza",
-        repseqs="02-output-deblur-se-unfiltered/00-table-repseqs/representative_sequences.qza",
+        repseqs="02-output-deblur-se-unfiltered/00-table-repseqs/repseqs.qza",
         stats="02-output-deblur-se-unfiltered/00-table-repseqs/deblur_stats.qza"
     threads: config["deblur_threads"]
     shell:
@@ -529,9 +529,9 @@ rule summarize_biom_features:
 
 rule visualize_repseqs:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.qza"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.qzv"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv"
     shell:
         "qiime feature-table tabulate-seqs "
         "--i-data {input} "
@@ -539,9 +539,9 @@ rule visualize_repseqs:
 
 rule unzip_repseqs_to_fasta:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.qza"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.fasta"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     shell:
         "unzip -qq -o {input} -d temp; "
         "mv temp/*/data/dna-sequences.fasta {output}; "
@@ -549,25 +549,25 @@ rule unzip_repseqs_to_fasta:
 
 rule repseqs_detect_amplicon_locus:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.fasta"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences_amplicon_type.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt"
     shell:
         "python scripts/detect_amplicon_locus.py -i {input} > {output}"
 
 rule repseqs_lengths:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.fasta"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences_lengths.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt"
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
 rule repseqs_lengths_describe:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences_lengths.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences_lengths_describe.md"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths_describe.md"
     run:
         s = pd.read_csv(input[0], header=None, index_col=0)
         t = s.describe()
@@ -582,7 +582,7 @@ rule feature_classifier:
     input:
         refseqs="01-imported/refseqs.qza",
         reftax="01-imported/reftax.qza",
-        repseqs="02-output-{method}-unfiltered/00-table-repseqs/representative_sequences.qza"
+        repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
@@ -646,9 +646,9 @@ rule copy_taxonomy:
 
 rule alignment_mafft:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/representative_sequences.qza"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_representative_sequences.qza"
+        "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
     threads: config["alignment_mafft_threads"]
     shell:
         "qiime alignment mafft "
@@ -658,9 +658,9 @@ rule alignment_mafft:
 
 rule alignment_mask:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_representative_sequences.qza"
+        "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/masked_aligned_representative_sequences.qza"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     shell:
         "qiime alignment mask "
         "--i-alignment {input} "
@@ -668,7 +668,7 @@ rule alignment_mask:
 
 rule phylogeny_fasttree:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/masked_aligned_representative_sequences.qza"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/unrooted_tree.qza"
     threads: config["phylogeny_fasttree_threads"]
@@ -706,9 +706,9 @@ rule visualize_tree:
 
 rule unzip_alignment_to_fasta:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/masked_aligned_representative_sequences.qza"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences.fasta"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     shell:
         "unzip -qq -o {input} -d temp; "
         "mv temp/*/data/aligned-dna-sequences.fasta {output}; "
@@ -716,17 +716,17 @@ rule unzip_alignment_to_fasta:
 
 rule alignment_count_gaps:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences.fasta"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences_gaps.txt"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt"
     shell:
         "cat {input} | grep -v '>' | sed 's/[^-]//g' | awk '{{ print length }}' > {output}"
 
 rule alignment_gaps_describe:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences_gaps.txt"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences_gaps_describe.md"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
     run:
         gaps = pd.read_csv(input[0], header=None)
         t = gaps.describe()
@@ -737,26 +737,26 @@ rule alignment_gaps_describe:
 
 rule alignment_detect_outliers:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences.fasta"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     params:
         metric = config["odseq_distance_metric"],
         replicates = config["odseq_bootstrap_replicates"],
         threshold = config["odseq_threshold"]
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences_outliers.tsv"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv"
     shell:
         "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} {output}"
 
 rule tabulate_plot_repseq_properties:
     input:
-        lengths="02-output-{method}-{filter}/00-table-repseqs/representative_sequences_lengths.txt",
-        gaps="02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences_gaps.txt",
-        outliers="02-output-{method}-{filter}/02-alignment-tree/aligned_dna_sequences_outliers.tsv",
+        lengths="02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt",
+        gaps="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt",
+        outliers="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv",
         taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
     output:
-        proptsv="02-output-{method}-{filter}/02-alignment-tree/representative_sequences_properties.tsv",
-        proppdf="02-output-{method}-{filter}/02-alignment-tree/representative_sequences_properties.pdf"
+        proptsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
+        proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf"
     run:
         lengths = pd.read_csv(input['lengths'], header=None)
         gaps = pd.read_csv(input['gaps'], header=None)
@@ -778,7 +778,7 @@ rule tabulate_plot_repseq_properties:
 
 rule tabulate_repseqs_to_filter:
     input:
-        proptsv="02-output-{method}-{filter}/02-alignment-tree/representative_sequences_properties.tsv"
+        proptsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv"
     output:
         outliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         unassigned="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_unassigned.tsv"
@@ -790,12 +790,12 @@ rule tabulate_repseqs_to_filter:
 
 rule filter_sequences_by_taxonomy:
     input:
-        repseqs="02-output-{method}-unfiltered/00-table-repseqs/representative_sequences.qza",
+        repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza",
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
         excludeterms=config["exclude_terms"]
     output:
-        "02-output-{method}-filtered/00-table-repseqs/representative_sequences_pre_id_filtering.qza"
+        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza"
     shell:
         "qiime taxa filter-seqs "
         "--i-sequences {input.repseqs} "
@@ -805,10 +805,10 @@ rule filter_sequences_by_taxonomy:
 
 rule filter_sequences_by_id:
     input:
-        repseqs="02-output-{method}-filtered/00-table-repseqs/representative_sequences_pre_id_filtering.qza",
+        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza",
         seqmetadata="00-data/repseqs_to_filter_{method}.tsv"
     output:
-        "02-output-{method}-filtered/00-table-repseqs/representative_sequences.qza"
+        "02-output-{method}-filtered/00-table-repseqs/repseqs.qza"
     shell:
         "qiime feature-table filter-seqs "
         "--i-data {input.repseqs} "
@@ -819,7 +819,7 @@ rule filter_sequences_by_id:
 rule filter_table:
     input:
         table="02-output-{method}-unfiltered/00-table-repseqs/table.qza",
-        filteredseqs="02-output-{method}-filtered/00-table-repseqs/representative_sequences.qza"
+        filteredseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-filtered/00-table-repseqs/table.qza",
     shell:
@@ -972,15 +972,15 @@ rule generate_report_md:
         mdsummary="03-reports/metadata_summary.md",
         fastq="01-imported/fastq_count_describe.md",
         run="01-imported/fastq_illumina_run.log",
-        amplicontype="02-output-{method}-{filter}/00-table-repseqs/representative_sequences_amplicon_type.txt",
-        repseqstsv="02-output-{method}-{filter}/02-alignment-tree/representative_sequences_properties.tsv",
-        repseqspdf="02-output-{method}-{filter}/02-alignment-tree/representative_sequences_properties.pdf",
+        amplicontype="02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt",
+        repseqstsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
+        repseqspdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         repseqsoutliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         repseqsunassigned="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         samples="02-output-{method}-{filter}/00-table-repseqs/table_summary_samples.txt",
         features="02-output-{method}-{filter}/00-table-repseqs/table_summary_features.txt",
         visfastq="01-imported/fastq_summary.qzv",
-        visrepseqs="02-output-{method}-{filter}/00-table-repseqs/representative_sequences.qzv",
+        visrepseqs="02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv",
         vistaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv",
         vistable="02-output-{method}-{filter}/00-table-repseqs/table.qzv",
         vistaxbar="02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv",
