@@ -46,8 +46,14 @@ rule dada2_pe_diversity_unfiltered:
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/shannon_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/bray_curtis_emperor.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/bray_curtis_group_significance.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/jaccard_emperor.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/jaccard_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
 
 rule dada2_pe_report_unfiltered:
     input:
@@ -76,8 +82,14 @@ rule dada2_pe_diversity_filtered:
         "02-output-dada2-pe-filtered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-pe-filtered/03-alpha-diversity/shannon_group_significance.qzv",
         "02-output-dada2-pe-filtered/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/bray_curtis_emperor.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/bray_curtis_group_significance.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/jaccard_emperor.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/jaccard_group_significance.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
 
 rule dada2_pe_report_filtered:
     input:
@@ -115,8 +127,14 @@ rule dada2_se_diversity_unfiltered:
         "02-output-dada2-se-unfiltered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-se-unfiltered/03-alpha-diversity/shannon_group_significance.qzv",
         "02-output-dada2-se-unfiltered/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/bray_curtis_emperor.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/bray_curtis_group_significance.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/jaccard_emperor.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/jaccard_group_significance.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
 
 rule dada2_se_report_unfiltered:
     input:
@@ -145,8 +163,14 @@ rule dada2_se_diversity_filtered:
         "02-output-dada2-se-filtered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-se-filtered/03-alpha-diversity/shannon_group_significance.qzv",
         "02-output-dada2-se-filtered/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/bray_curtis_emperor.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/bray_curtis_group_significance.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/jaccard_emperor.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/jaccard_group_significance.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
 
 rule dada2_se_report_filtered:
     input:
@@ -184,8 +208,14 @@ rule deblur_se_diversity_unfiltered:
         "02-output-deblur-se-unfiltered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-deblur-se-unfiltered/03-alpha-diversity/shannon_group_significance.qzv",
         "02-output-deblur-se-unfiltered/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/bray_curtis_emperor.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/bray_curtis_group_significance.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/jaccard_emperor.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/jaccard_group_significance.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
 
 rule deblur_se_report_unfiltered:
     input:
@@ -214,8 +244,14 @@ rule deblur_se_diversity_filtered:
         "02-output-deblur-se-filtered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-deblur-se-filtered/03-alpha-diversity/shannon_group_significance.qzv",
         "02-output-deblur-se-filtered/03-alpha-diversity/evenness_group_significance.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/bray_curtis_emperor.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/bray_curtis_group_significance.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/jaccard_emperor.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/jaccard_group_significance.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
 
 rule deblur_se_report_filtered:
     input:
@@ -916,12 +952,12 @@ rule diversity_alpha_group_significance:
 
 rule diversity_beta_group_significance:
     input:
-        distancematrix="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_distance_matrix.qza",
+        distancematrix="02-output-{method}-{filter}/04-beta-diversity/{metric}_distance_matrix.qza",
         metadata=config["metadata"]
     params:
         column=config["beta_group_column"]
     output:
-        "02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        "02-output-{method}-{filter}/04-beta-diversity/{metric}_group_significance.qzv"
     shell:
         "qiime diversity beta-group-significance "
         "--i-distance-matrix {input.distancematrix} "
@@ -991,8 +1027,11 @@ rule generate_report_md:
         visobsfeaturesgs="02-output-{method}-{filter}/03-alpha-diversity/observed_features_group_significance.qzv",
         visshannongs="02-output-{method}-{filter}/03-alpha-diversity/shannon_group_significance.qzv",
         visbcemp="02-output-{method}-{filter}/04-beta-diversity/bray_curtis_emperor.qzv",
+        visbcgs="02-output-{method}-{filter}/04-beta-diversity/bray_curtis_group_significance.qzv",
         visjacemp="02-output-{method}-{filter}/04-beta-diversity/jaccard_emperor.qzv",
+        visjacgs="02-output-{method}-{filter}/04-beta-diversity/jaccard_group_significance.qzv",
         viswuemp="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_emperor.qzv",
+        viswugs="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_group_significance.qzv",
         visuwuemp="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
     output:
@@ -1004,7 +1043,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo 'For information on Tourmaline outputs, visit [https://github.com/aomlomics/tourmaline](https://github.com/aomlomics/tourmaline).' >> {output};"
         "echo '' >> {output};"
-        "echo 'To view the QIIME 2 visualization (.qzv) files, click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org).' >> {output};"
+        "echo 'To view the QIIME 2 visualization (QZV) files, click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org).' >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
@@ -1021,17 +1060,17 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '## Fastq Sequences Information' >> {output};"
         "echo '' >> {output};"
-        "echo '### Fastq sequences per sample' >> {output};"
+        "echo '### Fastq Sequences per Sample' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.fastq} >> {output};"
         "echo '' >> {output};"
         "cat {input.fastq} >> {output};"
         "echo '' >> {output};"
-        "echo '### Visualization of fastq sequences' >> {output};"
+        "echo '### Visualization of Fastq Sequences' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visfastq}\]\(../{input.visfastq}\) >> {output};"
+        "echo QZV: \[{input.visfastq}\]\(../{input.visfastq}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Number of Illumina runs' >> {output};"
+        "echo '### Number of Illumina Runs' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.run} >> {output};"
         "echo '' >> {output};"
@@ -1043,31 +1082,31 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '## Representative Sequences Information' >> {output};"
         "echo '' >> {output};"
-        "echo '### Representative sequences properties (featureid, length, gaps, outlier, taxonomy, observations)' >> {output};"
+        "echo '### Representative Sequences Properties (featureid, length, gaps, outlier, taxonomy, observations)' >> {output};"
         "echo '' >> {output};"
-        "echo Download TSV: \[{input.repseqstsv}\]\(../{input.repseqstsv}\) >> {output};"
+        "echo TSV: \[{input.repseqstsv}\]\(../{input.repseqstsv}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download PDF: \[{input.repseqspdf}\]\(../{input.repseqspdf}\) >> {output};"
+        "echo PDF: \[{input.repseqspdf}\]\(../{input.repseqspdf}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Representative sequences rooted tree' >> {output};"
+        "echo '### Representative Sequences Rooted Tree' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.repseqstree}\]\(../{input.repseqstree}\) >> {output};"
+        "echo QZV: \[{input.repseqstree}\]\(../{input.repseqstree}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Representative sequences to filter (optionally merge then rename to 00-data/repseqs_to_filter_{{method}}.tsv)' >> {output};"
+        "echo '### Representative Sequences to Filter (optionally merge then rename to 00-data/repseqs_to_filter_{{method}}.tsv)' >> {output};"
         "echo '' >> {output};"
-        "echo Download TSV \(outliers\): \[{input.repseqsoutliers}\]\(../{input.repseqsoutliers}\) >> {output};"
+        "echo Outliers TSV: \[{input.repseqsoutliers}\]\(../{input.repseqsoutliers}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download TSV \(unassigned\): \[{input.repseqsunassigned}\]\(../{input.repseqsunassigned}\) >> {output};"
+        "echo Unassigned TSV: \[{input.repseqsunassigned}\]\(../{input.repseqsunassigned}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Visualization of representative sequences' >> {output};"
+        "echo '### Visualization of Representative Sequences' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visrepseqs}\]\(../{input.visrepseqs}\) >> {output};"
+        "echo QZV: \[{input.visrepseqs}\]\(../{input.visrepseqs}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Visualization of taxonomy' >> {output};"
+        "echo '### Visualization of Taxonomy' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.vistaxonomy}\]\(../{input.vistaxonomy}\) >> {output};"
+        "echo QZV: \[{input.vistaxonomy}\]\(../{input.vistaxonomy}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Predicted amplicon type' >> {output};"
+        "echo '### Predicted Amplicon Type' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.amplicontype} >> {output};"
         "echo '' >> {output};"
@@ -1079,7 +1118,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '## Observation Table Information' >> {output};"
         "echo '' >> {output};"
-        "echo '### Table summary: Samples' >> {output};"
+        "echo '### Table Summary: Samples' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.samples} >> {output};"
         "echo '' >> {output};"
@@ -1087,7 +1126,7 @@ rule generate_report_md:
         "head -n 13 {input.samples} >> {output};"
         "echo '```' >> {output};"
         "echo '' >> {output};"
-        "echo '### Table summary: Features' >> {output};"
+        "echo '### Table Summary: Features' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.features} >> {output};"
         "echo '' >> {output};"
@@ -1095,65 +1134,59 @@ rule generate_report_md:
         "head -n 13 {input.features} >> {output};"
         "echo '```' >> {output};"
         "echo '' >> {output};"
-        "echo '### Visualization of table summary' >> {output};"
+        "echo '### Visualization of Table Summary' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.vistable}\]\(../{input.vistable}\) >> {output};"
+        "echo QZV: \[{input.vistable}\]\(../{input.vistable}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
         "echo '## Taxonomic Diversity Results' >> {output};"
         "echo '' >> {output};"
-        "echo '### Taxonomy barplot' >> {output};"
+        "echo '### Taxonomy Barplot' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.vistaxbar}\]\(../{input.vistaxbar}\) >> {output};"
+        "echo QZV: \[{input.vistaxbar}\]\(../{input.vistaxbar}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
         "echo '## Alpha Diversity Results' >> {output};"
         "echo '' >> {output};"
-        "echo '### Alpha rarefaction' >> {output};"
+        "echo '### Alpha Rarefaction' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visalpharare}\]\(../{input.visalpharare}\) >> {output};"
+        "echo QZV: \[{input.visalpharare}\]\(../{input.visalpharare}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Evenness group significance' >> {output};"
+        "echo '### Alpha Group Significance' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visevengs}\]\(../{input.visevengs}\) >> {output};"
+        "echo Evenness QZV: \[{input.visevengs}\]\(../{input.visevengs}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Faith PD group significance' >> {output};"
+        "echo Faith PD QZV: \[{input.visfaithgs}\]\(../{input.visfaithgs}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visfaithgs}\]\(../{input.visfaithgs}\) >> {output};"
+        "echo Observed features QZV: \[{input.visobsfeaturesgs}\]\(../{input.visobsfeaturesgs}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Observed features group significance' >> {output};"
-        "echo '' >> {output};"
-        "echo Download QZV: \[{input.visobsfeaturesgs}\]\(../{input.visobsfeaturesgs}\) >> {output};"
-        "echo '' >> {output};"
-        "echo '### Shannon group significance' >> {output};"
-        "echo '' >> {output};"
-        "echo Download QZV: \[{input.visshannongs}\]\(../{input.visshannongs}\) >> {output};"
+        "echo Shannon QZV: \[{input.visshannongs}\]\(../{input.visshannongs}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
         "echo '## Beta Diversity Results' >> {output};"
         "echo '' >> {output};"
-        "echo '### Bray-Curtis PCoA' >> {output};"
+        "echo '### PCoA Emperor Plots' >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visbcemp}\]\(../{input.visbcemp}\) >> {output};"
+        "echo Bray-Curtis QZV: \[{input.visbcemp}\]\(../{input.visbcemp}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Jaccard PCoA' >> {output};"
+        "echo Jaccard QZV: \[{input.visjacemp}\]\(../{input.visjacemp}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visjacemp}\]\(../{input.visjacemp}\) >> {output};"
+        "echo Weighted UniFrac QZV: \[{input.viswuemp}\]\(../{input.viswuemp}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Weighted UniFrac PCoA' >> {output};"
+        "echo Unweighted UniFrac QZV: \[{input.visuwuemp}\]\(../{input.visuwuemp}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.viswuemp}\]\(../{input.viswuemp}\) >> {output};"
+        "echo '### Beta Group Significance' >> {output};"
         "echo '' >> {output};"
-        "echo '### Unweighted UniFrac PCoA' >> {output};"
+        "echo Bray-Curtis QZV: \[{input.visbcgs}\]\(../{input.visbcgs}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visuwuemp}\]\(../{input.visuwuemp}\) >> {output};"
+        "echo Jaccard QZV: \[{input.visjacgs}\]\(../{input.visjacgs}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Unweighted UniFrac Group Significance' >> {output};"
+        "echo Weighted UniFrac QZV: \[{input.viswugs}\]\(../{input.viswugs}\) >> {output};"
         "echo '' >> {output};"
-        "echo Download QZV: \[{input.visuwugs}\]\(../{input.visuwugs}\) >> {output};"
+        "echo Unweighted UniFrac QZV: \[{input.visuwugs}\]\(../{input.visuwugs}\) >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"
