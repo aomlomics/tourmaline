@@ -697,7 +697,7 @@ rule visualize_tree:
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv"
     shell:
-        "qiime empress plot "
+        "qiime empress community-plot "
         "--i-tree {input.tree} "
         "--i-feature-table {input.table} "
         "--m-sample-metadata-file {input.metadata} "
@@ -975,6 +975,7 @@ rule generate_report_md:
         amplicontype="02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt",
         repseqstsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
         repseqspdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
+        repseqstree="02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv",
         repseqsoutliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         repseqsunassigned="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
         samples="02-output-{method}-{filter}/00-table-repseqs/table_summary_samples.txt",
@@ -1048,7 +1049,11 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Download PDF: \[{input.repseqspdf}\]\(../{input.repseqspdf}\) >> {output};"
         "echo '' >> {output};"
-        "echo '### Representative sequences to filter (optionally merge then rename to 00-data/repseqs_to_filter.tsv)' >> {output};"
+        "echo '### Representative sequences rooted tree' >> {output};"
+        "echo '' >> {output};"
+        "echo Download QZV: \[{input.repseqstree}\]\(../{input.repseqstree}\) >> {output};"
+        "echo '' >> {output};"
+        "echo '### Representative sequences to filter (optionally merge then rename to 00-data/repseqs_to_filter_{{method}}.tsv)' >> {output};"
         "echo '' >> {output};"
         "echo Download TSV \(outliers\): \[{input.repseqsoutliers}\]\(../{input.repseqsoutliers}\) >> {output};"
         "echo '' >> {output};"
