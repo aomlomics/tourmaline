@@ -19,6 +19,131 @@ Ready to get started? Visit the [Wiki](https://github.com/lukenoaa/tourmaline/wi
 
 ## Quick Start
 
+Tourmaline provides Snakemake rules for DADA2 (single-end and paired-end) and Deblur (single-end). For each type of processing, there are four steps:
+
+1. the *denoise* rule imports FASTQ data and runs denoising, generating a feature table and representative sequences;
+2. the *taxonomy* rule assigns taxonomy to representative sequences;
+3. the *diversity* rule does representative sequence curation, core diversity analyses, and alpha and beta group significance; and
+4. the *report* rule generates an HTML report of the outputs plus metadata, inputs, and parameters.
+
+Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in the *taxonomy* step of *filtered* mode, undesired taxonomic groups or individual sequences from the representative sequences and feature table are removed. The *diversity* and *report* rules are the same for *unfiltered* and *filtered* modes, except the output goes into separate subdirectories.
+
+### Install
+
+Tourmaline requires a Conda installation of QIIME 2, Snakemake, and other dependencies:
+
+```
+wget https://data.qiime2.org/distro/core/qiime2-2020.8-py36-osx-conda.yml
+conda env create -n qiime2-2020.8 --file qiime2-2020.8-py36-osx-conda.yml
+conda activate qiime2-2020.8
+conda install -c bioconda snakemake biopython tabulate pandoc tabview
+conda install -c bioconda bioconductor-msa bioconductor-odseq
+pip install git+https://github.com/biocore/empress.git
+qiime dev refresh-cache
+```
+
+### Setup
+
+Start by cloning the Tourmaline directory and files:
+
+```
+git clone https://github.com/aomlomics/tourmaline.git
+```
+
+If this is your first time running Tourmaline, you'll need to set up your directory. See the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for instructions. Briefly, to process the **Test data**:
+
+* Put reference database taxonomy and FASTA (as imported QIIME 2 archives) in `01-imported`.
+* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory.
+* Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`.
+
+Or to process **Your data**:
+
+* Put reference database taxonomy and FASTA files in `00-data` or imported QIIME 2 archives in `01-imported`.
+* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file.
+* Edit metadata file `metadata.tsv` to contain your sample names and any relevant metadata for your samples.
+* Edit configuration file `config.yaml` to change PCR locus/primers, DADA2/Deblur parameters, and rarefaction depth.
+* Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`.
+
+If you've run Tourmaline on your dataset before, you can initialize a new Tourmaline directory with the files and symlinks of an existing one using the command below:
+
+```
+cd /PATH/TO/NEW/TOURMALINE
+scripts/initialize_dir_from_existing_tourmaline_dir.sh /PATH/TO/EXISTING/TOURMALINE
+# then make any changes to your configuration before running
+```
+
+### Run Snakemake
+
+Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
+
+From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
+
+```
+snakemake dada2_pe_denoise
+```
+
+Pausing after the *denoise* step allows you to make changes before proceeding:
+
+* Check the table summaries and representative sequence lengths to determine if DADA2 or Deblur parameters need to be modified. If so, you can rename or delete the output directories and then rerun the *denoise* rule.
+* View the table visualization to decide an appropriate subsampling (rarefaction) depth. Then modify the parameters "alpha_max_depth" and "core_sampling_depth" in `config.yaml`.
+* Decide whether to filter your feature table and representative sequences by taxonomy or feature ID. After the *taxonomy* step, you can examine the taxonomy summary and bar plot to aid your decision. If you do filter your data, all output from that point on will go in a separate folder so you can compare output with and without filtering.
+
+#### Unfiltered mode
+
+For now, let's run the workflow without filtering. If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
+
+```
+snakemake dada2_pe_taxonomy_unfiltered
+```
+
+Continue with the *diversity* rule (for unfiltered data):
+
+```
+snakemake dada2_pe_diversity_unfiltered
+```
+
+Finally, run the *report* rule (for unfiltered data):
+
+```
+snakemake dada2_pe_report_unfiltered
+```
+
+#### Filtered mode
+
+Filtering is done on representative sequences and the feature table, and downstream outputs will be filtered; the taxonomy file itself is not filtered. Filtering can be done by taxonomy keywords and/or by feature IDs of specific representative sequences. To filter by these two methods, before running *taxonomy_filtered*:
+
+* Taxonomy keyword: Place the keywords in `config.yaml` in the field "exclude_terms", separated by commas. Searching is not case-sensitive.
+* Specific representative sequences: Go to `2-output-dada2-pe-unfiltered/02-alignment-tree` and copy or merge `repseqs_to_filter_outliers.tsv` and/or `repseqs_to_filter_unassigned.tsv` to  `00-data/repseqs_to_filter_dada2-pe.tsv`. If merging the two files, take care to remove duplicate feature IDs, because duplicates will cause the filtering step to fail.
+
+Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
+
+```
+snakemake dada2_pe_taxonomy_filtered
+```
+
+Continue with the *diversity* rule (for filtered data):
+
+```
+snakemake dada2_pe_diversity_filtered
+```
+
+Finally, run the *report* rule (for filtered data):
+
+```
+snakemake dada2_pe_report_filtered
+```
+
+#### Troubleshooting
+
+* The whole workflow should take ~3–5 minutes to complete with the test data. A normal dataset may take several hours to complete.
+* If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
+* Do not use the `--cores` option. Tourmaline should be run with 1 core (default).
+
+#### Power tips
+
+* The whole workflow can be run with just the command `snakemake dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
+* If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run.
+
 ## License
 
 Software code created by U.S. Government employees is not subject to copyright in the United States (17 U.S.C. §105). The United States/Department of Commerce reserve all rights to seek and obtain copyright protection in countries other than the United States for Software authored in its entirety by the Department of Commerce. To this end, the Department of Commerce hereby grants to Recipient a royalty-free, nonexclusive license to use, copy, and create derivative works of the Software outside of the United States.
@@ -26,4 +151,3 @@ Software code created by U.S. Government employees is not subject to copyright i
 ## Disclaimer
 
 This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration, or the United States Department of Commerce. All NOAA GitHub project code is provided on an ‘as is’ basis and the user assumes responsibility for its use. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
-
