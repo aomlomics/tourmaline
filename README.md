@@ -1,5 +1,7 @@
 <img src="images/tourmaline_banner.png" alt="images/tourmaline_banner" width="100%"/>
 
+<img src="images/figure1.png" alt="images/figure1" width="100%"/>
+
 ## Tourmaline
 
 Tourmaline is an amplicon (metabarcoding) sequence processing workflow for Illumina sequence data. It uses the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system as a wrapper for [QIIME 2](https://qiime2.org) and additional shell and Python scripts.
