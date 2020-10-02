@@ -90,13 +90,13 @@ Pausing after the *denoise* step allows you to make changes before proceeding:
 
 #### Unfiltered mode
 
-For now, let's run the workflow without filtering. If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
+Continue the workflow without filtering (for now). If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
 
 ```
 snakemake dada2_pe_taxonomy_unfiltered
 ```
 
-Continue with the *diversity* rule (for unfiltered data):
+Next, run the *diversity* rule (for unfiltered data):
 
 ```
 snakemake dada2_pe_diversity_unfiltered
@@ -121,7 +121,7 @@ Now we are ready to filter the representative sequences and feature table, gener
 snakemake dada2_pe_taxonomy_filtered
 ```
 
-Continue with the *diversity* rule (for filtered data):
+Next, run the *diversity* rule (for filtered data):
 
 ```
 snakemake dada2_pe_diversity_filtered
