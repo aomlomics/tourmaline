@@ -8,9 +8,10 @@ LABEL description="Docker image to build the Tourmaline Snakemake workflow for Q
 # Set the working directory for below commands - necessary? Causes container to open in this directory
 #WORKDIR /usr/src/app
 
-# Install dependencies
+# Install dependencies and useful commands
 RUN apt-get update && \
  apt-get install -y \
+	nano \
 	snakemake \
 	python3-biopython \
 	python3-tabulate \
@@ -21,3 +22,14 @@ RUN apt-get update && \
  pip install git+https://github.com/biocore/empress.git && \
  pip install tabview && \
  qiime dev refresh-cache
+
+# Set up bash environment: aliases, colors, history
+RUN echo "alias cd..='cd ..'" >> ~/.bashrc
+RUN echo "alias l='ls --color'" >> ~/.bashrc
+RUN echo "alias la='ls -a --color'" >> ~/.bashrc
+RUN echo "alias lal='ls -alh --color'" >> ~/.bashrc
+RUN echo "alias ll='ls -lh --color'" >> ~/.bashrc
+RUN echo "alias rm='rm -i'" >> ~/.bashrc
+RUN echo "alias taill='ls -lrt | tail'" >> ~/.bashrc
+RUN echo "bind '\"\e[A\": history-search-backward'" >> ~/.bashrc
+RUN echo "bind '\"\e[B\": history-search-forward'" >> ~/.bashrc
