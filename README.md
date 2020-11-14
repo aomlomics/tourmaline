@@ -52,13 +52,13 @@ Start by cloning the Tourmaline directory and files:
 git clone https://github.com/aomlomics/tourmaline.git
 ```
 
-If this is your first time running Tourmaline, you'll need to set up your directory. See the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for instructions. Briefly, to process the **Test data**:
+If this is your first time running Tourmaline, you'll need to set up your directory. See the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for instructions. Briefly, to process the **test data**:
 
-* Put reference database taxonomy and FASTA (as imported QIIME 2 archives) in `01-imported`.
+* Put reference database sequence and taxonomy files, named `refseqs.qza` and `reftax.qza` (QIIME 2 archives), in `01-imported`.
 * Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory.
 * Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`.
 
-Or to process **Your data**:
+Or to process **your data**:
 
 * Put reference database taxonomy and FASTA files in `00-data` or imported QIIME 2 archives in `01-imported`.
 * Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file.
@@ -66,11 +66,11 @@ Or to process **Your data**:
 * Edit configuration file `config.yaml` to change PCR locus/primers, DADA2/Deblur parameters, and rarefaction depth.
 * Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`.
 
-If you've run Tourmaline on your dataset before, you can initialize a new Tourmaline directory with the files and symlinks of an existing one using the command below:
+If you've run Tourmaline on your dataset before, you can initialize a new Tourmaline directory (e.g., named `tourmaline-new`) with the files and symlinks of the existing one (e.g., named `tourmaline-existing`) using the command below:
 
 ```
-cd /PATH/TO/NEW/TOURMALINE
-scripts/initialize_dir_from_existing_tourmaline_dir.sh /PATH/TO/EXISTING/TOURMALINE
+cd /path/to/tourmaline-new
+scripts/initialize_dir_from_existing_tourmaline_dir.sh /path/to/tourmaline-existing
 # then make any changes to your configuration before running
 ```
 
