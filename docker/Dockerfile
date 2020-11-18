@@ -22,6 +22,7 @@ RUN apt-get update -y && \
  build-essential \
  apt-utils \
  nano \
+ unzip \
  pandoc && \
  rm -rf /var/lib/apt/lists/*
  

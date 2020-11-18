@@ -66,7 +66,7 @@ To process the **test data**:
   ln -s silva-138-99-tax-515-806.qza reftax.qza
   ```
 
-* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory (not necessary if you are using the Docker container and you cloned `tourmaline` into `/data`):
+* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory (This step is not necessary if you are using the Docker container and you cloned `tourmaline` into `/data`.):
 
   ```
   cd /path/to/tourmaline/00-data

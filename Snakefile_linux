@@ -353,7 +353,6 @@ rule check_illumina_run_pe:
         runs="01-imported/fastq_illumina_run.txt",
         log="01-imported/fastq_illumina_run.log"
     shell:
-        "set +o pipefail; "
         "for line in `tail -n +2 {input} | cut -d',' -f2`; "
         "do echo -n $line; "
         "echo -n ','; "
@@ -370,7 +369,6 @@ rule check_illumina_run_se:
         runs="01-imported/fastq_illumina_run.txt",
         log="01-imported/fastq_illumina_run.log"
     shell:
-        "set +o pipefail; "
         "for line in `tail -n +2 {input} | cut -d',' -f2`; "
         "do echo -n $line; "
         "echo -n ','; "
