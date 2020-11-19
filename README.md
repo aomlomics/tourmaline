@@ -1,6 +1,6 @@
-<img src="images/tourmaline_banner.png" alt="images/tourmaline_banner" width="100%"/>
+<img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
 
-<img src="images/figure1.png" alt="images/figure1" width="100%"/>
+<img src="png/figure1.png" alt="png/figure1" width="100%"/>
 
 ## Tourmaline
 
@@ -44,6 +44,13 @@ pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
+Alternatively, use the Docker image to create a container with all the dependencies:
+
+```
+docker pull aomlomics/tourmaline:2020.8-1
+docker run -it aomlomics/tourmaline:2020.8-1
+```
+
 ### Setup
 
 Start by cloning the Tourmaline directory and files:
@@ -66,7 +73,7 @@ To process the **test data**:
   ln -s silva-138-99-tax-515-806.qza reftax.qza
   ```
 
-* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory (not necessary if you are using the Docker container and you cloned `tourmaline` into `/data`):
+* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory (This step is not necessary if you are using the Docker container and you cloned `tourmaline` into `/data`.):
 
   ```
   cd /path/to/tourmaline/00-data
