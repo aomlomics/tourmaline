@@ -42,4 +42,5 @@ ENV PATH="/opt/conda/envs/qiime2-2020.8/bin:$PATH"
 SHELL ["conda", "run", "-n", "qiime2-2020.8", "/bin/bash", "-c"]
  
 # Install snakemake
+RUN conda update -n base -c defaults conda
 RUN conda install -c bioconda snakemake

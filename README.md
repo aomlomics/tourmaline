@@ -53,57 +53,65 @@ docker run -it aomlomics/tourmaline:2020.8-1
 
 ### Setup
 
+If this is your first time running Tourmaline, you'll need to set up your directory. Simplified instructions are below, but see the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for complete instructions. 
+
 Start by cloning the Tourmaline directory and files:
 
 ```
 git clone https://github.com/aomlomics/tourmaline.git
 ```
 
-If this is your first time running Tourmaline, you'll need to set up your directory. See the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for instructions. 
+#### Setup for the test data
 
-To process the **test data**:
+The test data (16 samples of paired-end 16S rRNA data with 1000 sequences per sample) comes with your cloned copy of Tourmaline. It's fast to run and will verify that you can run the workflow.
 
-* Download reference database sequence and taxonomy files, named `refseqs.qza` and `reftax.qza` (QIIME 2 archives), in `01-imported` (replace `/path/to` with the location of your `tourmaline` directory):
+Download reference database sequence and taxonomy files, named `refseqs.qza` and `reftax.qza` (QIIME 2 archives), in `01-imported`:
 
-  ```
-  cd /path/to/tourmaline/01-imported
-  wget https://data.qiime2.org/2020.8/common/silva-138-99-seqs-515-806.qza
-  wget https://data.qiime2.org/2020.8/common/silva-138-99-tax-515-806.qza
-  ln -s silva-138-99-seqs-515-806.qza refseqs.qza
-  ln -s silva-138-99-tax-515-806.qza reftax.qza
-  ```
+```
+cd tourmaline/01-imported
+wget https://data.qiime2.org/2020.8/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2020.8/common/silva-138-99-tax-515-806.qza
+ln -s silva-138-99-seqs-515-806.qza refseqs.qza
+ln -s silva-138-99-tax-515-806.qza reftax.qza
+```
 
-* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory (This step is not necessary if you are using the Docker container and you cloned `tourmaline` into `/data`.):
+Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory. In the command below, replace `/path/to` with the location of your `tourmaline` directory—or skip this step if you are using the Docker container and you cloned `tourmaline` into `/data`:
 
-  ```
-  cd /path/to/tourmaline/00-data
-  cat manifest_pe.csv | sed 's|/data/tourmaline|/path/to/tourmaline|' > temp
-  mv temp manifest_pe.csv 
-  cat manifest_pe.csv | grep -v "reverse" > manifest_se.csv
-  ```
+```
+cd ../00-data
+cat manifest_pe.csv | sed 's|/data/tourmaline|/path/to/tourmaline|' > temp
+mv temp manifest_pe.csv 
+cat manifest_pe.csv | grep -v "reverse" > manifest_se.csv
+```
 
-* Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`:
+Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` to `Snakefile`, depending on your operating system (if you are using the Docker container, your operating system is Linux):
 
-  ```
-  cd /path/to/tourmaline
-  ln -s Snakefile_linux Snakefile
-  ```
+```
+cd ..
+ln -s Snakefile_linux Snakefile
+```
 
-To process **your data**:
+Go to **Run Snakemake**.
+
+#### Setup for your data
+
+If you're ready to run your own data, the setup is similar to what you did for the test data:
 
 * Put reference database taxonomy and FASTA files in `00-data` or imported QIIME 2 archives in `01-imported`.
 * Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file.
 * Edit metadata file `metadata.tsv` to contain your sample names and any relevant metadata for your samples.
 * Edit configuration file `config.yaml` to change PCR locus/primers, DADA2/Deblur parameters, and rarefaction depth.
 * Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`.
+* Go to **Run Snakemake**.
 
-If you've run Tourmaline on your dataset before, you can initialize a new Tourmaline directory (e.g., named `tourmaline-new`) with the files and symlinks of the existing one (e.g., named `tourmaline-existing`) using the command below:
+Note: If you've run Tourmaline on your dataset before, you can skip the steps above and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
 
 ```
 cd /path/to/tourmaline-new
 scripts/initialize_dir_from_existing_tourmaline_dir.sh /path/to/tourmaline-existing
-# then make any changes to your configuration before running
 ```
+
+Just remember to make any changes to your configuration file before you run Snakemake.
 
 ### Run Snakemake
 
@@ -143,7 +151,7 @@ snakemake dada2_pe_report_unfiltered
 
 #### Filtered mode
 
-Filtering is done on representative sequences and the feature table, and downstream outputs will be filtered; the taxonomy file itself is not filtered. Filtering can be done by taxonomy keywords and/or by feature IDs of specific representative sequences. To filter by these two methods, before running *taxonomy_filtered*:
+Filtering is done on representative sequences and the feature table, and downstream outputs will be filtered; the taxonomy file itself is not filtered. Filtering can be done by taxonomy keywords and/or by feature IDs of specific representative sequences. To filter by these two methods, before running *taxonomy_filtered*, do this:
 
 * Taxonomy keyword: Place the keywords in `config.yaml` in the field "exclude_terms", separated by commas. Searching is not case-sensitive.
 * Specific representative sequences: Go to `2-output-dada2-pe-unfiltered/02-alignment-tree` and copy or merge `repseqs_to_filter_outliers.tsv` and/or `repseqs_to_filter_unassigned.tsv` to  `00-data/repseqs_to_filter_dada2-pe.tsv`. If merging the two files, take care to remove duplicate feature IDs, because duplicates will cause the filtering step to fail.
@@ -171,6 +179,7 @@ snakemake dada2_pe_report_filtered
 * The whole workflow should take ~3–5 minutes to complete with the test data. A normal dataset may take several hours to complete.
 * If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
 * Do not use the `--cores` option. Tourmaline should be run with 1 core (default).
+* If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/lukenoaa/tourmaline/wiki/2-Install#installation-options).
 
 #### Power tips
 
