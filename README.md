@@ -1,6 +1,6 @@
-<img src="images/tourmaline_banner.png" alt="images/tourmaline_banner" width="100%"/>
+<img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
 
-<img src="images/figure1.png" alt="images/figure1" width="100%"/>
+<img src="png/figure1.png" alt="png/figure1" width="100%"/>
 
 ## Tourmaline
 
@@ -42,6 +42,13 @@ conda install -c bioconda snakemake biopython tabulate pandoc tabview
 conda install -c bioconda bioconductor-msa bioconductor-odseq
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
+```
+
+Alternatively, use the Docker image to create a container with all the dependencies:
+
+```
+docker pull aomlomics/tourmaline:2020.8-1
+docker run -it aomlomics/tourmaline:2020.8-1
 ```
 
 ### Setup
