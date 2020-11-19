@@ -32,7 +32,11 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Tourmaline requires a Conda installation of QIIME 2, Snakemake, and other dependencies:
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container.
+
+#### Option 1: Native installation
+
+To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 and add the other dependencies:
 
 ```
 wget https://data.qiime2.org/distro/core/qiime2-2020.8-py36-osx-conda.yml
@@ -44,12 +48,16 @@ pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
-Alternatively, use the Docker image to create a container with all the dependencies:
+#### Option 2: Docker container
+
+To run Tourmaline inside a Docker container, simply download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) and run:
 
 ```
 docker pull aomlomics/tourmaline
 docker run -it aomlomics/tourmaline
 ```
+
+See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for instructions on reading/writing files from/to your local filesystem from inside a Docker container.
 
 ### Setup
 
