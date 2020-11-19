@@ -47,8 +47,8 @@ qiime dev refresh-cache
 Alternatively, use the Docker image to create a container with all the dependencies:
 
 ```
-docker pull aomlomics/tourmaline:2020.8-1
-docker run -it aomlomics/tourmaline:2020.8-1
+docker pull aomlomics/tourmaline
+docker run -it aomlomics/tourmaline
 ```
 
 ### Setup
