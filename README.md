@@ -87,8 +87,7 @@ Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so fil
 
 ```
 cd ../00-data
-cat manifest_pe.csv | sed 's|/data/tourmaline|/path/to/tourmaline|' > temp
-mv temp manifest_pe.csv 
+cat manifest_pe.csv | sed 's|/data/tourmaline|/path/to/tourmaline|' > temp && mv temp manifest_pe.csv 
 cat manifest_pe.csv | grep -v "reverse" > manifest_se.csv
 ```
 
