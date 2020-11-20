@@ -50,14 +50,19 @@ qiime dev refresh-cache
 
 #### Option 2: Docker container
 
-To run Tourmaline inside a Docker container, simply download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) and run:
+To run Tourmaline inside a Docker container:
+
+1. Install Docker Desktop (Mac or Windows) or Docker (Linux) from [Docker.com](https://docs.docker.com/get-docker/).
+2. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
+3. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
+4. Run the Docker image (command below).
 
 ```
 docker pull aomlomics/tourmaline
-docker run -it aomlomics/tourmaline
+docker run -v /Users/myhome:/data/myhome -v /Volumes/mydrive:/data/mydrive -it aomlomics/tourmaline
 ```
 
-See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details, including instructions on installing Docker and on reading/writing files from/to your local filesystem from inside a Docker container.
+Replace the volumes (`-v`) above with your home folder (to copy metadata and manifest files to your container) and external drive (to create symbolic links from your container to your FASTQ files and reference database, and when the run is completed to copy your whole tourmaline directory out of the container). See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 
 ### Setup
 
