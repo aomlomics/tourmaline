@@ -57,7 +57,7 @@ docker pull aomlomics/tourmaline
 docker run -it aomlomics/tourmaline
 ```
 
-See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for instructions on reading/writing files from/to your local filesystem from inside a Docker container.
+See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details, including instructions on installing Docker and on reading/writing files from/to your local filesystem from inside a Docker container.
 
 ### Setup
 
