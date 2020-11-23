@@ -61,7 +61,7 @@ classify_method: consensus-blast
 # - use a nonsense word or don't run filtering rules to skip
 exclude_terms: mitochondria,chloroplast,eukaryota
 
-# filter representative sequences by featureid
+# filter representative sequences by featureid (not in config.yaml)
 # - feature metadata tsv file has two columns: 1. "featureid", 2. anything
 # - files must be named as follows:
 # 00-data/repseqs_to_filter_dada2-pe.tsv
@@ -69,15 +69,9 @@ exclude_terms: mitochondria,chloroplast,eukaryota
 # 00-data/repseqs_to_filter_deblur-se.tsv
 
 # representative sequence outlier detection using odseq
-# - odseq_distance_metric: type of distance metric to be computed
-#   (choose from: linear, affine)
-# - odseq_bootstrap_replicates: number of bootstrap replicates to be run
-#   (integer)
-# - odseq_threshold: probability to remain at the right of the bootstrap scores
-#   distribution when computing outliers (float)
-odseq_distance_metric: affine
+odseq_distance_metric: affine # choose from: linear, affine
 odseq_bootstrap_replicates: 1000
-odseq_threshold: 0.025
+odseq_threshold: 0.025 # probability to be at right of the bootstrap scores distribution
 
 # subsampling
 core_sampling_depth: 500
