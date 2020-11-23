@@ -59,10 +59,12 @@ To run Tourmaline inside a Docker container:
 
 ```
 docker pull aomlomics/tourmaline
-docker run -v /Users/myhome:/data/myhome -v /Volumes/mydrive:/data/mydrive -it aomlomics/tourmaline
+docker run -v $HOME:/data/myhome -it aomlomics/tourmaline
 ```
 
-Replace the volumes (`-v`) above with your home folder (to copy metadata and manifest files to your container) and external drive (to create symbolic links from your container to your FASTQ files and reference database, and when the run is completed to copy your whole tourmaline directory out of the container). See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
+The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole tourmaline directory out of the container when the run is completed.
+
+See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 
 ### Setup
 
@@ -185,6 +187,28 @@ Finally, run the *report* rule (for filtered data):
 ```
 snakemake dada2_pe_report_filtered
 ```
+
+### View output
+
+#### Transfer output
+
+If using the Docker container, copy your entire Tourmaline directory to your computer's hard drive or an external drive:
+
+```
+cp -r /data/tourmaline /data/myhome
+```
+
+#### View report and output files
+
+Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/){target="_blank"} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){target="_blank"}. To view the linked files: 
+
+* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org){target="_blank"}.
+* TSV (tab-separated values): click to download, then open in Microsoft Excel or Tabview (command line tool that comes with Tourmaline).
+* PDF (portable document format): click to open and view in new tab.
+
+Downloaded files can be deleted after viewing because they are already stored in your Tourmaline directory.
+
+### More tips
 
 #### Troubleshooting
 
