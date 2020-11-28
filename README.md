@@ -62,7 +62,7 @@ docker pull aomlomics/tourmaline
 docker run -v $HOME:/data/myhome -it aomlomics/tourmaline
 ```
 
-The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole tourmaline directory out of the container when the run is completed.
+The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole Tourmaline directory out of the container when the run is completed.
 
 See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 

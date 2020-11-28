@@ -31,6 +31,7 @@ rule dada2_pe_denoise:
 
 rule dada2_pe_taxonomy_unfiltered:
     input:
+        "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv"
 
@@ -67,6 +68,7 @@ rule dada2_pe_taxonomy_filtered:
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs.qzv",
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs_amplicon_type.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs_lengths_describe.md",
+        "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv"
 
@@ -112,6 +114,7 @@ rule dada2_se_denoise:
 
 rule dada2_se_taxonomy_unfiltered:
     input:
+        "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
 
@@ -148,6 +151,7 @@ rule dada2_se_taxonomy_filtered:
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs.qzv",
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs_amplicon_type.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
+        "02-output-dada2-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv"
 
@@ -193,6 +197,7 @@ rule deblur_se_denoise:
 
 rule deblur_se_taxonomy_unfiltered:
     input:
+        "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
 
@@ -229,6 +234,7 @@ rule deblur_se_taxonomy_filtered:
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs.qzv",
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs_amplicon_type.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
+        "02-output-deblur-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv"
 
@@ -644,6 +650,16 @@ rule feature_classifier:
         "--o-classification {output}; "
         "fi"
 
+rule unzip_taxonomy_to_tsv:
+    input:
+        "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
+    output:
+        "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
+    shell:
+        "unzip -qq -o {input} -d temp; "
+        "mv temp/*/data/taxonomy.tsv {output}; "
+        "/bin/rm -r temp"
+
 rule visualize_taxonomy:
     input:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
@@ -1016,6 +1032,7 @@ rule generate_report_md:
         features="02-output-{method}-{filter}/00-table-repseqs/table_summary_features.txt",
         visfastq="01-imported/fastq_summary.qzv",
         visrepseqs="02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv",
+        tsvtaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv",
         vistaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv",
         vistable="02-output-{method}-{filter}/00-table-repseqs/table.qzv",
         vistaxbar="02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv",
@@ -1037,7 +1054,7 @@ rule generate_report_md:
     shell:
         "echo '# Tourmaline Report' > {output};"
         "echo '' >> {output};"
-        "echo 'Please use the [Chrome](https://www.google.com/chrome/){{target=\"_blank\"}} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){{target=\"_blank\"}} browser for best results.' >> {output};"
+        "echo 'View this report with [Chrome](https://www.google.com/chrome/){{target=\"_blank\"}} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){{target=\"_blank\"}} for best results.' >> {output};"
         "echo '' >> {output};"
         "echo 'To view the linked files below: ' >> {output};"
         "echo '' >> {output};"
@@ -1105,6 +1122,10 @@ rule generate_report_md:
         "echo '### Visualization of Representative Sequences' >> {output};"
         "echo '' >> {output};"
         "echo QZV: \[{input.visrepseqs}\]\(../{input.visrepseqs}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        "echo '### Taxonomy Table' >> {output};"
+        "echo '' >> {output};"
+        "echo TSV: \[{input.tsvtaxonomy}\]\(../{input.tsvtaxonomy}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
         "echo '### Visualization of Taxonomy' >> {output};"
         "echo '' >> {output};"
