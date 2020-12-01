@@ -3,12 +3,12 @@ manifest_se: 00-data/manifest_se.csv
 manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
 
-# reference sequences
-refseqs: 00-data/refseqs.fna
-reftax: 00-data/reftax.tsv
-pcr_locus: 16S-EMP
-pcr_primer_fwd: GTGYCAGCMGCCGCGGTAA
-pcr_primer_rev: GGACTACNVGGGTWTCTAAT
+# reference database
+# - if "qza" files are present, "text" files will be ignored
+refseqs_text: 00-data/refseqs.fna
+reftax_text: 00-data/reftax.tsv
+refseqs_qza: 01-imported/refseqs.qza
+reftax_qza: 01-imported/reftax.qza
 
 # dada2 paired-end
 dada2pe_trunc_len_f: 240

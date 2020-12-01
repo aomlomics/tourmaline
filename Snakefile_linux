@@ -384,9 +384,9 @@ rule check_illumina_run_se:
 
 rule import_ref_seqs:
     input:
-        config["refseqs"]
+        config["refseqs_text"]
     output:
-        "01-imported/refseqs.qza"
+        config["refseqs_qza"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Sequence]' "
@@ -395,13 +395,13 @@ rule import_ref_seqs:
 
 rule import_ref_tax:
     input:
-        config["reftax"]
+        config["reftax_text"]
     output:
-        "01-imported/reftax.qza"
+        config["reftax_qza"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Taxonomy]' "
-        '--input-format HeaderlessTSVTaxonomyFormat '
+        "--input-format HeaderlessTSVTaxonomyFormat "
         "--input-path {input} "
         "--output-path {output}"
 
@@ -484,7 +484,7 @@ rule denoise_dada2_se:
 rule denoise_deblur_se:
     input:
         seqs="01-imported/fastq_se.qza",
-        refseqs="01-imported/refseqs.qza"
+        refseqs=config["refseqs_qza"]
     params:
         trimlength=config["deblur_trim_length"],
         samplestats=config["deblur_sample_stats"],
@@ -620,8 +620,8 @@ rule repseqs_lengths_describe:
 
 rule feature_classifier:
     input:
-        refseqs="01-imported/refseqs.qza",
-        reftax="01-imported/reftax.qza",
+        refseqs=config["refseqs_qza"],
+        reftax=config["reftax_qza"],
         repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
@@ -989,13 +989,7 @@ rule summarize_metadata:
         "03-reports/metadata_summary.md"
     run:
         df = pd.read_csv(input.metadata, sep='\t')
-        cols1 = ['project_name', 'experiment_design_description',
-                 'target_gene', 'target_subfragment', 'pcr_primers',
-                 'pcr_primer_names', 'seq_platform', 'seq_model',
-                 'seq_chemistry', 'seq_meth',
-                 'run_center', 'run_date']
-        cols2 = sorted(list(set(df.columns) - set(cols1)))
-        cols = cols1 + cols2
+        cols = df.columns
         df2 = pd.DataFrame(columns =[0,1], index=cols)
         for col in cols:
             if col in df.columns:
@@ -1071,8 +1065,6 @@ rule generate_report_md:
         "echo '## Metadata Summary' >> {output};"
         "echo '' >> {output};"
         "echo Filename: {input.mdsummary} >> {output};"
-        "echo '' >> {output};"
-        "echo 'The first 12 columns are recommended by the Tourmaline developers but may not have been provided.' >> {output};"
         "echo '' >> {output};"
         "cat {input.mdsummary} >> {output};"
         "echo '' >> {output};"
