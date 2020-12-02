@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from qiime2 import Artifact
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -819,11 +820,10 @@ rule tabulate_plot_repseq_properties:
         merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
                            axis=1, ignore_index=True)
         merged.columns = ['featureid', 'length', 'gaps', 'outlier', 'taxonomy', 'observations']
-        merged.sort_values('observations', ascending=False, inplace=True)
+        merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
+        merged.sort_values('log10(observations)', ascending=False, inplace=True)
         merged.to_csv(output['proptsv'], index=False, sep='\t')
-        fig, ax = plt.subplots()
-        sns.scatterplot(ax=ax, data=merged, x='length', y='gaps', style='outlier', hue='taxonomy', size='observations', sizes=(10,200), edgecolor=None)
-        ax.legend(bbox_to_anchor=(1.35, 1.0))
+        sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
         plt.savefig(output['proppdf'], bbox_inches='tight')
 
 rule tabulate_repseqs_to_filter:
