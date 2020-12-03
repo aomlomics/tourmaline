@@ -69,8 +69,8 @@ exclude_terms: mitochondria,chloroplast,eukaryota
 # 00-data/repseqs_to_filter_deblur-se.tsv
 
 # representative sequence outlier detection using odseq
-odseq_distance_metric: affine # choose from: linear, affine
-odseq_bootstrap_replicates: 1000
+odseq_distance_metric: linear # choose from: linear, affine
+odseq_bootstrap_replicates: 100
 odseq_threshold: 0.025 # probability to be at right of the bootstrap scores distribution
 
 # subsampling

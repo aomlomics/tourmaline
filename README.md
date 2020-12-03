@@ -131,6 +131,8 @@ Just remember to make any changes to your configuration file before you run Snak
 
 Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them.
+
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
 ```
