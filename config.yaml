@@ -58,12 +58,15 @@ classify_method: consensus-blast
 # filter table and representative sequences by taxonomy
 # - separate terms with commas
 # - terms are not case-sensitive
-# - use a nonsense word or don't run filtering rules to skip
+# - use a nonsense word or don't run filtering mode to skip
 exclude_terms: mitochondria,chloroplast,eukaryota
 
-# filter representative sequences by featureid (not in config.yaml)
-# - feature metadata tsv file has two columns: 1. "featureid", 2. anything
-# - files must be named as follows:
+# filter representative sequences by featureid (paths hard-coded, not specified in config.yaml)
+# - feature metadata tsv file has a header line with two columns: 1. "featureid", 2. anything
+# - easiest method to create feature metadata file for filtering repseqs:
+# - 1. go to 2-output-dada2-pe-unfiltered/02-alignment-tree
+# - 2. merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
+# - 3. rename to the file name below correspoinding to your method:
 # 00-data/repseqs_to_filter_dada2-pe.tsv
 # 00-data/repseqs_to_filter_dada2-se.tsv
 # 00-data/repseqs_to_filter_deblur-se.tsv
