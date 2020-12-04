@@ -14,6 +14,8 @@ configfile: "config.yaml"
 ruleorder: count_fastq_demux_pe > count_fastq_demux_se
 ruleorder: summarize_fastq_demux_pe > summarize_fastq_demux_se
 ruleorder: check_illumina_run_pe > check_illumina_run_se
+ruleorder: feature_classifier > import_taxonomy_to_qza
+ruleorder: filter_taxonomy > unzip_taxonomy_to_tsv
 
 # PSEUDO-RULES: DADA2 PAIRED-END -----------------------------------------------
 
@@ -886,16 +888,17 @@ rule filter_table:
 
 rule filter_taxonomy:
     input:
-        taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.tsv"
-        excludeterms=config["exclude_terms"]
+        taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.tsv",
         repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
+    params:
+        excludeterms=config["exclude_terms"]
     output:
-        taxonomy="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"
+        taxonomy="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv"
     run:
-        df_taxonomy = pd.read_csv(taxonomy, sep='\t', index_col=0)
-        exclude_terms = excludeterms.split(',')
+        df_taxonomy = pd.read_csv(input['taxonomy'], sep='\t', index_col=0)
+        exclude_terms = params['excludeterms'].split(',')
         exclude_ids_taxa = df_taxonomy.index[[any(x.lower() in y.lower() for x in exclude_terms) for y in df_taxonomy['Taxon']]]
-        df_repseqs_to_filter = pd.read_csv(repseqstofilter, sep='\t')
+        df_repseqs_to_filter = pd.read_csv(input['repseqstofilter'], sep='\t')
         exclude_ids_direct = df_repseqs_to_filter['featureid'].values
         keep_ids = set(df_taxonomy.index) - set(exclude_ids_taxa) - set(exclude_ids_direct)
         df_taxonomy_filtered = df_taxonomy.loc[list(keep_ids)]
