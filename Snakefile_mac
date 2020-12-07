@@ -831,7 +831,8 @@ rule tabulate_plot_repseq_properties:
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
         merged.sort_values('log10(observations)', ascending=False, inplace=True)
         merged.to_csv(output['proptsv'], index=False, sep='\t')
-        sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
+        g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
+        g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in masked multiple sequence alignment')
         plt.savefig(output['proppdf'], bbox_inches='tight')
 
 rule tabulate_repseqs_to_filter:
@@ -1074,7 +1075,7 @@ rule generate_report_md:
     shell:
         "echo '# Tourmaline Report' > {output};"
         "echo '' >> {output};"
-        "echo 'View this HTML report with [Chrome](https://www.google.com/chrome/){{target=\"_blank\"}} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){{target=\"_blank\"}} for best results. Link to Markdown version: \[{output}\]\(../{output}\){{target=\"_blank\"}}.' >> {output};"
+        "echo 'View this HTML report with [Chrome](https://www.google.com/chrome/){{target=\"_blank\"}} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){{target=\"_blank\"}} for best results.' >> {output};"
         "echo '' >> {output};"
         "echo 'To view the linked files below: ' >> {output};"
         "echo '' >> {output};"
@@ -1129,12 +1130,12 @@ rule generate_report_md:
         "echo 'Columns:' >> {output};"
         "echo '' >> {output};"
         "echo '* featureid' >> {output};"
-        "echo '* length (bp)' >> {output};"
-        "echo '* gaps (in multiple sequence alignment, bp)' >> {output};"
-        "echo '* outlier (True/False from OD-seq)' >> {output};"
-        "echo '* taxonomy (domain)' >> {output};"
-        "echo '* observations (total observations across dataset)' >> {output};"
-        "echo '* log10(observations)' >> {output};"
+        "echo '* length - length (bp) not including gaps' >> {output};"
+        "echo '* gaps - gaps (bp) in masked multiple sequence alignment' >> {output};"
+        "echo '* outlier - outlier (True/False) determined by OD-seq' >> {output};"
+        "echo '* taxonomy - domain level' >> {output};"
+        "echo '* observations - total observations summed across all samples (unrarefied)' >> {output};"
+        "echo '* log10(observations) - log base-10 of total observations' >> {output};"
         "echo '' >> {output};"
         "echo '### Representative Sequences Properties Plot' >> {output};"
         "echo '' >> {output};"
@@ -1142,17 +1143,19 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo 'Plot elements:' >> {output};"
         "echo '' >> {output};"
-        "echo '* x: length (bp)' >> {output};"
-        "echo '* y: gaps (in multiple sequence alignment, bp)' >> {output};"
+        "echo '* x: length (bp) not including gaps' >> {output};"
+        "echo '* y: gaps (bp) in masked multiple sequence alignment' >> {output};"
         "echo '* color: taxonomy (domain)' >> {output};"
         "echo '* size: log10(observations)' >> {output};"
-        "echo '* facets: outlier (True/False from OD-seq)' >> {output};"
+        "echo '* facets: outlier (True/False) determined by OD-seq' >> {output};"
         "echo '' >> {output};"
         "echo '### Representative Sequences Rooted Tree' >> {output};"
         "echo '' >> {output};"
         "echo QZV: \[{input.repseqstree}\]\(../{input.repseqstree}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
-        "echo '### Representative Sequences to Filter (optionally merge then rename to 00-data/repseqs_to_filter_{{method}}.tsv)' >> {output};"
+        "echo '### Representative Sequences to Filter' >> {output};"
+        "echo '' >> {output};"
+        "echo 'To filter, go to 02-output-{{method}}-{{filter}}/02-alignment-tree, merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv, rename to 00-data/repseqs_to_filter_{{method}}.tsv, then run Snakemake in filtered mode.' >> {output};"
         "echo '' >> {output};"
         "echo Outliers TSV: \[{input.repseqsoutliers}\]\(../{input.repseqsoutliers}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
