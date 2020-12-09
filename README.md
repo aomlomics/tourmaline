@@ -62,7 +62,7 @@ docker pull aomlomics/tourmaline
 docker run -v $HOME:/data/myhome -it aomlomics/tourmaline
 ```
 
-The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole tourmaline directory out of the container when the run is completed.
+The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole Tourmaline directory out of the container when the run is completed.
 
 See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 
@@ -130,6 +130,8 @@ Just remember to make any changes to your configuration file before you run Snak
 ### Run Snakemake
 
 Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
+
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them.
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 

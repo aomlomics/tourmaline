@@ -3,12 +3,12 @@ manifest_se: 00-data/manifest_se.csv
 manifest_pe: 00-data/manifest_pe.csv
 metadata: 00-data/metadata.tsv
 
-# reference sequences
-refseqs: 00-data/refseqs.fna
-reftax: 00-data/reftax.tsv
-pcr_locus: 16S-EMP
-pcr_primer_fwd: GTGYCAGCMGCCGCGGTAA
-pcr_primer_rev: GGACTACNVGGGTWTCTAAT
+# reference database
+# - if "qza" files are present, "text" files will be ignored
+refseqs_text: 00-data/refseqs.fna
+reftax_text: 00-data/reftax.tsv
+refseqs_qza: 01-imported/refseqs.qza
+reftax_qza: 01-imported/reftax.qza
 
 # dada2 paired-end
 dada2pe_trunc_len_f: 240
@@ -58,19 +58,22 @@ classify_method: consensus-blast
 # filter table and representative sequences by taxonomy
 # - separate terms with commas
 # - terms are not case-sensitive
-# - use a nonsense word or don't run filtering rules to skip
+# - use a nonsense word or don't run filtering mode to skip
 exclude_terms: mitochondria,chloroplast,eukaryota
 
-# filter representative sequences by featureid (not in config.yaml)
-# - feature metadata tsv file has two columns: 1. "featureid", 2. anything
-# - files must be named as follows:
+# filter representative sequences by featureid (paths hard-coded, not specified in config.yaml)
+# - feature metadata tsv file has a header line with two columns: 1. "featureid", 2. anything
+# - easiest method to create feature metadata file for filtering repseqs:
+# - 1. go to 02-output-{method}-{filter}/02-alignment-tree
+# - 2. merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
+# - 3. rename to the file name below correspoinding to your method:
 # 00-data/repseqs_to_filter_dada2-pe.tsv
 # 00-data/repseqs_to_filter_dada2-se.tsv
 # 00-data/repseqs_to_filter_deblur-se.tsv
 
 # representative sequence outlier detection using odseq
-odseq_distance_metric: affine # choose from: linear, affine
-odseq_bootstrap_replicates: 1000
+odseq_distance_metric: linear # choose from: linear, affine
+odseq_bootstrap_replicates: 100
 odseq_threshold: 0.025 # probability to be at right of the bootstrap scores distribution
 
 # subsampling
