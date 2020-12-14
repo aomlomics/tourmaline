@@ -24,7 +24,9 @@ def calculate_fastqc_dropoff(input, cutoff):
     Do this by putting the R1 fastqc output in one directory and the R2 fastqc output
     in another directory, then running `multiqc --export $DIR` inside each directory.
     """
-    mqc = pd.read_csv(input, sep='\t', index_col=0)
+    firstrow = pd.read_csv(input, sep='\t', index_col=0, nrows=1)
+    firstcol = pd.read_csv(input, sep='\t', index_col=0, usecols=[0])
+    mqc = pd.read_csv(input, sep='\t', index_col=0, usecols=range(firstrow.shape[1]+1), skiprows=range(2,firstcol.shape[0],2))
     mqc_max_to_end = mqc.loc[:, mqc.median().idxmax():]
     positions_below_cutoff = mqc_max_to_end.columns[mqc_max_to_end.median()/mqc_max_to_end.median().max() <= cutoff]
     if len(positions_below_cutoff) > 0:
