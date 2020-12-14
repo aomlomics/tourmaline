@@ -752,7 +752,8 @@ rule visualize_tree:
         tree="02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza",
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         metadata=config["metadata"],
-        taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
+        taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
+        outliers="02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv"
     shell:
@@ -761,6 +762,7 @@ rule visualize_tree:
         "--i-feature-table {input.table} "
         "--m-sample-metadata-file {input.metadata} "
         "--m-feature-metadata-file {input.taxonomy} "
+        "--m-feature-metadata-file {input.outliers} "
         "--o-visualization {output}"
 
 rule unzip_alignment_to_fasta:
@@ -815,7 +817,8 @@ rule tabulate_plot_repseq_properties:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
     output:
         proptsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
-        proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf"
+        proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
+        outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     run:
         lengths = pd.read_csv(input['lengths'], header=None)
         gaps = pd.read_csv(input['gaps'], header=None)
@@ -825,15 +828,29 @@ rule tabulate_plot_repseq_properties:
         taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
         table = Artifact.load(input['table'])
         tabledf = table.view(view_type=pd.DataFrame)
-        merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
+        merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['Taxon'].reset_index(drop=True), taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
                            axis=1, ignore_index=True)
-        merged.columns = ['featureid', 'length', 'gaps', 'outlier', 'taxonomy', 'observations']
+        merged.columns = ['featureid', 'length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
         merged.sort_values('log10(observations)', ascending=False, inplace=True)
         merged.to_csv(output['proptsv'], index=False, sep='\t')
-        g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
+        g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy_level_1', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
         g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in masked multiple sequence alignment')
         plt.savefig(output['proppdf'], bbox_inches='tight')
+        outliers.columns = ['Feature ID', 'Outlier']
+        outliers = outliers*1
+        outliers.to_csv(output['outliersforqza'], index=False, sep='\t')
+
+rule import_outliers_to_qza:
+    input:
+        "02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
+    output:
+        "02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
+    shell:
+        "qiime tools import "
+        "--type 'FeatureData[Importance]' "
+        "--input-path {input} "
+        "--output-path {output}"
 
 rule tabulate_repseqs_to_filter:
     input:
