@@ -80,7 +80,7 @@ odseq_threshold: 0.025 # probability to be at right of the bootstrap scores dist
 core_sampling_depth: 500
 alpha_max_depth: 500
 
-# statistics
+# beta group significance (choose a column from metadata to test)
 beta_group_column: region
 
 # report theme (choose from: github, gothic, newsprint, night, pixyll, whitey)
