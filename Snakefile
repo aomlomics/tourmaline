@@ -11,9 +11,7 @@ configfile: "config.yaml"
 
 # RULEORDER DIRECTIVES ---------------------------------------------------------
 
-ruleorder: count_fastq_demux_pe > count_fastq_demux_se
 ruleorder: summarize_fastq_demux_pe > summarize_fastq_demux_se
-ruleorder: check_illumina_run_pe > check_illumina_run_se
 ruleorder: feature_classifier > import_taxonomy_to_qza
 ruleorder: filter_taxonomy > unzip_taxonomy_to_tsv
 
@@ -21,10 +19,8 @@ ruleorder: filter_taxonomy > unzip_taxonomy_to_tsv
 
 rule dada2_pe_denoise:
     input:
-        "01-imported/fastq_pe.qza",
         "01-imported/fastq_summary.qzv",
-        "01-imported/fastq_count_describe.md",
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_counts_describe.md",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table.qzv",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_features.txt",
@@ -104,10 +100,8 @@ rule dada2_pe_report_filtered:
 
 rule dada2_se_denoise:
     input:
-        "01-imported/fastq_pe.qza",
         "01-imported/fastq_summary.qzv",
-        "01-imported/fastq_count_describe.md",
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_counts_describe.md",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table.qzv",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_features.txt",
@@ -187,10 +181,8 @@ rule dada2_se_report_filtered:
 
 rule deblur_se_denoise:
     input:
-        "01-imported/fastq_pe.qza",
         "01-imported/fastq_summary.qzv",
-        "01-imported/fastq_count_describe.md",
-        "01-imported/fastq_illumina_run.log",
+        "01-imported/fastq_counts_describe.md",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table.qzv",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_features.txt",
@@ -268,11 +260,34 @@ rule deblur_se_report_filtered:
 
 # RULES: IMPORT ----------------------------------------------------------------
 
+rule import_ref_seqs:
+    input:
+        config["refseqs_fna"]
+    output:
+        config["refseqs_qza"]
+    shell:
+        "qiime tools import "
+        "--type 'FeatureData[Sequence]' "
+        "--input-path {input} "
+        "--output-path {output}"
+
+rule import_ref_tax:
+    input:
+        config["reftax_tsv"]
+    output:
+        config["reftax_qza"]
+    shell:
+        "qiime tools import "
+        "--type 'FeatureData[Taxonomy]' "
+        "--input-format HeaderlessTSVTaxonomyFormat "
+        "--input-path {input} "
+        "--output-path {output}"
+
 rule import_fastq_demux_pe:
     input:
         config["manifest_pe"]
     output:
-        "01-imported/fastq_pe.qza"
+        config["fastq_pe_qza"]
     shell:
         "qiime tools import "
         "--type 'SampleData[PairedEndSequencesWithQuality]' "
@@ -284,7 +299,7 @@ rule import_fastq_demux_se:
     input:
         config["manifest_se"]
     output:
-        "01-imported/fastq_se.qza"
+        config["fastq_se_qza"]
     shell:
         "qiime tools import "
         "--type 'SampleData[SequencesWithQuality]' "
@@ -292,9 +307,11 @@ rule import_fastq_demux_se:
         "--output-path {output} "
         "--input-format SingleEndFastqManifestPhred33"
 
+# RULES: SUMMARIZE FASTQ SEQUENCES ---------------------------------------------
+
 rule summarize_fastq_demux_pe:
     input:
-        "01-imported/fastq_pe.qza"
+        config["fastq_pe_qza"]
     output:
         "01-imported/fastq_summary.qzv"
     shell:
@@ -304,7 +321,7 @@ rule summarize_fastq_demux_pe:
 
 rule summarize_fastq_demux_se:
     input:
-        "01-imported/fastq_se.qza"
+        config["fastq_se_qza"]
     output:
         "01-imported/fastq_summary.qzv"
     shell:
@@ -312,109 +329,34 @@ rule summarize_fastq_demux_se:
         "--i-data {input} "
         "--o-visualization {output}"
 
-# mac: gzcat (zcat requires extension .Z) / linux: zcat
-# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule count_fastq_demux_pe:
+rule unzip_fastq_summary:
     input:
-        config["manifest_pe"]
+        "01-imported/fastq_summary.qzv"
     output:
-        "01-imported/fastq_count.csv"
+        "01-imported/fastq_counts.tsv"
     shell:
-        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
-        "do echo -n $line; "
-        "echo -n ','; "
-        "zcat $line | awk 'END {{l=NR; print l/4}}'; "
-        "done > {output}"
+        "unzip -qq -o {input} -d temp; "
+        "mv temp/*/data/per-sample-fastq-counts.tsv {output}; "
+        "/bin/rm -r temp"
 
-# mac: gzcat (zcat requires extension .Z) / linux: zcat
-# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule count_fastq_demux_se:
+rule describe_fastq_counts:
     input:
-        config["manifest_se"]
+        "01-imported/fastq_counts.tsv"
     output:
-        "01-imported/fastq_count.csv"
-    shell:
-        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
-        "do echo -n $line; "
-        "echo -n ','; "
-        "zcat $line | awk 'END {{l=NR; print l/4}}'; "
-        "done > {output}"
-
-rule describe_count_fastq:
-    input:
-        "01-imported/fastq_count.csv"
-    output:
-        "01-imported/fastq_count_describe.md"
+        "01-imported/fastq_counts_describe.md"
     run:
-        s = pd.read_csv(input[0], header=None)
+        s = pd.read_csv(input[0], sep='\t', index_col=0)
         t = s.describe()
-        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Fastq sequences per sample'])
+        outstr = tabulate(pd.DataFrame(t.iloc[1:,0]), tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0,0].astype(int), 'Fastq sequences per sample'])
         with open(output[0], 'w') as target:
             target.write(outstr)
             target.write('\n')
-
-# mac: gzcat (zcat requires extension .Z) / linux: zcat
-# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule check_illumina_run_pe:
-    input:
-        config["manifest_pe"]
-    output:
-        runs="01-imported/fastq_illumina_run.txt",
-        log="01-imported/fastq_illumina_run.log"
-    shell:
-        "set +o pipefail; "
-        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
-        "do echo -n $line; "
-        "echo -n ','; "
-        "zcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
-        "done > {output.runs}; "
-        "echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
-
-# mac: gzcat (zcat requires extension .Z) / linux: zcat
-# change gzcat/zcat to cat if fastq files are not gzipped (but they should be)
-rule check_illumina_run_se:
-    input:
-        config["manifest_se"]
-    output:
-        runs="01-imported/fastq_illumina_run.txt",
-        log="01-imported/fastq_illumina_run.log"
-    shell:
-        "set +o pipefail; "
-        "for line in `tail -n +2 {input} | cut -d',' -f2`; "
-        "do echo -n $line; "
-        "echo -n ','; "
-        "zcat $line | head -n 1 | sed 's/^@//' | cut -d ':' -f1-3; "
-        "done > {output.runs}; "
-        "echo -n 'Number of Illumina runs in {input}:' > {output.log}; cat {output.runs} | cut -d',' -f2 | sort | uniq | wc -l >> {output.log}"
-
-rule import_ref_seqs:
-    input:
-        config["refseqs_text"]
-    output:
-        config["refseqs_qza"]
-    shell:
-        "qiime tools import "
-        "--type 'FeatureData[Sequence]' "
-        "--input-path {input} "
-        "--output-path {output}"
-
-rule import_ref_tax:
-    input:
-        config["reftax_text"]
-    output:
-        config["reftax_qza"]
-    shell:
-        "qiime tools import "
-        "--type 'FeatureData[Taxonomy]' "
-        "--input-format HeaderlessTSVTaxonomyFormat "
-        "--input-path {input} "
-        "--output-path {output}"
 
 # RULES: DENOISE ---------------------------------------------------------------
 
 rule denoise_dada2_pe:
     input:
-        "01-imported/fastq_pe.qza"
+        config["fastq_pe_qza"]
     params:
         trunclenf=config["dada2pe_trunc_len_f"],
         trunclenr=config["dada2pe_trunc_len_r"],
@@ -423,6 +365,7 @@ rule denoise_dada2_pe:
         maxeef=config["dada2pe_max_ee_f"],
         maxeer=config["dada2pe_max_ee_r"],
         truncq=config["dada2pe_trunc_q"],
+        poolingmethod=config["dada2pe_pooling_method"],        
         chimeramethod=config["dada2pe_chimera_method"],
         minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
         nreadslearn=config["dada2pe_n_reads_learn"],
@@ -442,6 +385,7 @@ rule denoise_dada2_pe:
         "--p-max-ee-f {params.maxeef} "
         "--p-max-ee-r {params.maxeer} "
         "--p-trunc-q {params.truncq} "
+        "--p-pooling-method {params.poolingmethod} "
         "--p-chimera-method {params.chimeramethod} "
         "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
         "--p-n-reads-learn {params.nreadslearn} "
@@ -454,12 +398,13 @@ rule denoise_dada2_pe:
 
 rule denoise_dada2_se:
     input:
-        "01-imported/fastq_se.qza"
+        config["fastq_se_qza"]
     params:
         trunclen=config["dada2se_trunc_len"],
         trimleft=config["dada2se_trim_left"],
         maxee=config["dada2se_max_ee"],
         truncq=config["dada2se_trunc_q"],
+        poolingmethod=config["dada2se_pooling_method"],        
         chimeramethod=config["dada2se_chimera_method"],
         minfoldparentoverabundance=config["dada2se_min_fold_parent_over_abundance"],
         nreadslearn=config["dada2se_n_reads_learn"],
@@ -476,6 +421,7 @@ rule denoise_dada2_se:
         "--p-trim-left {params.trimleft} "
         "--p-max-ee {params.maxee} "
         "--p-trunc-q {params.truncq} "
+        "--p-pooling-method {params.poolingmethod} "
         "--p-chimera-method {params.chimeramethod} "
         "--p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} "
         "--p-n-reads-learn {params.nreadslearn} "
@@ -488,7 +434,7 @@ rule denoise_dada2_se:
 
 rule denoise_deblur_se:
     input:
-        seqs="01-imported/fastq_se.qza",
+        seqs=config["fastq_se_qza"],
         refseqs=config["refseqs_qza"]
     params:
         trimlength=config["deblur_trim_length"],
@@ -523,7 +469,7 @@ rule denoise_deblur_se:
         "--p-jobs-to-start {threads} "
         "--verbose"
 
-# RULES: SUMMARIZE -------------------------------------------------------------
+# RULES: SUMMARIZE FEATURE TABLE -----------------------------------------------
 
 rule summarize_feature_table:
     input:
@@ -1058,8 +1004,7 @@ rule generate_report_md:
     input:
         configfile="config.yaml",
         mdsummary="03-reports/metadata_summary.md",
-        fastq="01-imported/fastq_count_describe.md",
-        run="01-imported/fastq_illumina_run.log",
+        fastq="01-imported/fastq_counts_describe.md",
         amplicontype="02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt",
         repseqstsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
         repseqspdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
@@ -1127,14 +1072,6 @@ rule generate_report_md:
         "echo '### Visualization of Fastq Sequences' >> {output};"
         "echo '' >> {output};"
         "echo QZV: \[{input.visfastq}\]\(../{input.visfastq}\){{target=\"_blank\"}} >> {output};"
-        "echo '' >> {output};"
-        "echo '### Number of Illumina Runs' >> {output};"
-        "echo '' >> {output};"
-        "echo Text: \[{input.run}\]\(../{input.run}\){{target=\"_blank\"}} >> {output};"
-        "echo '' >> {output};"
-        "echo '```' >> {output};"
-        "head -n 5 {input.run} >> {output};"
-        "echo '```' >> {output};"
         "echo '' >> {output};"
         "echo '---' >> {output};"
         "echo '' >> {output};"

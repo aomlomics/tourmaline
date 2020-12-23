@@ -4,6 +4,9 @@
 #
 # From the main directory run this script after making changes to Snakefile_mac
 # to change Mac-specific commands to Linux-specific commands in Snakefile_linux.
+#
+# This script is not currently needed, as the offending commands are no longer
+# used in the Snakefile.
 
 cat Snakefile_mac | \
 sed "s,gzcat \$line,zcat \$line,g" | \

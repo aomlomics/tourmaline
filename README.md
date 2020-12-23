@@ -4,10 +4,13 @@
 
 ## Tourmaline
 
-Tourmaline is an amplicon (metabarcoding) sequence processing workflow for Illumina sequence data. It uses the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system as a wrapper for [QIIME 2](https://qiime2.org) and additional shell and Python scripts.
+Tourmaline is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
 ### Why should I use Tourmaline?
 
+Tourmaline has many advantages over other analysis workflows:
+
+* **Portability.** Native support for Linux and macOS in addition to Docker containers.
 * **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) package, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
 * **Snakemake.** Managing the workflow with Snakemake provides several benefits: 
   - **Configuration file** contains all parameters in one file, so you can see what your workflow is doing and make changes for a subsequent run.
@@ -17,7 +20,25 @@ Tourmaline is an amplicon (metabarcoding) sequence processing workflow for Illum
 * **Reports.** Every Tourmaline run produces an HTML report containing a summary of your metadata and outputs, with links to web-viewable QIIME 2 visualization files.
 * **Downstream analysis.** Analyze the output of single or multiple Tourmaline runs programmatically, with qiime2R in R or the QIIME 2 Artifact API in Python, using the provided R and Python notebooks or your own code.
 
-Ready to get started? Visit the [Wiki](https://github.com/lukenoaa/tourmaline/wiki) for a detailed guide on using Tourmaline. If you're feeling bold and want to get started right away, check out the Quick Start instructions below.
+### What QIIME 2 options does Tourmaline support?
+
+If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`. Briefly, here are the main QIIME 2 options supported (QIIME 2 visualization outputs are indicated with "qzv"):
+
+* FASTQ sequence import using a manifest file, or use your pre-imported FASTQ qza file
+* Denoising with DADA2 (paired-end and single-end) and Deblur (single-end)
+* Feature classification (taxonomic assignment) with options: consensus BLAST, naive Bayes
+* Feature filtering by taxonomy and by feature ID
+* Interactive taxonomy barplot (qzv)
+* De novo multiple sequence alignment with MAFFT (with masking) and tree building with Fasttree
+* Tree visualization using Empress (qzv)
+* Interactive alpha-rarefaction plot (qzv)
+* Alpha diversity and alpha-rarefaction with choice of metrics (qzv)
+* Beta diversity and beta group significance with choice of metrics (qzv)
+* Principal coordinates plots with Emperor (qzv)
+
+### How do I get started? 
+
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/lukenoaa/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below.
 
 ## Quick Start
 
@@ -98,40 +119,27 @@ cat manifest_pe.csv | sed 's|/data/tourmaline|/path/to/tourmaline|' > temp && mv
 cat manifest_pe.csv | grep -v "reverse" > manifest_se.csv
 ```
 
-Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` to `Snakefile`, depending on your operating system (if you are using the Docker container, your operating system is Linux):
-
-```
-cd ..
-ln -s Snakefile_linux Snakefile
-```
-
 Go to **Run Snakemake**.
 
 #### Setup for your data
 
 If you're ready to run your own data, the setup is similar to what you did for the test data:
 
-* Put reference database taxonomy and FASTA files in `00-data` or imported QIIME 2 archives in `01-imported`.
-* Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file.
-* Edit metadata file `metadata.tsv` to contain your sample names and any relevant metadata for your samples.
-* Edit configuration file `config.yaml` to change PCR locus/primers, DADA2/Deblur parameters, and rarefaction depth.
-* Create a symbolic link from `Snakefile_mac` or `Snakefile_linux` (depending on your system) to `Snakefile`.
+* Prepare reference database:
+  * Option 1: Put taxonomy and FASTA files in `00-data`. Check that filenames match those in `config.yaml`.
+  * Option 2: Put imported QIIME 2 archives in `01-imported`. Check that filenames match those in `config.yaml`.
+* Prepare sequence data:
+  * Option 1: Edit FASTQ manifests in `00-data` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file. You can use a text editor such as Sublime Text, nano, vim, etc. Check that manifest filenames match those in `config.yaml`.
+  * Option 2: Put your pre-imported FASTQ qza files in `01-imported`. Check that qza filenames match those in `config.yaml`.
+* Edit metadata file `metadata.tsv` to contain your sample names and any relevant metadata for your samples. You can use a spreadsheet editor like Microsoft Excel or LibreOffice, but make sure to export the output in tab-delimited format.
+* Edit configuration file `config.yaml` to change input file names (or preferably, rename your input files to match the defaults), DADA2/Deblur parameters (sequence truncation/trimming, sample pooling, chimera removal, etc.), rarefaction depth, taxonomic classification method, and other parameters. This YAML (yet another markup language) file is a regular text file that can be edited in Sublime Text, nano, vim, etc.
 * Go to **Run Snakemake**.
-
-Note: If you've run Tourmaline on your dataset before, you can skip the steps above and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
-
-```
-cd /path/to/tourmaline-new
-scripts/initialize_dir_from_existing_tourmaline_dir.sh /path/to/tourmaline-existing
-```
-
-Just remember to make any changes to your configuration file before you run Snakemake.
 
 ### Run Snakemake
 
 Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
-Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them.
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page.
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
@@ -204,7 +212,7 @@ cp -r /data/tourmaline /data/myhome
 
 Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/){target="_blank"} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){target="_blank"}. To view the linked files: 
 
-* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org){target="_blank"}.
+* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org){target="_blank"}. Empress trees (e.g., `rooted_tree.qzv`) may take more than 10 minutes to load.
 * TSV (tab-separated values): click to download, then open in Microsoft Excel or Tabview (command line tool that comes with Tourmaline).
 * PDF (portable document format): click to open and view in new tab.
 
@@ -214,15 +222,42 @@ Downloaded files can be deleted after viewing because they are already stored in
 
 #### Troubleshooting
 
-* The whole workflow should take ~3–5 minutes to complete with the test data. A normal dataset may take several hours to complete.
+* The whole workflow with test data should take ~3–5 minutes to complete. A normal dataset may take several hours to complete.
 * If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
-* Do not use the `--cores` option. Tourmaline should be run with 1 core (default).
+* Do not use the `--cores` option. Tourmaline should be run with 1 core (default). The parameters for multiple threads in the configuration file don't do anything at this time.
 * If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/lukenoaa/tourmaline/wiki/2-Install#installation-options).
 
 #### Power tips
 
 * The whole workflow can be run with just the command `snakemake dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
+
 * If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run.
+
+* You can always delete any file you want to regenerate. Then there are several ways to regenerate it: run `snakemake FILE` and Snakemake will determine which rules (commands) need to be run to generate that file; or, run `snakemake RULE` where the rule generates the desired file as output.
+
+* If you've run Tourmaline on your dataset before, you can speed up the setup process and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the some of the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
+
+  ```
+  cd /path/to/tourmaline-new
+  scripts/initialize_dir_from_existing_tourmaline_dir.sh /path/to/tourmaline-existing
+  ```
+
+  You may get error messages if some files don't exist, but it should have copied the files that were there. The files that will be copied from the existing directory to the new directory are:
+
+  ```
+  config.yaml
+  00-data/manifest_pe.csv
+  00-data/manifest_se.csv
+  00-data/metadata.tsv
+  00-data/repseqs_to_filter_dada2-pe.tsv
+  00-data/repseqs_to_filter_dada2-se.tsv
+  00-data/repseqs_to_filter_deblur-se.tsv
+  01-imported/refseqs.qza
+  01-imported/reftax.qza
+  01-imported/classifier.qza
+  ```
+
+  Ensure you make any changes to your configuration file and (if necessary) delete any files you want to be regenerated before you run Snakemake.
 
 ## License
 
