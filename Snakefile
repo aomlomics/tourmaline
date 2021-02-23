@@ -885,9 +885,9 @@ rule diversity_alpha_rarefaction:
         "--i-phylogeny {input.phylogeny} "
         "--p-max-depth {params.maxdepth} "
         "--p-metrics faith_pd "
-        "--p-metrics shannon "
         "--p-metrics observed_features "
-        "--p-metrics chao1 "
+        "--p-metrics shannon "
+        "--p-metrics pielou_e "
         "--m-metadata-file {input.metadata} "
         "--o-visualization {output}"
 

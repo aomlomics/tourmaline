@@ -22,19 +22,17 @@ Tourmaline has many advantages over other analysis workflows:
 
 ### What QIIME 2 options does Tourmaline support?
 
-If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`. Briefly, here are the main QIIME 2 options supported (QIIME 2 visualization outputs are indicated with "qzv"):
+If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`. Briefly, here are the main QIIME 2 options supported, with QIIME 2 visualization (.qzv) outputs indicated:
 
-* FASTQ sequence import using a manifest file, or use your pre-imported FASTQ qza file
+* FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
 * Denoising with DADA2 (paired-end and single-end) and Deblur (single-end)
-* Feature classification (taxonomic assignment) with options: consensus BLAST, naive Bayes
+* Feature classification (taxonomic assignment) with options of consensus BLAST and naive Bayes
 * Feature filtering by taxonomy and by feature ID
-* Interactive taxonomy barplot (qzv)
+* Interactive taxonomy barplot (.qzv)
 * De novo multiple sequence alignment with MAFFT (with masking) and tree building with Fasttree
-* Tree visualization using Empress (qzv)
-* Interactive alpha-rarefaction plot (qzv)
-* Alpha diversity and alpha-rarefaction with choice of metrics (qzv)
-* Beta diversity and beta group significance with choice of metrics (qzv)
-* Principal coordinates plots with Emperor (qzv)
+* Tree visualization using Empress (.qzv)
+* Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou's evenness (.qzv)
+* Beta diversity distances, principal coordinates, Emperor plots, and beta group significance (one metadata column) with four metrics: unweighted UniFrac, weighted UniFrac, Jaccard distance, and Bray-Curtis distance (.qzv)
 
 ### How do I get started? 
 
@@ -47,7 +45,7 @@ Tourmaline provides Snakemake rules for DADA2 (single-end and paired-end) and De
 1. the *denoise* rule imports FASTQ data and runs denoising, generating a feature table and representative sequences;
 2. the *taxonomy* rule assigns taxonomy to representative sequences;
 3. the *diversity* rule does representative sequence curation, core diversity analyses, and alpha and beta group significance; and
-4. the *report* rule generates an HTML report of the outputs plus metadata, inputs, and parameters.
+4. the *report* rule generates an HTML report of the outputs plus metadata, inputs, and parameters. Also, the *report* rule can be run immediately to run the entire workflow.
 
 Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in the *taxonomy* step of *filtered* mode, undesired taxonomic groups or individual sequences from the representative sequences and feature table are removed. The *diversity* and *report* rules are the same for *unfiltered* and *filtered* modes, except the output goes into separate subdirectories.
 
@@ -130,7 +128,7 @@ If you're ready to run your own data, the setup is similar to what you did for t
   * Option 2: Put imported QIIME 2 archives in `01-imported`. Check that filenames match those in `config.yaml`.
 * Prepare sequence data:
   * Option 1: Edit FASTQ manifests in `00-data` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file. You can use a text editor such as Sublime Text, nano, vim, etc. Check that manifest filenames match those in `config.yaml`.
-  * Option 2: Put your pre-imported FASTQ qza files in `01-imported`. Check that qza filenames match those in `config.yaml`.
+  * Option 2: Put your pre-imported FASTQ .qza files in `01-imported`. Check that .qza filenames match those in `config.yaml`.
 * Edit metadata file `metadata.tsv` to contain your sample names and any relevant metadata for your samples. You can use a spreadsheet editor like Microsoft Excel or LibreOffice, but make sure to export the output in tab-delimited format.
 * Edit configuration file `config.yaml` to change input file names (or preferably, rename your input files to match the defaults), DADA2/Deblur parameters (sequence truncation/trimming, sample pooling, chimera removal, etc.), rarefaction depth, taxonomic classification method, and other parameters. This YAML (yet another markup language) file is a regular text file that can be edited in Sublime Text, nano, vim, etc.
 * Go to **Run Snakemake**.
