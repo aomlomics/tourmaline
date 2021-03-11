@@ -57,14 +57,22 @@ Before you download the Tourmaline commands and directory structure from GitHub,
 
 To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 and add the other dependencies:
 
-```
-wget https://data.qiime2.org/distro/core/qiime2-2020.8-py36-osx-conda.yml
-conda env create -n qiime2-2020.8 --file qiime2-2020.8-py36-osx-conda.yml
-conda activate qiime2-2020.8
+```bash
+wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
+conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
+conda activate qiime2-2021.2
 conda install -c bioconda snakemake biopython tabulate pandoc tabview
-conda install -c bioconda bioconductor-msa bioconductor-odseq
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
+```
+
+Finally, open R by entering `R` and install the R dependencies:
+
+```R
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("msa")
+BiocManager::install("odseq")
 ```
 
 #### Option 2: Docker container
@@ -76,7 +84,7 @@ To run Tourmaline inside a Docker container:
 3. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
 4. Run the Docker image (command below).
 
-```
+```bash
 docker pull aomlomics/tourmaline
 docker run -v $HOME:/data/myhome -it aomlomics/tourmaline
 ```
@@ -91,9 +99,11 @@ If this is your first time running Tourmaline, you'll need to set up your direct
 
 Start by cloning the Tourmaline directory and files:
 
-```
+```bash
 git clone https://github.com/aomlomics/tourmaline.git
 ```
+
+If using the Docker container, it's recommended you run the above command from inside `/data`.
 
 #### Setup for the test data
 
@@ -101,17 +111,17 @@ The test data (16 samples of paired-end 16S rRNA data with 1000 sequences per sa
 
 Download reference database sequence and taxonomy files, named `refseqs.qza` and `reftax.qza` (QIIME 2 archives), in `01-imported`:
 
-```
+```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2020.8/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2020.8/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2021.2/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2021.2/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
 
 Edit FASTQ manifests `manifest_se.csv` and `manifest_pe.csv` in `00-data` so file paths match the location of your `tourmaline` directory. In the command below, replace `/path/to` with the location of your `tourmaline` directory—or skip this step if you are using the Docker container and you cloned `tourmaline` into `/data`:
 
-```
+```bash
 cd ../00-data
 cat manifest_pe.csv | sed 's|/data/tourmaline|/path/to/tourmaline|' > temp && mv temp manifest_pe.csv 
 cat manifest_pe.csv | grep -v "reverse" > manifest_se.csv
@@ -141,7 +151,7 @@ Note that any of the commands below can be run with various options, including `
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
-```
+```bash
 snakemake dada2_pe_denoise
 ```
 
@@ -155,19 +165,19 @@ Pausing after the *denoise* step allows you to make changes before proceeding:
 
 Continue the workflow without filtering (for now). If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
 
-```
+```bash
 snakemake dada2_pe_taxonomy_unfiltered
 ```
 
 Next, run the *diversity* rule (for unfiltered data):
 
-```
+```bash
 snakemake dada2_pe_diversity_unfiltered
 ```
 
 Finally, run the *report* rule (for unfiltered data):
 
-```
+```bash
 snakemake dada2_pe_report_unfiltered
 ```
 
@@ -176,23 +186,23 @@ snakemake dada2_pe_report_unfiltered
 Filtering is done on representative sequences and the feature table, and downstream outputs will be filtered; the taxonomy file itself is not filtered. Filtering can be done by taxonomy keywords and/or by feature IDs of specific representative sequences. To filter by these two methods, before running *taxonomy_filtered*, do this:
 
 * Taxonomy keyword: Place the keywords in `config.yaml` in the field "exclude_terms", separated by commas. Searching is not case-sensitive.
-* Specific representative sequences: Go to `2-output-dada2-pe-unfiltered/02-alignment-tree` and copy or merge `repseqs_to_filter_outliers.tsv` and/or `repseqs_to_filter_unassigned.tsv` to  `00-data/repseqs_to_filter_dada2-pe.tsv`. If merging the two files, take care to remove duplicate feature IDs, because duplicates will cause the filtering step to fail.
+* Specific representative sequences: Go to `2-output-dada2-pe-unfiltered/02-alignment-tree` and copy or merge `repseqs_to_filter_outliers.tsv` and/or `repseqs_to_filter_unassigned.tsv` to `00-data/repseqs_to_filter_dada2-pe.tsv`. If merging the two files, take care to remove duplicate feature IDs, because duplicates will cause the filtering step to fail.
 
 Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
 
-```
+```bash
 snakemake dada2_pe_taxonomy_filtered
 ```
 
 Next, run the *diversity* rule (for filtered data):
 
-```
+```bash
 snakemake dada2_pe_diversity_filtered
 ```
 
 Finally, run the *report* rule (for filtered data):
 
-```
+```bash
 snakemake dada2_pe_report_filtered
 ```
 
@@ -202,7 +212,7 @@ snakemake dada2_pe_report_filtered
 
 If using the Docker container, copy your entire Tourmaline directory to your computer's hard drive or an external drive:
 
-```
+```bash
 cp -r /data/tourmaline /data/myhome
 ```
 
@@ -235,7 +245,7 @@ Downloaded files can be deleted after viewing because they are already stored in
 
 * If you've run Tourmaline on your dataset before, you can speed up the setup process and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the some of the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
 
-  ```
+  ```bash
   cd /path/to/tourmaline-new
   scripts/initialize_dir_from_existing_tourmaline_dir.sh /path/to/tourmaline-existing
   ```
