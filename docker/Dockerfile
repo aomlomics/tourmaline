@@ -1,5 +1,5 @@
 # Use the official QIIME 2 image as a parent image
-FROM qiime2/core:2020.8
+FROM quay.io/qiime2/core:2021.2
 
 # Label information
 LABEL maintainer="Luke Thompson"
@@ -36,10 +36,10 @@ RUN pip install git+https://github.com/biocore/empress.git && \
  qiime dev refresh-cache
 
 # Add conda installation dir to $PATH (instead of doing 'conda activate')
-ENV PATH="/opt/conda/envs/qiime2-2020.8/bin:$PATH"
+ENV PATH="/opt/conda/envs/qiime2-2021.2/bin:$PATH"
 
 # This is necessary to install snakemake using conda
-SHELL ["conda", "run", "-n", "qiime2-2020.8", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "qiime2-2021.2", "/bin/bash", "-c"]
  
 # Install snakemake
 RUN conda update -n base -c defaults conda
