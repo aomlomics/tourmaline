@@ -1,4 +1,4 @@
-# metadata
+# metadata file
 metadata: 00-data/metadata.tsv
 
 # fastq data
@@ -18,6 +18,7 @@ refseqs_qza: 01-imported/refseqs.qza
 reftax_qza: 01-imported/reftax.qza
 
 # dada2 paired-end
+# - denoising parameters for command "qiime dada2 denoise-paired"
 dada2pe_trunc_len_f: 240
 dada2pe_trunc_len_r: 190
 dada2pe_trim_left_f: 0
@@ -32,6 +33,7 @@ dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 single-end
+# - denoising parameters for command "qiime dada2 denoise-single"
 dada2se_trunc_len: 240
 dada2se_trim_left: 0
 dada2se_max_ee: 2
@@ -42,7 +44,8 @@ dada2se_min_fold_parent_over_abundance: 1
 dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
-# deblur single-end
+# deblur parameters
+# - denoising parameters for command "qiime deblur denoise-other"
 deblur_trim_length: 240
 deblur_sample_stats: --p-sample-stats
 deblur_mean_error: 0.005
@@ -53,6 +56,8 @@ deblur_min_size: 2
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # threads
+# - max number of threads for individual steps
+# - threads used will be lower of this and snakemake parameter --cores
 dada2pe_threads: 8
 dada2se_threads: 8
 deblur_threads: 8
@@ -61,7 +66,8 @@ alignment_mafft_threads: 8
 phylogeny_fasttree_threads: 8
 diversity_core_metrics_phylogenetic_threads: 8
 
-# taxonomic classification method (choose from: consensus-blast, naive-bayes)
+# taxonomic classification method
+# - choose from: consensus-blast, naive-bayes
 classify_method: consensus-blast
 
 # filter table and representative sequences by taxonomy
@@ -89,8 +95,14 @@ odseq_threshold: 0.025 # probability to be at right of the bootstrap scores dist
 core_sampling_depth: 500
 alpha_max_depth: 500
 
-# beta group significance (choose a column from metadata to test)
+# beta group significance
+# - column: metadata column to test beta group significance
+# - method: choose from: permanova, anosim, permdisp
+# - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
 beta_group_column: region
+beta_group_method: permanova
+beta_group_pairwise: --p-pairwise
 
-# report theme (choose from: github, gothic, newsprint, night, pixyll, whitey)
+# report theme for html version
+# - choose from: github, gothic, newsprint, night, pixyll, whitey
 report_theme: github
