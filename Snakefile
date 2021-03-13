@@ -335,9 +335,9 @@ rule unzip_fastq_summary:
     output:
         "01-imported/fastq_counts.tsv"
     shell:
-        "unzip -qq -o {input} -d temp; "
-        "mv temp/*/data/per-sample-fastq-counts.tsv {output}; "
-        "/bin/rm -r temp"
+        "unzip -qq -o {input} -d temp0; "
+        "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
+        "/bin/rm -r temp0"
 
 rule describe_fastq_counts:
     input:
@@ -488,9 +488,9 @@ rule unzip_table_to_biom:
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     shell:
-        "unzip -qq -o {input} -d temp; "
-        "mv temp/*/data/feature-table.biom {output}; "
-        "/bin/rm -r temp"
+        "unzip -qq -o {input} -d temp1; "
+        "mv temp1/*/data/feature-table.biom {output}; "
+        "/bin/rm -r temp1"
 
 rule summarize_biom_samples:
     input:
@@ -533,9 +533,9 @@ rule unzip_repseqs_to_fasta:
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     shell:
-        "unzip -qq -o {input} -d temp; "
-        "mv temp/*/data/dna-sequences.fasta {output}; "
-        "/bin/rm -r temp"
+        "unzip -qq -o {input} -d temp2; "
+        "mv temp2/*/data/dna-sequences.fasta {output}; "
+        "/bin/rm -r temp2"
 
 rule repseqs_detect_amplicon_locus:
     input:
@@ -630,9 +630,9 @@ rule unzip_taxonomy_to_tsv:
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
     shell:
-        "unzip -qq -o {input} -d temp; "
-        "mv temp/*/data/taxonomy.tsv {output}; "
-        "/bin/rm -r temp"
+        "unzip -qq -o {input} -d temp3; "
+        "mv temp3/*/data/taxonomy.tsv {output}; "
+        "/bin/rm -r temp3"
 
 rule import_taxonomy_to_qza:
     input:
@@ -716,9 +716,9 @@ rule unzip_alignment_to_fasta:
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     shell:
-        "unzip -qq -o {input} -d temp; "
-        "mv temp/*/data/aligned-dna-sequences.fasta {output}; "
-        "/bin/rm -r temp"
+        "unzip -qq -o {input} -d temp4; "
+        "mv temp4/*/data/aligned-dna-sequences.fasta {output}; "
+        "/bin/rm -r temp4"
 
 rule alignment_count_gaps:
     input:
@@ -958,7 +958,9 @@ rule diversity_beta_group_significance:
         distancematrix="02-output-{method}-{filter}/04-beta-diversity/{metric}_distance_matrix.qza",
         metadata=config["metadata"]
     params:
-        column=config["beta_group_column"]
+        column=config["beta_group_column"],
+        method=config["beta_group_method"],
+        pairwise=config["beta_group_pairwise"]
     output:
         "02-output-{method}-{filter}/04-beta-diversity/{metric}_group_significance.qzv"
     shell:
@@ -966,8 +968,9 @@ rule diversity_beta_group_significance:
         "--i-distance-matrix {input.distancematrix} "
         "--m-metadata-file {input.metadata} "
         "--m-metadata-column {params.column} "
-        "--o-visualization {output} "
-        "--p-pairwise"
+        "--p-method {params.method} "
+        "{params.pairwise} "
+        "--o-visualization {output}"
 
 # RULES: REPORT ----------------------------------------------------------------
 
