@@ -762,6 +762,7 @@ rule tabulate_plot_repseq_properties:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
     output:
         proptsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
+        propdescribe="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties_describe.md",
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     run:
@@ -779,6 +780,13 @@ rule tabulate_plot_repseq_properties:
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
         merged.sort_values('log10(observations)', ascending=False, inplace=True)
         merged.to_csv(output['proptsv'], index=False, sep='\t')
+        t = merged.describe()
+        tcolumns = t.columns
+        tcolumns = tcolumns.insert(0, 'Statistic (n=%s)' % t.iloc[0].values[0].astype(int))
+        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=tcolumns)
+        with open(output['propdescribe'], 'w') as target:
+            target.write(outstr)
+            target.write('\n')
         g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy_level_1', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
         g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in masked multiple sequence alignment')
         plt.savefig(output['proppdf'], bbox_inches='tight')
@@ -1009,6 +1017,7 @@ rule generate_report_md:
         fastq="01-imported/fastq_counts_describe.md",
         amplicontype="02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt",
         repseqstsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
+        repseqsdescribe="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties_describe.md",
         repseqspdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         repseqstree="02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv",
         repseqsoutliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
@@ -1078,6 +1087,12 @@ rule generate_report_md:
         "echo '---' >> {output};"
         "echo '' >> {output};"
         "echo '## Representative Sequences Information' >> {output};"
+        "echo '' >> {output};"
+        "echo '### Representative Sequences Properties Summary' >> {output};"
+        "echo '' >> {output};"
+        "echo Markdown: \[{input.repseqsdescribe}\]\(../{input.repseqsdescribe}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        "cat {input.repseqsdescribe} >> {output};"
         "echo '' >> {output};"
         "echo '### Representative Sequences Properties Table' >> {output};"
         "echo '' >> {output};"
