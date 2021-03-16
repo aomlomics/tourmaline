@@ -8,7 +8,7 @@ Tourmaline is an amplicon sequence processing workflow for Illumina sequence dat
 
 ### Why should I use Tourmaline?
 
-Tourmaline has many advantages over other analysis workflows:
+Tourmaline has several features that enhance usability and interoperability:
 
 * **Portability.** Native support for Linux and macOS in addition to Docker containers.
 * **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) package, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
@@ -86,7 +86,7 @@ To run Tourmaline inside a Docker container:
 
 ```bash
 docker pull aomlomics/tourmaline
-docker run -v $HOME:/data/myhome -it aomlomics/tourmaline
+docker run -v $HOME:/data -it aomlomics/tourmaline
 ```
 
 The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole Tourmaline directory out of the container when the run is completed.
@@ -208,14 +208,6 @@ snakemake dada2_pe_report_filtered
 
 ### View output
 
-#### Transfer output
-
-If using the Docker container, copy your entire Tourmaline directory to your computer's hard drive or an external drive:
-
-```bash
-cp -r /data/tourmaline /data/myhome
-```
-
 #### View report and output files
 
 Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/){target="_blank"} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){target="_blank"}. To view the linked files: 
@@ -266,6 +258,14 @@ Downloaded files can be deleted after viewing because they are already stored in
   ```
 
   Ensure you make any changes to your configuration file and (if necessary) delete any files you want to be regenerated before you run Snakemake.
+
+#### Alternatives
+
+Some alternative pipelines for amplicon sequence analysis include the following:
+
+* Anacapa Toolkit from UCLA: https://github.com/limey-bean/Anacapa
+* Banzai from MBON: https://github.com/jimmyodonnell/banzai
+* Sarah Hu's QIIME 2 Snakemake workflow: https://github.com/shu251/tagseq-qiime2-snakemake
 
 ## License
 

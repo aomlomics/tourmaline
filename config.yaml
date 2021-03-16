@@ -1,3 +1,7 @@
+# config.yaml - configuration file for the Tourmaline Snakemake workflow
+# - the user MUST edit these parameters before running with their own data
+# - see https://github.com/aomlomics/tourmaline/wiki for detailed instructions
+
 # metadata file
 metadata: 00-data/metadata.tsv
 
@@ -78,13 +82,13 @@ exclude_terms: mitochondria,chloroplast,eukaryota
 
 # filter representative sequences by featureid (paths hard-coded, not specified in config.yaml)
 # - feature metadata tsv file has a header line with two columns: 1. "featureid", 2. anything
-# - easiest method to create feature metadata file for filtering repseqs:
-# - 1. go to 02-output-{method}-{filter}/02-alignment-tree
-# - 2. merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
-# - 3. rename to the file name below correspoinding to your method:
-# 00-data/repseqs_to_filter_dada2-pe.tsv
-# 00-data/repseqs_to_filter_dada2-se.tsv
-# 00-data/repseqs_to_filter_deblur-se.tsv
+# - to create a feature metadata file for filtering repseqs:
+#     1. go to 02-output-{method}-{filter}/02-alignment-tree
+#     2. merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
+#     3. rename to the file name below correspoinding to your method:
+#          00-data/repseqs_to_filter_dada2-pe.tsv
+#          00-data/repseqs_to_filter_dada2-se.tsv
+#          00-data/repseqs_to_filter_deblur-se.tsv
 
 # representative sequence outlier detection using odseq
 odseq_distance_metric: linear # choose from: linear, affine
