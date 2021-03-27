@@ -682,7 +682,7 @@ rule alignment_muscle:
 #         "--input-path {output.aln_fasta} "
 #         "--output-path {output.aln_qza}"
 
-# OPTION 3: MAFFT - comment lines 653-666 and uncomment lines 687-717 (leave lines 670-683 commented)
+# OPTION 3: MAFFT with masking - comment lines 653-666 and uncomment lines 687-717 (leave lines 670-683 commented)
 
 # rule alignment_mafft:
 #     input:
@@ -824,7 +824,7 @@ rule tabulate_plot_repseq_properties:
             target.write(outstr)
             target.write('\n')
         g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy_level_1', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
-        g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in masked multiple sequence alignment')
+        g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in multiple sequence alignment')
         plt.savefig(output['proppdf'], bbox_inches='tight')
         outliers.columns = ['Feature ID', 'Outlier']
         outliers = outliers*1
@@ -1138,7 +1138,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '* featureid' >> {output};"
         "echo '* length - length (bp) not including gaps' >> {output};"
-        "echo '* gaps - gaps (bp) in masked multiple sequence alignment' >> {output};"
+        "echo '* gaps - gaps (bp) in multiple sequence alignment' >> {output};"
         "echo '* outlier - outlier (True/False) determined by OD-seq' >> {output};"
         "echo '* taxonomy - domain level' >> {output};"
         "echo '* observations - total observations summed across all samples (unrarefied)' >> {output};"
@@ -1151,7 +1151,7 @@ rule generate_report_md:
         "echo 'Plot elements:' >> {output};"
         "echo '' >> {output};"
         "echo '* x: length (bp) not including gaps' >> {output};"
-        "echo '* y: gaps (bp) in masked multiple sequence alignment' >> {output};"
+        "echo '* y: gaps (bp) in multiple sequence alignment' >> {output};"
         "echo '* color: taxonomy (domain)' >> {output};"
         "echo '* size: log10(observations)' >> {output};"
         "echo '* facets: outlier (True/False) determined by OD-seq' >> {output};"
