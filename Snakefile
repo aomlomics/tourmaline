@@ -648,27 +648,73 @@ rule import_taxonomy_to_qza:
 
 # RULES: ALIGNMENT & TREE ------------------------------------------------------
 
-rule alignment_mafft:
-    input:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
-    output:
-        "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
-    threads: config["alignment_mafft_threads"]
-    shell:
-        "qiime alignment mafft "
-        "--i-sequences {input} "
-        "--o-alignment {output} "
-        "--p-n-threads {threads}"
+# OPTION 1: MUSCLE - default (leave lines 653-666 uncommented and lines 670-683 and 687-717 commented)
 
-rule alignment_mask:
+rule alignment_muscle:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+        aln_fasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
+        aln_qza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     shell:
-        "qiime alignment mask "
-        "--i-alignment {input} "
-        "--o-masked-alignment {output}"
+        "muscle "
+        "-in {input} "
+        "-out {output.aln_fasta}; "
+        "qiime tools import "
+        "--type 'FeatureData[AlignedSequence]' "
+        "--input-path {output.aln_fasta} "
+        "--output-path {output.aln_qza}"
+
+# OPTION 2: Clustal Omega - comment lines 653-666 and uncomment lines 670-683 (leave lines 687-717 commented)
+
+# rule alignment_clustalo:
+#     input:
+#         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
+#     output:
+#         aln_fasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
+#         aln_qza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+#     shell:
+#         "clustalo --verbose --force "
+#         "--in {input} "
+#         "--out {output.aln_fasta}; "
+#         "qiime tools import "
+#         "--type 'FeatureData[AlignedSequence]' "
+#         "--input-path {output.aln_fasta} "
+#         "--output-path {output.aln_qza}"
+
+# OPTION 3: MAFFT - comment lines 653-666 and uncomment lines 687-717 (leave lines 670-683 commented)
+
+# rule alignment_mafft:
+#     input:
+#         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
+#     output:
+#         "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
+#     threads: config["alignment_mafft_threads"]
+#     shell:
+#         "qiime alignment mafft "
+#         "--i-sequences {input} "
+#         "--o-alignment {output} "
+#         "--p-n-threads {threads}"
+
+# rule alignment_mask:
+#     input:
+#         "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
+#     output:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+#     shell:
+#         "qiime alimvgnment mask "
+#         "--i-alignment {input} "
+#         "--o-masked-alignment {output}"
+
+# rule unzip_alignment_to_fasta:
+#     input:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+#     output:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
+#     shell:
+#         "unzip -qq -o {input} -d temp4; "
+#         "mv temp4/*/data/aligned-dna-sequences.fasta {output}; "
+#         "/bin/rm -r temp4"
 
 rule phylogeny_fasttree:
     input:
@@ -709,16 +755,6 @@ rule visualize_tree:
         "--m-feature-metadata-file {input.taxonomy} "
         "--m-feature-metadata-file {input.outliers} "
         "--o-visualization {output}"
-
-rule unzip_alignment_to_fasta:
-    input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
-    output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
-    shell:
-        "unzip -qq -o {input} -d temp4; "
-        "mv temp4/*/data/aligned-dna-sequences.fasta {output}; "
-        "/bin/rm -r temp4"
 
 rule alignment_count_gaps:
     input:
