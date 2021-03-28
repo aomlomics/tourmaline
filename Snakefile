@@ -657,7 +657,7 @@ rule alignment_muscle:
         aln_fasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
         aln_qza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     shell:
-        "muscle "
+        "muscle -maxiters 2 -diags "
         "-in {input} "
         "-out {output.aln_fasta}; "
         "qiime tools import "

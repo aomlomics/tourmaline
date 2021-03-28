@@ -29,7 +29,7 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * Feature classification (taxonomic assignment) with options of consensus BLAST and naive Bayes
 * Feature filtering by taxonomy and by feature ID
 * Interactive taxonomy barplot (.qzv)
-* De novo multiple sequence alignment with MUSCLE, Clustal Omega, or MAFFT (with masking) and tree building with Fasttree
+* De novo multiple sequence alignment with MUSCLE, Clustal Omega, or MAFFT (with masking) and tree building with FastTree
 * Tree visualization using Empress (.qzv)
 * Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou's evenness (.qzv)
 * Beta diversity distances, principal coordinates, Emperor plots, and beta group significance (one metadata column) with four metrics: unweighted UniFrac, weighted UniFrac, Jaccard distance, and Bray-Curtis distance (.qzv)
