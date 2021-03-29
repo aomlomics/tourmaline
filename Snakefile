@@ -648,73 +648,62 @@ rule import_taxonomy_to_qza:
 
 # RULES: ALIGNMENT & TREE ------------------------------------------------------
 
-# OPTION 1: MUSCLE - default (leave lines 653-666 uncommented and lines 670-683 and 687-717 commented)
-
-rule alignment_muscle:
+rule alignment:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
+        repseqsfasta="02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta",
+        repseqsqza="02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
-        aln_fasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
-        aln_qza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+        alnfasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
+        alnqza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+    params:
+        method=config["alignment_method"],
+        muscle_maxiters=config["alignment_muscle_maxiters"],
+        muscle_diags=config["alignment_muscle_diags"]
+    threads: config["alignment_threads"],
     shell:
-        "muscle -maxiters 2 -diags "
-        "-in {input} "
-        "-out {output.aln_fasta}; "
-        "qiime tools import "
-        "--type 'FeatureData[AlignedSequence]' "
-        "--input-path {output.aln_fasta} "
-        "--output-path {output.aln_qza}"
-
-# OPTION 2: Clustal Omega - comment lines 653-666 and uncomment lines 670-683 (leave lines 687-717 commented)
-
-# rule alignment_clustalo:
-#     input:
-#         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
-#     output:
-#         aln_fasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
-#         aln_qza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
-#     shell:
-#         "clustalo --verbose --force "
-#         "--in {input} "
-#         "--out {output.aln_fasta}; "
-#         "qiime tools import "
-#         "--type 'FeatureData[AlignedSequence]' "
-#         "--input-path {output.aln_fasta} "
-#         "--output-path {output.aln_qza}"
-
-# OPTION 3: MAFFT with masking - comment lines 653-666 and uncomment lines 687-717 (leave lines 670-683 commented)
-
-# rule alignment_mafft:
-#     input:
-#         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
-#     output:
-#         "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
-#     threads: config["alignment_mafft_threads"]
-#     shell:
-#         "qiime alignment mafft "
-#         "--i-sequences {input} "
-#         "--o-alignment {output} "
-#         "--p-n-threads {threads}"
-
-# rule alignment_mask:
-#     input:
-#         "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
-#     output:
-#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
-#     shell:
-#         "qiime alimvgnment mask "
-#         "--i-alignment {input} "
-#         "--o-masked-alignment {output}"
-
-# rule unzip_alignment_to_fasta:
-#     input:
-#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
-#     output:
-#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
-#     shell:
-#         "unzip -qq -o {input} -d temp4; "
-#         "mv temp4/*/data/aligned-dna-sequences.fasta {output}; "
-#         "/bin/rm -r temp4"
+        "if [ {params.method} == 'muscle' ]; then "
+        "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
+        "    muscle "
+        "    -maxiters {params.muscle_maxiters} "
+        "    {params.muscle_diags} "
+        "    -in {input.repseqsfasta} "
+        "    -out temp_aligned_repseqs.fasta; "
+        "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
+        "    echo 'Line breaks removed to generate {output.alnfasta}'; "
+        "    /bin/rm temp_aligned_repseqs.fasta; "
+        "    qiime tools import "
+        "    --type 'FeatureData[AlignedSequence]' "
+        "    --input-path {output.alnfasta} "
+        "    --output-path {output.alnqza}; "
+        "elif [ {params.method} == 'clustalo' ]; then "
+        "    echo 'Multiple sequence alignment method: Clustal Omega ...'; "
+        "    clustalo --verbose --force "
+        "    --in {input.repseqsfasta} "
+        "    --out temp_aligned_repseqs.fasta "
+        "    --threads={threads}; "
+        "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
+        "    echo 'Line breaks removed to generate {output.alnfasta}'; "
+        "    /bin/rm temp_aligned_repseqs.fasta; "
+        "    qiime tools import "
+        "    --type 'FeatureData[AlignedSequence]' "
+        "    --input-path {output.alnfasta} "
+        "    --output-path {output.alnqza}; "
+        "elif [ {params.method} == 'mafft' ]; then "
+        "    echo 'Multiple sequence alignment method: MAFFT ...'; "
+        "    qiime alignment mafft "
+        "    --i-sequences {input.repseqsqza} "
+        "    --o-alignment tempfile_unmasked_aligned_repseqs.qza "
+        "    --p-n-threads {threads}; "
+        "    qiime alignment mask "
+        "    --i-alignment tempfile_unmasked_aligned_repseqs.qza "
+        "    --o-masked-alignment {output.alnqza}; "
+        "    /bin/rm tempfile_unmasked_aligned_repseqs.qza; "
+        "    unzip -qq -o {output.alnqza} -d temp4; "
+        "    mv temp4/*/data/aligned-dna-sequences.fasta {output.alnfasta}; "
+        "    /bin/rm -r temp4; "
+        "else "
+        "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
+        "fi"
 
 rule phylogeny_fasttree:
     input:

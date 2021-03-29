@@ -59,36 +59,32 @@ deblur_min_reads: 10
 deblur_min_size: 2
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
-# threads
-# - max number of threads for individual steps
-# - threads used will be lower of this and snakemake parameter --cores
-dada2pe_threads: 8
-dada2se_threads: 8
-deblur_threads: 8
-feature_classifier_threads: 8
-alignment_mafft_threads: 8
-phylogeny_fasttree_threads: 8
-diversity_core_metrics_phylogenetic_threads: 8
+# multiple sequence alignment
+# - method: choose from: muscle, clustalo, mafft
+alignment_method: muscle
+alignment_muscle_maxiters: 2
+alignment_muscle_diags: -diags
 
 # taxonomic classification method
 # - choose from: consensus-blast, naive-bayes
 classify_method: consensus-blast
 
 # filter table and representative sequences by taxonomy
-# - separate terms with commas
+# - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
-# - use a nonsense word or don't run filtering mode to skip
-exclude_terms: mitochondria,chloroplast,eukaryota
+# - to skip filtering by taxonomy: provide a nonsense term or don't run filtering mode
+exclude_terms: xxxxxxxxx
 
 # filter representative sequences by featureid (paths hard-coded, not specified in config.yaml)
 # - feature metadata tsv file has a header line with two columns: 1. "featureid", 2. anything
 # - to create a feature metadata file for filtering repseqs:
 #     1. go to 02-output-{method}-{filter}/02-alignment-tree
 #     2. merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
-#     3. rename to the file name below correspoinding to your method:
+#     3. rename to the file name below corresponding to your method:
 #          00-data/repseqs_to_filter_dada2-pe.tsv
 #          00-data/repseqs_to_filter_dada2-se.tsv
 #          00-data/repseqs_to_filter_deblur-se.tsv
+# - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering mode
 
 # representative sequence outlier detection using odseq
 odseq_distance_metric: linear # choose from: linear, affine
@@ -110,3 +106,14 @@ beta_group_pairwise: --p-pairwise
 # report theme for html version
 # - choose from: github, gothic, newsprint, night, pixyll, whitey
 report_theme: github
+
+# threads
+# - max number of threads for individual steps
+# - threads used will be lower of this and snakemake parameter --cores
+dada2pe_threads: 8
+dada2se_threads: 8
+deblur_threads: 8
+alignment_threads: 8
+feature_classifier_threads: 8
+phylogeny_fasttree_threads: 8
+diversity_core_metrics_phylogenetic_threads: 8
