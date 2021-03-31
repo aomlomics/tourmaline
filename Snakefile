@@ -576,28 +576,39 @@ rule feature_classifier:
     output:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
-        classifymethod=config["classify_method"]
+        classifymethod=config["classify_method"],
+        classifyparams=config["classify_parameters"]
     threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
         "if [ {params.classifymethod} = 'naive-bayes' ]; then "
-        "if [ ! -f 01-imported/classifier.qza ]; then "
-        "qiime feature-classifier fit-classifier-naive-bayes "
-        "--i-reference-reads {input.refseqs} "
-        "--i-reference-taxonomy {input.reftax} "
-        "--o-classifier 01-imported/classifier.qza; "
-        "fi; "
-        "qiime feature-classifier classify-sklearn "
-        "--i-classifier 01-imported/classifier.qza "
-        "--i-reads {input.repseqs} "
-        "--o-classification {output} "
-        "--p-n-jobs {threads}; "
+        "    if [ ! -f 01-imported/classifier.qza ]; then "
+        "        qiime feature-classifier fit-classifier-naive-bayes "
+        "        --i-reference-reads {input.refseqs} "
+        "        --i-reference-taxonomy {input.reftax} "
+        "        --o-classifier 01-imported/classifier.qza; "
+        "    fi; "
+        "    qiime feature-classifier classify-sklearn "
+        "    --i-classifier 01-imported/classifier.qza "
+        "    --i-reads {input.repseqs} "
+        "    --o-classification {output} "
+        "    --p-n-jobs {threads} "
+        "    {params.classifyparams}; "
         "elif [ {params.classifymethod} = 'consensus-blast' ]; then "
-        "qiime feature-classifier classify-consensus-blast "
-        "--i-reference-reads {input.refseqs} "
-        "--i-reference-taxonomy {input.reftax} "
-        "--i-query {input.repseqs} "
-        "--o-classification {output}; "
+        "    qiime feature-classifier classify-consensus-blast "
+        "    --i-reference-reads {input.refseqs} "
+        "    --i-reference-taxonomy {input.reftax} "
+        "    --i-query {input.repseqs} "
+        "    --o-classification {output} "
+        "    {params.classifyparams}; "
+        "elif [ {params.classifymethod} = 'consensus-vsearch' ]; then "
+        "    qiime feature-classifier classify-consensus-vsearch "
+        "    --i-reference-reads {input.refseqs} "
+        "    --i-reference-taxonomy {input.reftax} "
+        "    --i-query {input.repseqs} "
+        "    --o-classification {output} "
+        "    --p-threads {threads} "
+        "    {params.classifyparams}; "
         "fi"
 
 rule visualize_taxonomy:
@@ -648,7 +659,7 @@ rule import_taxonomy_to_qza:
 
 # RULES: ALIGNMENT & TREE ------------------------------------------------------
 
-rule alignment:
+rule align_repseqs:
     input:
         repseqsfasta="02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta",
         repseqsqza="02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
@@ -849,13 +860,28 @@ rule filter_sequences_by_taxonomy:
     params:
         excludeterms=config["exclude_terms"]
     output:
-        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza"
+        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_length_filtering.qza"
     shell:
         "qiime taxa filter-seqs "
         "--i-sequences {input.repseqs} "
         "--i-taxonomy {input.taxonomy} "
         "--p-exclude {params.excludeterms} "
         "--o-filtered-sequences {output}"
+
+rule filter_sequences_by_length:
+    input:
+        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_length_filtering.qza"
+    params:
+        minlength=config["repseq_min_length"],
+        maxlength=config["repseq_max_length"]
+    output:
+        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza"
+    shell:
+        "qiime feature-table filter-seqs "
+        "--i-data {input.repseqs} "
+        "--m-metadata-file {input.repseqs} "
+        "--p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' "
+        "--o-filtered-data {output}"
 
 rule filter_sequences_by_id:
     input:
@@ -881,6 +907,22 @@ rule filter_table:
         "--i-table {input.table} "
         "--m-metadata-file {input.filteredseqs} "
         "--o-filtered-table {output}"
+
+# rule filter_sequences_by_abundance_prevalence:
+#     input:
+#         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
+#     params:
+#         minabund=config["repseq_min_abundance"],
+#         maxabund=config["repseq_max_abundance"],
+#         minprev=config["repseq_min_prevalence"],
+#         maxprev=config["repseq_max_prevalence"]
+#     output:
+#         "02-output-{method}-filtered/00-table-repseqs/table_refiltered.qza",
+#     shell: 
+#         "--i-table ARTIFACT "
+#         "--p-abundance (0, 1) "
+#         "--p-prevalence (0, 1) "
+#         "--o-filtered-table ARTIFACT"
 
 rule filter_taxonomy:
     input:

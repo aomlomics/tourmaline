@@ -65,17 +65,27 @@ alignment_method: muscle
 alignment_muscle_maxiters: 2
 alignment_muscle_diags: -diags
 
-# taxonomic classification method
-# - choose from: consensus-blast, naive-bayes
-classify_method: consensus-blast
+# taxonomic classification
+# - method: choose from: naive-bayes, consensus-blast, consensus-vsearch
+# - parameters: add arbitrary parameters or at least one parameter; see "qiime feature-classifier COMMAND --help"
+classify_method: consensus-vsearch
+classify_parameters: --verbose
 
-# filter table and representative sequences by taxonomy
+# filter representative sequences by taxonomy
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering mode
-exclude_terms: xxxxxxxxx
+exclude_terms: xxxxxxxx
 
-# filter representative sequences by featureid (paths hard-coded, not specified in config.yaml)
+# filter representative sequences by length
+# - increase minimum and/or decrease maximum to impose length limits for filtering
+# - leave defaults (0, 10000) to do no filtering
+# - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
+repseq_min_length: 251
+repseq_max_length: 255
+
+# filter representative sequences by featureid
+# - paths are hard-coded, not specified in config.yaml
 # - feature metadata tsv file has a header line with two columns: 1. "featureid", 2. anything
 # - to create a feature metadata file for filtering repseqs:
 #     1. go to 02-output-{method}-{filter}/02-alignment-tree
@@ -85,6 +95,14 @@ exclude_terms: xxxxxxxxx
 #          00-data/repseqs_to_filter_dada2-se.tsv
 #          00-data/repseqs_to_filter_deblur-se.tsv
 # - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering mode
+
+# CURRENTLY NOT IMPLEMENTED - DO AFTER OTHER STEPS?
+# filter table by abundance and prevalence
+# - increase minimum and/or decrease maximum to impose abundance/prevalence limits for filtering
+# - leave defaults (0, 1) to do no filtering
+# - ranges are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
+repseq_range_abundance: (0, 1)
+repseq_range_prevalence: (0, 1)
 
 # representative sequence outlier detection using odseq
 odseq_distance_metric: linear # choose from: linear, affine

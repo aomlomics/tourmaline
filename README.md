@@ -26,8 +26,8 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 
 * FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
 * Denoising with DADA2 (paired-end and single-end) and Deblur (single-end)
-* Feature classification (taxonomic assignment) with options of consensus BLAST and naive Bayes
-* Feature filtering by taxonomy and by feature ID
+* Feature classification (taxonomic assignment) with options of naive Bayes, consensus BLAST, and consensus VSEARCH
+* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
 * Interactive taxonomy barplot (.qzv)
 * De novo multiple sequence alignment with MUSCLE, Clustal Omega, or MAFFT (with masking) and tree building with FastTree
 * Tree visualization using Empress (.qzv)
