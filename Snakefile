@@ -13,7 +13,7 @@ configfile: "config.yaml"
 
 ruleorder: summarize_fastq_demux_pe > summarize_fastq_demux_se
 ruleorder: feature_classifier > import_taxonomy_to_qza
-ruleorder: filter_taxonomy > unzip_taxonomy_to_tsv
+ruleorder: filter_taxonomy > import_taxonomy_to_qza > unzip_taxonomy_to_tsv
 
 # PSEUDO-RULES: DADA2 PAIRED-END -----------------------------------------------
 
@@ -794,9 +794,9 @@ rule alignment_detect_outliers:
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv"
     shell:
-        "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} {output}"
-
-##### GETTING CyclicGraphException HERE - NEED TO FIGURE OUT WHEN THE FILTERED TAXONOMY IS MADE!
+        "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} temp_odseq; "
+        "cat temp_odseq | sed 's/^X//' > {output}; "
+        "/bin/rm temp_odseq"
 
 rule tabulate_plot_repseq_properties:
     input:
@@ -819,11 +819,11 @@ rule tabulate_plot_repseq_properties:
         taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
         table = Artifact.load(input['table'])
         tabledf = table.view(view_type=pd.DataFrame)
-        merged = pd.merge(lengths, gaps, left_index=True, right_index=True, how='inner')
-        merged = pd.merge(merged, outliers, left_index=True, right_index=True, how='inner')
-        merged = pd.merge(merged, taxonomydf['Taxon'], left_index=True, right_index=True, how='inner')
-        merged = pd.merge(merged, taxonomydf['level_1'], left_index=True, right_index=True, how='inner')
-        merged = pd.merge(merged, tabledf.sum().rename('observations'), left_index=True, right_index=True, how='inner')
+        merged = pd.merge(lengths, gaps, left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, outliers, left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, taxonomydf['Taxon'], left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, taxonomydf['level_1'], left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, tabledf.sum().rename('observations'), left_index=True, right_index=True, how='outer')
         merged.columns = ['length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
         merged.index.name = 'featureid'
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
@@ -887,57 +887,55 @@ rule filter_sequences_table:
     shell:
         # FILTER SEQUENCES BY TAXONOMY
         "qiime taxa filter-seqs "
-        "--i-sequences {input.repseqs} " # .qza
-        "--i-taxonomy {input.taxonomy} " # .qza
-        "--p-exclude {params.excludeterms} " # text
-        "--o-filtered-sequences temp_repseqs1.qza; " # .qza
+        "--i-sequences {input.repseqs} "
+        "--i-taxonomy {input.taxonomy} "
+        "--p-exclude {params.excludeterms} "
+        "--o-filtered-sequences temp_repseqs1.qza; "
         # FILTER SEQUENCES BY LENGTH
         "qiime feature-table filter-seqs "
-        "--i-data temp_repseqs1.qza " # .qza
-        "--m-metadata-file temp_repseqs1.qza " # .qza
+        "--i-data temp_repseqs1.qza "
+        "--m-metadata-file temp_repseqs1.qza "
         "--p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' "
-        "--o-filtered-data temp_repseqs2.qza; " # .qza
+        "--o-filtered-data temp_repseqs2.qza; "
         # FILTER SEQUENCES BY ID
         "qiime feature-table filter-seqs "
-        "--i-data temp_repseqs2.qza " # .qza
-        "--m-metadata-file {input.repseqstofilter} " # .tsv
+        "--i-data temp_repseqs2.qza "
+        "--m-metadata-file {input.repseqstofilter} "
         "--p-exclude-ids "
-        "--o-filtered-data temp_repseqs3.qza; " # .qza
+        "--o-filtered-data temp_repseqs3.qza; "
         # FILTER TABLE BY IDS
         "qiime feature-table filter-features "
-        "--i-table {input.table} " # .qza
-        "--m-metadata-file temp_repseqs3.qza " # .qza
-        "--o-filtered-table temp_table.qza; " # .qza
+        "--i-table {input.table} "
+        "--m-metadata-file temp_repseqs3.qza "
+        "--o-filtered-table temp_table.qza; "
         # FILTER TABLE BY ABUNDANCE & PREVALENCE
         "qiime feature-table filter-features-conditionally "
-        "--i-table temp_table.qza " # .qza
+        "--i-table temp_table.qza "
         "--p-abundance {params.minabund} "
         "--p-prevalence {params.minprev} "
-        "--o-filtered-table {output.table}; " # .qza
+        "--o-filtered-table {output.table}; "
         # FILTER SEQUENCES USING TABLE
         "qiime feature-table filter-seqs "
-        "--i-data temp_repseqs3.qza " # .qza
-        "--i-table {output.table} " # .qza
+        "--i-data temp_repseqs3.qza "
+        "--i-table {output.table} "
         "--p-no-exclude-ids "
-        "--o-filtered-data {output.repseqs}; " # .qza
+        "--o-filtered-data {output.repseqs}; "
         # REMOVE TEMP FILES
-        "/bin/rm temp_repseqs1.qza"
-        "/bin/rm temp_repseqs2.qza"
-        "/bin/rm temp_repseqs3.qza"
+        "/bin/rm temp_repseqs1.qza; "
+        "/bin/rm temp_repseqs2.qza; "
+        "/bin/rm temp_repseqs3.qza; "
         "/bin/rm temp_table.qza"
-
-##### GETTING CyclicGraphException HERE - NEED TO FIGURE OUT WHEN THE FILTERED TAXONOMY IS MADE!
 
 rule filter_taxonomy:
     input:
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.tsv",
-        proptsv="02-output-{method}-filtered/02-alignment-tree/repseqs_properties.tsv"
+        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_lengths.tsv"
     output:
         taxonomytsv="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv",
         taxonomyqza="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"        
     run:
         df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
-        df_repseqs = pd.read_csv(input['proptsv'], index_col=0, sep='\t')
+        df_repseqs = pd.read_csv(input['repseqs'], header=None, index_col=0, sep='\t')
         keep_ids = df_repseqs.index
         df_taxonomy_filtered = df_taxonomy.loc[list(keep_ids)]
         df_taxonomy_filtered.to_csv(output['taxonomytsv'], sep='\t')
