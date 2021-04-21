@@ -71,38 +71,42 @@ alignment_muscle_diags: -diags
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
-# filter representative sequences by taxonomy
+# filtering - implemented by filtering commands, eg "snakemake dada2_pe_report_filtered", the parameters below are applied to:
+#     1. representative sequences
+#     2. taxonomy
+#     3. feature table
+
+# filter by featureid
+# - these feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything
+# - to create a feature metadata file for filtering repseqs:
+#     1. go to 02-output-{method}-{filter}/02-alignment-tree
+#     2. merge (removing duplicates) or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
+#     3. rename to the file name below corresponding to your method:
+#          00-data/repseqs_to_filter_dada2-pe.tsv
+#          00-data/repseqs_to_filter_dada2-se.tsv
+#          00-data/repseqs_to_filter_deblur-se.tsv
+# - these paths are hard-coded (they must match those above), not specified in config.yaml
+# - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering commands
+
+# filter by taxonomy
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
-# - to skip filtering by taxonomy: provide a nonsense term or don't run filtering mode
+# - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
 exclude_terms: xxxxxxxx
 
-# filter representative sequences by length
+# filter by length
 # - increase minimum and/or decrease maximum to impose length limits for filtering
 # - leave defaults (0, 10000) to do no filtering
 # - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
 repseq_min_length: 251
 repseq_max_length: 255
 
-# filter representative sequences by featureid
-# - paths are hard-coded, not specified in config.yaml
-# - feature metadata tsv file has a header line with two columns: 1. "featureid", 2. anything
-# - to create a feature metadata file for filtering repseqs:
-#     1. go to 02-output-{method}-{filter}/02-alignment-tree
-#     2. merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
-#     3. rename to the file name below corresponding to your method:
-#          00-data/repseqs_to_filter_dada2-pe.tsv
-#          00-data/repseqs_to_filter_dada2-se.tsv
-#          00-data/repseqs_to_filter_deblur-se.tsv
-# - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering mode
-
-# CURRENTLY NOT IMPLEMENTED - DO AFTER OTHER STEPS?
-# filter table by abundance and prevalence
+# filter by abundance and prevalence
 # - increase minimum and/or decrease maximum to impose abundance/prevalence limits for filtering
 # - leave defaults (0, 1) to do no filtering
 # - ranges are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-repseq_range_abundance: (0, 1)
-repseq_range_prevalence: (0, 1)
+repseq_min_abundance: 0
+repseq_min_prevalence: 0
 
 # representative sequence outlier detection using odseq
 odseq_distance_metric: linear # choose from: linear, affine

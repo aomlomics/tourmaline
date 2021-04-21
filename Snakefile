@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from qiime2 import Artifact
+from qiime2.plugins import feature_table, rescript
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
@@ -345,7 +346,7 @@ rule describe_fastq_counts:
     output:
         "01-imported/fastq_counts_describe.md"
     run:
-        s = pd.read_csv(input[0], sep='\t', index_col=0)
+        s = pd.read_csv(input[0], index_col=0, sep='\t')
         t = s.describe()
         outstr = tabulate(pd.DataFrame(t.iloc[1:,0]), tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0,0].astype(int), 'Fastq sequences per sample'])
         with open(output[0], 'w') as target:
@@ -549,17 +550,17 @@ rule repseqs_lengths:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
 rule repseqs_lengths_describe:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths_describe.md"
     run:
-        s = pd.read_csv(input[0], header=None, index_col=0)
+        s = pd.read_csv(input[0], header=None, index_col=0, sep='\t')
         t = s.describe()
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Sequence length'])
         with open(output[0], 'w') as target:
@@ -760,17 +761,24 @@ rule alignment_count_gaps:
     input:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
     shell:
-        "cat {input} | grep -v '>' | sed 's/[^-]//g' | awk '{{ print length }}' > {output}"
+        "while read line; do"
+        "    if [[ $line =~ ^\>.* ]]; then "
+        "        echo $line | sed 's/>//' | tr -d '\n' >> {output}; "
+        "        echo -e -n '\t' >> {output}; "
+        "    else "
+        "        echo $line | sed 's/[^-]//g' | awk '{{ print length }}' >> {output}; "
+        "    fi; "
+        "done < {input}"
 
 rule alignment_gaps_describe:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
     run:
-        gaps = pd.read_csv(input[0], header=None)
+        gaps = pd.read_csv(input[0], header=None, sep='\t')
         t = gaps.describe()
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
         with open(output[0], 'w') as target:
@@ -791,8 +799,8 @@ rule alignment_detect_outliers:
 
 rule tabulate_plot_repseq_properties:
     input:
-        lengths="02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt",
-        gaps="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt",
+        lengths="02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv",
+        gaps="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv",
         outliers="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv",
         taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
@@ -802,16 +810,29 @@ rule tabulate_plot_repseq_properties:
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     run:
-        lengths = pd.read_csv(input['lengths'], header=None)
-        gaps = pd.read_csv(input['gaps'], header=None)
-        outliers = pd.read_csv(input['outliers'], header=None, sep='\t')
+        lengths = pd.read_csv(input['lengths'], header=None, index_col=0, sep='\t') # <- CHANGED TO INDEX\tVALUE
+        gaps = pd.read_csv(input['gaps'], header=None, index_col=0, sep='\t') # <- CHANGED TO INDEX\tVALUE
+        outliers = pd.read_csv(input['outliers'], header=None, index_col=0, sep='\t')
         taxonomy = Artifact.load(input['taxonomy'])
         taxonomydf = taxonomy.view(view_type=pd.DataFrame)
         taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
         table = Artifact.load(input['table'])
         tabledf = table.view(view_type=pd.DataFrame)
-        merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['Taxon'].reset_index(drop=True), taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
-                           axis=1, ignore_index=True)
+
+        ##### CHANGE TO MERGE BY SEQID TO AVOID ANY ISSUES WITH SEQUENCE ORDER
+
+        #merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['Taxon'].reset_index(drop=True), taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
+        #                   axis=1, ignore_index=True)
+
+        # BELOW GIVES ERROR: Cannot merge a Series without a name
+
+        merged = pd.merge(lengths, gaps, left_index=True, right_index=True, how='inner')
+        merged = pd.merge(merged, outliers, left_index=True, right_index=True, how='inner')
+        merged = pd.merge(merged, taxonomydf['Taxon'], left_index=True, right_index=True, how='inner')
+        merged = pd.merge(merged, taxonomydf['level_1'], left_index=True, right_index=True, how='inner')
+        merged = pd.merge(merged, tabledf.sum(), left_index=True, right_index=True, how='inner')
+
+
         merged.columns = ['featureid', 'length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
         merged.sort_values('log10(observations)', ascending=False, inplace=True)
@@ -853,92 +874,76 @@ rule tabulate_repseqs_to_filter:
 
 # RULES: FILTER ----------------------------------------------------------------
 
-rule filter_sequences_by_taxonomy:
-    input:
-        repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza",
-        taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
-    params:
-        excludeterms=config["exclude_terms"]
-    output:
-        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_length_filtering.qza"
-    shell:
-        "qiime taxa filter-seqs "
-        "--i-sequences {input.repseqs} "
-        "--i-taxonomy {input.taxonomy} "
-        "--p-exclude {params.excludeterms} "
-        "--o-filtered-sequences {output}"
+# NEW RULES
 
-rule filter_sequences_by_length:
-    input:
-        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_length_filtering.qza"
-    params:
-        minlength=config["repseq_min_length"],
-        maxlength=config["repseq_max_length"]
-    output:
-        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza"
-    shell:
-        "qiime feature-table filter-seqs "
-        "--i-data {input.repseqs} "
-        "--m-metadata-file {input.repseqs} "
-        "--p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' "
-        "--o-filtered-data {output}"
-
-rule filter_sequences_by_id:
-    input:
-        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza",
-        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
-    output:
-        "02-output-{method}-filtered/00-table-repseqs/repseqs.qza"
-    shell:
-        "qiime feature-table filter-seqs "
-        "--i-data {input.repseqs} "
-        "--m-metadata-file {input.repseqstofilter} "
-        "--p-exclude-ids "
-        "--o-filtered-data {output}"
-
-rule filter_table:
+rule filter_sequences_table:
     input:
         table="02-output-{method}-unfiltered/00-table-repseqs/table.qza",
-        filteredseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza"
+        taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza",
+        repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza",
+        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
+    params:
+        excludeterms=config["exclude_terms"],
+        minlength=config["repseq_min_length"],
+        maxlength=config["repseq_max_length"],
+        minabund=config["repseq_min_abundance"],
+        minprev=config["repseq_min_prevalence"],
     output:
-        "02-output-{method}-filtered/00-table-repseqs/table.qza",
+        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
+        table="02-output-{method}-filtered/00-table-repseqs/table.qza"
     shell:
+        # FILTER SEQUENCES BY TAXONOMY
+        "qiime taxa filter-seqs "
+        "--i-sequences {input.repseqs} " # .qza
+        "--i-taxonomy {input.taxonomy} " # .qza
+        "--p-exclude {params.excludeterms} " # text
+        "--o-filtered-sequences temp_repseqs1.qza; " # .qza
+        # FILTER SEQUENCES BY LENGTH
+        "qiime feature-table filter-seqs "
+        "--i-data temp_repseqs1.qza " # .qza
+        "--m-metadata-file temp_repseqs1.qza " # .qza
+        "--p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' "
+        "--o-filtered-data temp_repseqs2.qza; " # .qza
+        # FILTER SEQUENCES BY ID
+        "qiime feature-table filter-seqs "
+        "--i-data temp_repseqs2.qza " # .qza
+        "--m-metadata-file {input.repseqstofilter} " # .tsv
+        "--p-exclude-ids "
+        "--o-filtered-data temp_repseqs3.qza; " # .qza
+        # FILTER TABLE BY IDS
         "qiime feature-table filter-features "
-        "--i-table {input.table} "
-        "--m-metadata-file {input.filteredseqs} "
-        "--o-filtered-table {output}"
+        "--i-table {input.table} " # .qza
+        "--m-metadata-file temp_repseqs3.qza " # .qza
+        "--o-filtered-table temp_table.qza; " # .qza
+        # FILTER TABLE BY ABUNDANCE & PREVALENCE
+        "qiime feature-table filter-features-conditionally "
+        "--i-table temp_table.qza " # .qza
+        "--p-abundance {params.minabund} "
+        "--p-prevalence {params.minprev} "
+        "--o-filtered-table {output.table}; " # .qza
+        # FILTER SEQUENCES USING TABLE
+        "qiime feature-table filter-seqs "
+        "--i-data temp_repseqs3.qza " # .qza
+        "--i-table {output.table} " # .qza
+        "--p-no-exclude-ids "
+        "--o-filtered-data {output.repseqs}; " # .qza
+        # REMOVE TEMP FILES
+        "/bin/rm temp_repseqs1.qza"
+        "/bin/rm temp_repseqs2.qza"
+        "/bin/rm temp_repseqs3.qza"
+        "/bin/rm temp_table.qza"
 
-# rule filter_sequences_by_abundance_prevalence:
-#     input:
-#         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
-#     params:
-#         minabund=config["repseq_min_abundance"],
-#         maxabund=config["repseq_max_abundance"],
-#         minprev=config["repseq_min_prevalence"],
-#         maxprev=config["repseq_max_prevalence"]
-#     output:
-#         "02-output-{method}-filtered/00-table-repseqs/table_refiltered.qza",
-#     shell: 
-#         "--i-table ARTIFACT "
-#         "--p-abundance (0, 1) "
-#         "--p-prevalence (0, 1) "
-#         "--o-filtered-table ARTIFACT"
-
+##### THIS RULE SHOULD NOW TAKE THE FINAL REPSEQS.QZA AND PULL THOSE IDS FROM THE TAXONOMY
 rule filter_taxonomy:
     input:
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.tsv",
-        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
-    params:
-        excludeterms=config["exclude_terms"]
+        proptsv="02-output-{method}-filtered/02-alignment-tree/repseqs_properties.tsv"
     output:
         taxonomy="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv"
     run:
-        df_taxonomy = pd.read_csv(input['taxonomy'], sep='\t', index_col=0)
-        exclude_terms = params['excludeterms'].split(',')
-        exclude_ids_taxa = df_taxonomy.index[[any(x.lower() in y.lower() for x in exclude_terms) for y in df_taxonomy['Taxon']]]
-        df_repseqs_to_filter = pd.read_csv(input['repseqstofilter'], sep='\t')
-        exclude_ids_direct = df_repseqs_to_filter['featureid'].values
-        keep_ids = set(df_taxonomy.index) - set(exclude_ids_taxa) - set(exclude_ids_direct)
+        df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
+        df_repseqs = pd.read_csv(input['proptsv'], index_col=0, sep='\t')
+        keep_ids = df_repseqs.index
         df_taxonomy_filtered = df_taxonomy.loc[list(keep_ids)]
         df_taxonomy_filtered.to_csv(output['taxonomy'], sep='\t')
 
