@@ -43,4 +43,4 @@ SHELL ["conda", "run", "-n", "qiime2-2021.2", "/bin/bash", "-c"]
  
 # Install snakemake
 RUN conda update -n base -c defaults conda
-RUN conda install -c bioconda snakemake
+RUN conda install -c bioconda snakemake muscle clustalo
