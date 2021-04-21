@@ -63,7 +63,6 @@ conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
 conda activate qiime2-2021.2
 conda install -c bioconda snakemake biopython muscle clustalo xmltodict tabulate pandoc tabview
 pip install git+https://github.com/biocore/empress.git
-pip install git+https://github.com/bokulich-lab/RESCRIPt.git
 qiime dev refresh-cache
 ```
 

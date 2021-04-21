@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from qiime2 import Artifact
-from qiime2.plugins import feature_table, rescript
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
@@ -797,6 +796,8 @@ rule alignment_detect_outliers:
     shell:
         "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} {output}"
 
+##### GETTING CyclicGraphException HERE - NEED TO FIGURE OUT WHEN THE FILTERED TAXONOMY IS MADE!
+
 rule tabulate_plot_repseq_properties:
     input:
         lengths="02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv",
@@ -810,33 +811,24 @@ rule tabulate_plot_repseq_properties:
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     run:
-        lengths = pd.read_csv(input['lengths'], header=None, index_col=0, sep='\t') # <- CHANGED TO INDEX\tVALUE
-        gaps = pd.read_csv(input['gaps'], header=None, index_col=0, sep='\t') # <- CHANGED TO INDEX\tVALUE
-        outliers = pd.read_csv(input['outliers'], header=None, index_col=0, sep='\t')
+        lengths = pd.read_csv(input['lengths'], names=['length'], index_col=0, sep='\t')
+        gaps = pd.read_csv(input['gaps'], names=['gaps'], index_col=0, sep='\t')
+        outliers = pd.read_csv(input['outliers'], names=['outlier'], index_col=0, sep='\t')
         taxonomy = Artifact.load(input['taxonomy'])
         taxonomydf = taxonomy.view(view_type=pd.DataFrame)
         taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
         table = Artifact.load(input['table'])
         tabledf = table.view(view_type=pd.DataFrame)
-
-        ##### CHANGE TO MERGE BY SEQID TO AVOID ANY ISSUES WITH SEQUENCE ORDER
-
-        #merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['Taxon'].reset_index(drop=True), taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
-        #                   axis=1, ignore_index=True)
-
-        # BELOW GIVES ERROR: Cannot merge a Series without a name
-
         merged = pd.merge(lengths, gaps, left_index=True, right_index=True, how='inner')
         merged = pd.merge(merged, outliers, left_index=True, right_index=True, how='inner')
         merged = pd.merge(merged, taxonomydf['Taxon'], left_index=True, right_index=True, how='inner')
         merged = pd.merge(merged, taxonomydf['level_1'], left_index=True, right_index=True, how='inner')
-        merged = pd.merge(merged, tabledf.sum(), left_index=True, right_index=True, how='inner')
-
-
-        merged.columns = ['featureid', 'length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
+        merged = pd.merge(merged, tabledf.sum().rename('observations'), left_index=True, right_index=True, how='inner')
+        merged.columns = ['length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
+        merged.index.name = 'featureid'
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
         merged.sort_values('log10(observations)', ascending=False, inplace=True)
-        merged.to_csv(output['proptsv'], index=False, sep='\t')
+        merged.to_csv(output['proptsv'], index=True, sep='\t')
         t = merged.describe()
         tcolumns = t.columns
         tcolumns = tcolumns.insert(0, 'Statistic (n=%s)' % t.iloc[0].values[0].astype(int))
@@ -847,9 +839,10 @@ rule tabulate_plot_repseq_properties:
         g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy_level_1', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
         g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in multiple sequence alignment')
         plt.savefig(output['proppdf'], bbox_inches='tight')
-        outliers.columns = ['Feature ID', 'Outlier']
+        outliers.columns = ['Outlier']
+        outliers.index.name = 'Feature ID'
         outliers = outliers*1
-        outliers.to_csv(output['outliersforqza'], index=False, sep='\t')
+        outliers.to_csv(output['outliersforqza'], index=True, sep='\t')
 
 rule import_outliers_to_qza:
     input:
@@ -933,19 +926,23 @@ rule filter_sequences_table:
         "/bin/rm temp_repseqs3.qza"
         "/bin/rm temp_table.qza"
 
-##### THIS RULE SHOULD NOW TAKE THE FINAL REPSEQS.QZA AND PULL THOSE IDS FROM THE TAXONOMY
+##### GETTING CyclicGraphException HERE - NEED TO FIGURE OUT WHEN THE FILTERED TAXONOMY IS MADE!
+
 rule filter_taxonomy:
     input:
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.tsv",
         proptsv="02-output-{method}-filtered/02-alignment-tree/repseqs_properties.tsv"
     output:
-        taxonomy="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv"
+        taxonomytsv="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv",
+        taxonomyqza="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"        
     run:
         df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
         df_repseqs = pd.read_csv(input['proptsv'], index_col=0, sep='\t')
         keep_ids = df_repseqs.index
         df_taxonomy_filtered = df_taxonomy.loc[list(keep_ids)]
-        df_taxonomy_filtered.to_csv(output['taxonomy'], sep='\t')
+        df_taxonomy_filtered.to_csv(output['taxonomytsv'], sep='\t')
+        artifact_taxonomy_filtered = Artifact.import_data('FeatureData[Taxonomy]', df_taxonomy_filtered)
+        artifact_taxonomy_filtered.save(output['taxonomyqza'])
 
 # RULES: DIVERSITY -------------------------------------------------------------
 
