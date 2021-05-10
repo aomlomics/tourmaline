@@ -13,7 +13,7 @@ configfile: "config.yaml"
 
 ruleorder: summarize_fastq_demux_pe > summarize_fastq_demux_se
 ruleorder: feature_classifier > import_taxonomy_to_qza
-ruleorder: filter_taxonomy > unzip_taxonomy_to_tsv
+ruleorder: filter_taxonomy > import_taxonomy_to_qza > unzip_taxonomy_to_tsv
 
 # PSEUDO-RULES: DADA2 PAIRED-END -----------------------------------------------
 
@@ -345,7 +345,7 @@ rule describe_fastq_counts:
     output:
         "01-imported/fastq_counts_describe.md"
     run:
-        s = pd.read_csv(input[0], sep='\t', index_col=0)
+        s = pd.read_csv(input[0], index_col=0, sep='\t')
         t = s.describe()
         outstr = tabulate(pd.DataFrame(t.iloc[1:,0]), tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0,0].astype(int), 'Fastq sequences per sample'])
         with open(output[0], 'w') as target:
@@ -549,17 +549,17 @@ rule repseqs_lengths:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
 rule repseqs_lengths_describe:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt"
+        "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths_describe.md"
     run:
-        s = pd.read_csv(input[0], header=None, index_col=0)
+        s = pd.read_csv(input[0], header=None, index_col=0, sep='\t')
         t = s.describe()
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Sequence length'])
         with open(output[0], 'w') as target:
@@ -576,28 +576,39 @@ rule feature_classifier:
     output:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
-        classifymethod=config["classify_method"]
+        classifymethod=config["classify_method"],
+        classifyparams=config["classify_parameters"]
     threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
         "if [ {params.classifymethod} = 'naive-bayes' ]; then "
-        "if [ ! -f 01-imported/classifier.qza ]; then "
-        "qiime feature-classifier fit-classifier-naive-bayes "
-        "--i-reference-reads {input.refseqs} "
-        "--i-reference-taxonomy {input.reftax} "
-        "--o-classifier 01-imported/classifier.qza; "
-        "fi; "
-        "qiime feature-classifier classify-sklearn "
-        "--i-classifier 01-imported/classifier.qza "
-        "--i-reads {input.repseqs} "
-        "--o-classification {output} "
-        "--p-n-jobs {threads}; "
+        "    if [ ! -f 01-imported/classifier.qza ]; then "
+        "        qiime feature-classifier fit-classifier-naive-bayes "
+        "        --i-reference-reads {input.refseqs} "
+        "        --i-reference-taxonomy {input.reftax} "
+        "        --o-classifier 01-imported/classifier.qza; "
+        "    fi; "
+        "    qiime feature-classifier classify-sklearn "
+        "    --i-classifier 01-imported/classifier.qza "
+        "    --i-reads {input.repseqs} "
+        "    --o-classification {output} "
+        "    --p-n-jobs {threads} "
+        "    {params.classifyparams}; "
         "elif [ {params.classifymethod} = 'consensus-blast' ]; then "
-        "qiime feature-classifier classify-consensus-blast "
-        "--i-reference-reads {input.refseqs} "
-        "--i-reference-taxonomy {input.reftax} "
-        "--i-query {input.repseqs} "
-        "--o-classification {output}; "
+        "    qiime feature-classifier classify-consensus-blast "
+        "    --i-reference-reads {input.refseqs} "
+        "    --i-reference-taxonomy {input.reftax} "
+        "    --i-query {input.repseqs} "
+        "    --o-classification {output} "
+        "    {params.classifyparams}; "
+        "elif [ {params.classifymethod} = 'consensus-vsearch' ]; then "
+        "    qiime feature-classifier classify-consensus-vsearch "
+        "    --i-reference-reads {input.refseqs} "
+        "    --i-reference-taxonomy {input.reftax} "
+        "    --i-query {input.repseqs} "
+        "    --o-classification {output} "
+        "    --p-threads {threads} "
+        "    {params.classifyparams}; "
         "fi"
 
 rule visualize_taxonomy:
@@ -648,27 +659,62 @@ rule import_taxonomy_to_qza:
 
 # RULES: ALIGNMENT & TREE ------------------------------------------------------
 
-rule alignment_mafft:
+rule align_repseqs:
     input:
-        "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
+        repseqsfasta="02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta",
+        repseqsqza="02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
-    threads: config["alignment_mafft_threads"]
+        alnfasta="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta",
+        alnqza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
+    params:
+        method=config["alignment_method"],
+        muscle_maxiters=config["alignment_muscle_maxiters"],
+        muscle_diags=config["alignment_muscle_diags"]
+    threads: config["alignment_threads"],
     shell:
-        "qiime alignment mafft "
-        "--i-sequences {input} "
-        "--o-alignment {output} "
-        "--p-n-threads {threads}"
-
-rule alignment_mask:
-    input:
-        "02-output-{method}-{filter}/02-alignment-tree/unmasked_aligned_repseqs.qza"
-    output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
-    shell:
-        "qiime alignment mask "
-        "--i-alignment {input} "
-        "--o-masked-alignment {output}"
+        "if [ {params.method} == 'muscle' ]; then "
+        "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
+        "    muscle "
+        "    -maxiters {params.muscle_maxiters} "
+        "    {params.muscle_diags} "
+        "    -in {input.repseqsfasta} "
+        "    -out temp_aligned_repseqs.fasta; "
+        "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
+        "    echo 'Line breaks removed to generate {output.alnfasta}'; "
+        "    /bin/rm temp_aligned_repseqs.fasta; "
+        "    qiime tools import "
+        "    --type 'FeatureData[AlignedSequence]' "
+        "    --input-path {output.alnfasta} "
+        "    --output-path {output.alnqza}; "
+        "elif [ {params.method} == 'clustalo' ]; then "
+        "    echo 'Multiple sequence alignment method: Clustal Omega ...'; "
+        "    clustalo --verbose --force "
+        "    --in {input.repseqsfasta} "
+        "    --out temp_aligned_repseqs.fasta "
+        "    --threads={threads}; "
+        "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
+        "    echo 'Line breaks removed to generate {output.alnfasta}'; "
+        "    /bin/rm temp_aligned_repseqs.fasta; "
+        "    qiime tools import "
+        "    --type 'FeatureData[AlignedSequence]' "
+        "    --input-path {output.alnfasta} "
+        "    --output-path {output.alnqza}; "
+        "elif [ {params.method} == 'mafft' ]; then "
+        "    echo 'Multiple sequence alignment method: MAFFT ...'; "
+        "    qiime alignment mafft "
+        "    --i-sequences {input.repseqsqza} "
+        "    --o-alignment tempfile_unmasked_aligned_repseqs.qza "
+        "    --p-n-threads {threads}; "
+        "    qiime alignment mask "
+        "    --i-alignment tempfile_unmasked_aligned_repseqs.qza "
+        "    --o-masked-alignment {output.alnqza}; "
+        "    /bin/rm tempfile_unmasked_aligned_repseqs.qza; "
+        "    unzip -qq -o {output.alnqza} -d temp4; "
+        "    mv temp4/*/data/aligned-dna-sequences.fasta {output.alnfasta}; "
+        "    /bin/rm -r temp4; "
+        "else "
+        "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
+        "fi"
 
 rule phylogeny_fasttree:
     input:
@@ -710,31 +756,28 @@ rule visualize_tree:
         "--m-feature-metadata-file {input.outliers} "
         "--o-visualization {output}"
 
-rule unzip_alignment_to_fasta:
-    input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
-    output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
-    shell:
-        "unzip -qq -o {input} -d temp4; "
-        "mv temp4/*/data/aligned-dna-sequences.fasta {output}; "
-        "/bin/rm -r temp4"
-
 rule alignment_count_gaps:
     input:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
     shell:
-        "cat {input} | grep -v '>' | sed 's/[^-]//g' | awk '{{ print length }}' > {output}"
+        "while read line; do"
+        "    if [[ $line =~ ^\>.* ]]; then "
+        "        echo $line | sed 's/>//' | tr -d '\n' >> {output}; "
+        "        echo -e -n '\t' >> {output}; "
+        "    else "
+        "        echo $line | sed 's/[^-]//g' | awk '{{ print length }}' >> {output}; "
+        "    fi; "
+        "done < {input}"
 
 rule alignment_gaps_describe:
     input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt"
+        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
     run:
-        gaps = pd.read_csv(input[0], header=None)
+        gaps = pd.read_csv(input[0], header=None, sep='\t')
         t = gaps.describe()
         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
         with open(output[0], 'w') as target:
@@ -751,12 +794,14 @@ rule alignment_detect_outliers:
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv"
     shell:
-        "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} {output}"
+        "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} temp_odseq; "
+        "cat temp_odseq | sed 's/^X//' > {output}; "
+        "/bin/rm temp_odseq"
 
 rule tabulate_plot_repseq_properties:
     input:
-        lengths="02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.txt",
-        gaps="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.txt",
+        lengths="02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv",
+        gaps="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv",
         outliers="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv",
         taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
@@ -766,20 +811,24 @@ rule tabulate_plot_repseq_properties:
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     run:
-        lengths = pd.read_csv(input['lengths'], header=None)
-        gaps = pd.read_csv(input['gaps'], header=None)
-        outliers = pd.read_csv(input['outliers'], header=None, sep='\t')
+        lengths = pd.read_csv(input['lengths'], names=['length'], index_col=0, sep='\t')
+        gaps = pd.read_csv(input['gaps'], names=['gaps'], index_col=0, sep='\t')
+        outliers = pd.read_csv(input['outliers'], names=['outlier'], index_col=0, sep='\t')
         taxonomy = Artifact.load(input['taxonomy'])
         taxonomydf = taxonomy.view(view_type=pd.DataFrame)
         taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
         table = Artifact.load(input['table'])
         tabledf = table.view(view_type=pd.DataFrame)
-        merged = pd.concat([lengths, gaps, outliers[1], taxonomydf['Taxon'].reset_index(drop=True), taxonomydf['level_1'].reset_index(drop=True), tabledf.sum().reset_index(drop=True)],
-                           axis=1, ignore_index=True)
-        merged.columns = ['featureid', 'length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
+        merged = pd.merge(lengths, gaps, left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, outliers, left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, taxonomydf['Taxon'], left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, taxonomydf['level_1'], left_index=True, right_index=True, how='outer')
+        merged = pd.merge(merged, tabledf.sum().rename('observations'), left_index=True, right_index=True, how='outer')
+        merged.columns = ['length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
+        merged.index.name = 'featureid'
         merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
         merged.sort_values('log10(observations)', ascending=False, inplace=True)
-        merged.to_csv(output['proptsv'], index=False, sep='\t')
+        merged.to_csv(output['proptsv'], index=True, sep='\t')
         t = merged.describe()
         tcolumns = t.columns
         tcolumns = tcolumns.insert(0, 'Statistic (n=%s)' % t.iloc[0].values[0].astype(int))
@@ -788,11 +837,12 @@ rule tabulate_plot_repseq_properties:
             target.write(outstr)
             target.write('\n')
         g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy_level_1', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
-        g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in masked multiple sequence alignment')
+        g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in multiple sequence alignment')
         plt.savefig(output['proppdf'], bbox_inches='tight')
-        outliers.columns = ['Feature ID', 'Outlier']
+        outliers.columns = ['Outlier']
+        outliers.index.name = 'Feature ID'
         outliers = outliers*1
-        outliers.to_csv(output['outliersforqza'], index=False, sep='\t')
+        outliers.to_csv(output['outliersforqza'], index=True, sep='\t')
 
 rule import_outliers_to_qza:
     input:
@@ -817,63 +867,80 @@ rule tabulate_repseqs_to_filter:
 
 # RULES: FILTER ----------------------------------------------------------------
 
-rule filter_sequences_by_taxonomy:
+# NEW RULES
+
+rule filter_sequences_table:
     input:
+        table="02-output-{method}-unfiltered/00-table-repseqs/table.qza",
+        taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza",
         repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza",
-        taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
+        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
     params:
-        excludeterms=config["exclude_terms"]
+        excludeterms=config["exclude_terms"],
+        minlength=config["repseq_min_length"],
+        maxlength=config["repseq_max_length"],
+        minabund=config["repseq_min_abundance"],
+        minprev=config["repseq_min_prevalence"],
     output:
-        "02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza"
+        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
+        table="02-output-{method}-filtered/00-table-repseqs/table.qza"
     shell:
+        # FILTER SEQUENCES BY TAXONOMY
         "qiime taxa filter-seqs "
         "--i-sequences {input.repseqs} "
         "--i-taxonomy {input.taxonomy} "
         "--p-exclude {params.excludeterms} "
-        "--o-filtered-sequences {output}"
-
-rule filter_sequences_by_id:
-    input:
-        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_pre_id_filtering.qza",
-        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
-    output:
-        "02-output-{method}-filtered/00-table-repseqs/repseqs.qza"
-    shell:
+        "--o-filtered-sequences temp_repseqs1.qza; "
+        # FILTER SEQUENCES BY LENGTH
         "qiime feature-table filter-seqs "
-        "--i-data {input.repseqs} "
+        "--i-data temp_repseqs1.qza "
+        "--m-metadata-file temp_repseqs1.qza "
+        "--p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' "
+        "--o-filtered-data temp_repseqs2.qza; "
+        # FILTER SEQUENCES BY ID
+        "qiime feature-table filter-seqs "
+        "--i-data temp_repseqs2.qza "
         "--m-metadata-file {input.repseqstofilter} "
         "--p-exclude-ids "
-        "--o-filtered-data {output}"
-
-rule filter_table:
-    input:
-        table="02-output-{method}-unfiltered/00-table-repseqs/table.qza",
-        filteredseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza"
-    output:
-        "02-output-{method}-filtered/00-table-repseqs/table.qza",
-    shell:
+        "--o-filtered-data temp_repseqs3.qza; "
+        # FILTER TABLE BY IDS
         "qiime feature-table filter-features "
         "--i-table {input.table} "
-        "--m-metadata-file {input.filteredseqs} "
-        "--o-filtered-table {output}"
+        "--m-metadata-file temp_repseqs3.qza "
+        "--o-filtered-table temp_table.qza; "
+        # FILTER TABLE BY ABUNDANCE & PREVALENCE
+        "qiime feature-table filter-features-conditionally "
+        "--i-table temp_table.qza "
+        "--p-abundance {params.minabund} "
+        "--p-prevalence {params.minprev} "
+        "--o-filtered-table {output.table}; "
+        # FILTER SEQUENCES USING TABLE
+        "qiime feature-table filter-seqs "
+        "--i-data temp_repseqs3.qza "
+        "--i-table {output.table} "
+        "--p-no-exclude-ids "
+        "--o-filtered-data {output.repseqs}; "
+        # REMOVE TEMP FILES
+        "/bin/rm temp_repseqs1.qza; "
+        "/bin/rm temp_repseqs2.qza; "
+        "/bin/rm temp_repseqs3.qza; "
+        "/bin/rm temp_table.qza"
 
 rule filter_taxonomy:
     input:
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.tsv",
-        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
-    params:
-        excludeterms=config["exclude_terms"]
+        repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs_lengths.tsv"
     output:
-        taxonomy="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv"
+        taxonomytsv="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv",
+        taxonomyqza="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"        
     run:
-        df_taxonomy = pd.read_csv(input['taxonomy'], sep='\t', index_col=0)
-        exclude_terms = params['excludeterms'].split(',')
-        exclude_ids_taxa = df_taxonomy.index[[any(x.lower() in y.lower() for x in exclude_terms) for y in df_taxonomy['Taxon']]]
-        df_repseqs_to_filter = pd.read_csv(input['repseqstofilter'], sep='\t')
-        exclude_ids_direct = df_repseqs_to_filter['featureid'].values
-        keep_ids = set(df_taxonomy.index) - set(exclude_ids_taxa) - set(exclude_ids_direct)
+        df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
+        df_repseqs = pd.read_csv(input['repseqs'], header=None, index_col=0, sep='\t')
+        keep_ids = df_repseqs.index
         df_taxonomy_filtered = df_taxonomy.loc[list(keep_ids)]
-        df_taxonomy_filtered.to_csv(output['taxonomy'], sep='\t')
+        df_taxonomy_filtered.to_csv(output['taxonomytsv'], sep='\t')
+        artifact_taxonomy_filtered = Artifact.import_data('FeatureData[Taxonomy]', df_taxonomy_filtered)
+        artifact_taxonomy_filtered.save(output['taxonomyqza'])
 
 # RULES: DIVERSITY -------------------------------------------------------------
 
@@ -1102,7 +1169,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '* featureid' >> {output};"
         "echo '* length - length (bp) not including gaps' >> {output};"
-        "echo '* gaps - gaps (bp) in masked multiple sequence alignment' >> {output};"
+        "echo '* gaps - gaps (bp) in multiple sequence alignment' >> {output};"
         "echo '* outlier - outlier (True/False) determined by OD-seq' >> {output};"
         "echo '* taxonomy - domain level' >> {output};"
         "echo '* observations - total observations summed across all samples (unrarefied)' >> {output};"
@@ -1115,7 +1182,7 @@ rule generate_report_md:
         "echo 'Plot elements:' >> {output};"
         "echo '' >> {output};"
         "echo '* x: length (bp) not including gaps' >> {output};"
-        "echo '* y: gaps (bp) in masked multiple sequence alignment' >> {output};"
+        "echo '* y: gaps (bp) in multiple sequence alignment' >> {output};"
         "echo '* color: taxonomy (domain)' >> {output};"
         "echo '* size: log10(observations)' >> {output};"
         "echo '* facets: outlier (True/False) determined by OD-seq' >> {output};"

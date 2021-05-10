@@ -26,10 +26,10 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 
 * FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
 * Denoising with DADA2 (paired-end and single-end) and Deblur (single-end)
-* Feature classification (taxonomic assignment) with options of consensus BLAST and naive Bayes
-* Feature filtering by taxonomy and by feature ID
+* Feature classification (taxonomic assignment) with options of naive Bayes, consensus BLAST, and consensus VSEARCH
+* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
 * Interactive taxonomy barplot (.qzv)
-* De novo multiple sequence alignment with MAFFT (with masking) and tree building with Fasttree
+* De novo multiple sequence alignment with MUSCLE, Clustal Omega, or MAFFT (with masking) and tree building with FastTree
 * Tree visualization using Empress (.qzv)
 * Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou's evenness (.qzv)
 * Beta diversity distances, principal coordinates, Emperor plots, and beta group significance (one metadata column) with four metrics: unweighted UniFrac, weighted UniFrac, Jaccard distance, and Bray-Curtis distance (.qzv)
@@ -61,12 +61,12 @@ To run Tourmaline natively on a Mac or Linux system, start with a Conda installa
 wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
 conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
 conda activate qiime2-2021.2
-conda install -c bioconda snakemake biopython tabulate pandoc tabview
+conda install -c bioconda snakemake biopython muscle clustalo xmltodict tabulate pandoc tabview
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
-Finally, open R by entering `R` and install the R dependencies:
+Finally, open R by entering `R` and install the R dependencies (if prompted, enter "a" to update all packages):
 
 ```R
 if (!requireNamespace("BiocManager", quietly = TRUE))

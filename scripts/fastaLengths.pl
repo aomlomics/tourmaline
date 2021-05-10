@@ -8,7 +8,7 @@ my $usage = qq{
 
         This script takes a multi-fasta file with or without line breaks and
         prints the sequence header (up to the first space) and number of bases
-        in each sequence, comma-delimited (.csv), to standard output.
+        in each sequence, tab-delimited (.tsv), to standard output.
 
 
 };
@@ -39,9 +39,9 @@ foreach my $line (@fasta) {
         $header = $line =~ s/>([a-zA-Z0-9]*).*\n/$1/r;
         if ($length) {
             print "$length\n";
-            print "$header,";
+            print "$header\t";
         } else {
-            print "$header,";
+            print "$header\t";
         }
         $length = 0;
         next;
