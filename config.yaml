@@ -61,6 +61,8 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # multiple sequence alignment
 # - method: choose from: muscle, clustalo, mafft
+# - muscle_maxiters: maximum number of iterations (integer, default 16)
+# - muscle_diags: choose from: -diags (find diagonals - faster for similar sequences) or leave blank
 alignment_method: muscle
 alignment_muscle_maxiters: 2
 alignment_muscle_diags: -diags
@@ -95,25 +97,30 @@ classify_parameters: --verbose
 exclude_terms: xxxxxxxx
 
 # filter by length
-# - increase minimum and/or decrease maximum to impose length limits for filtering
-# - leave defaults (0, 10000) to do no filtering
+# - set minimum and maximum sequence lengths to filter representative sequences by
 # - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-repseq_min_length: 251
-repseq_max_length: 255
+# - leave defaults (0, 10000) to do no filtering
+repseq_min_length: 0
+repseq_max_length: 10000
 
 # filter by abundance and prevalence
-# - increase minimum and/or decrease maximum to impose abundance/prevalence limits for filtering
-# - leave defaults (0, 1) to do no filtering
-# - ranges are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
+# - set minimum abundance/prevalence limits for filtering
+# - leave default (0) to do no filtering
+# - limit is inclusive, ie, greater than or equal to minimum
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
 
 # representative sequence outlier detection using odseq
+# - distance_metric: choose from: linear, affine
+# - bootstrap_replicates: number of bootstrap replicates (integer)
+# - threshold: probability to be at right of the bootstrap scores distribution (float)
 odseq_distance_metric: linear # choose from: linear, affine
 odseq_bootstrap_replicates: 100
-odseq_threshold: 0.025 # probability to be at right of the bootstrap scores distribution
+odseq_threshold: 0.025
 
-# subsampling
+# subsampling (rarefaction)
+# - core_sampling_depth: subsampling depth for core diversity analyses
+# - alpha_max_depth: maximum subsampling depth for alpha diversity rarefaction analysis
 core_sampling_depth: 500
 alpha_max_depth: 500
 
