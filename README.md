@@ -61,7 +61,7 @@ To run Tourmaline natively on a Mac or Linux system, start with a Conda installa
 wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
 conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
 conda activate qiime2-2021.2
-conda install -c bioconda snakemake biopython muscle clustalo xmltodict tabulate pandoc tabview
+conda install -c bioconda snakemake biopython muscle clustalo tabulate pandoc tabview
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
@@ -89,7 +89,13 @@ docker pull aomlomics/tourmaline
 docker run -v $HOME:/data -it aomlomics/tourmaline
 ```
 
-The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Use mounted volumes to copy metadata and manifest files to your container, create symbolic links from your container to your FASTQ files and reference database, and copy your whole Tourmaline directory out of the container when the run is completed.
+The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Note that symbolic links in a mounted volume will not work.
+
+Use mounted volumes to:
+
+* copy metadata and manifest files to your container;
+* create symbolic links from your container to your FASTQ files and reference database;
+* copy your whole Tourmaline directory out of the container when the run is completed (alternatively, you can clone the Tourmaline directory inside the mounted volume).
 
 See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 
