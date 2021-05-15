@@ -51,15 +51,20 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install) page for more details.
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 and add the other dependencies:
+To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2:
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
 conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
+```
+
+Activate the environment and install the other Conda- or PIP-installable dependencies:
+
+```
 conda activate qiime2-2021.2
 conda install -c bioconda snakemake biopython muscle clustalo tabulate pandoc tabview
 pip install git+https://github.com/biocore/empress.git
