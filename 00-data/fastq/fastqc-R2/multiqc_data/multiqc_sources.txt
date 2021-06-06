@@ -1,0 +1,17 @@
+Module	Section	Sample Name	Source
+FastQC	all_sections	Sample_134719_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134719_R2_fastqc.zip
+FastQC	all_sections	Sample_134720_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134720_R2_fastqc.zip
+FastQC	all_sections	Sample_134723_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134723_R2_fastqc.zip
+FastQC	all_sections	Sample_134789_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134789_R2_fastqc.zip
+FastQC	all_sections	Sample_134777_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134777_R2_fastqc.zip
+FastQC	all_sections	Sample_134790_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134790_R2_fastqc.zip
+FastQC	all_sections	Sample_134717_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134717_R2_fastqc.zip
+FastQC	all_sections	Sample_134767_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134767_R2_fastqc.zip
+FastQC	all_sections	Sample_134716_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134716_R2_fastqc.zip
+FastQC	all_sections	Sample_134771_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134771_R2_fastqc.zip
+FastQC	all_sections	Sample_134772_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134772_R2_fastqc.zip
+FastQC	all_sections	Sample_134722_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134722_R2_fastqc.zip
+FastQC	all_sections	Sample_134778_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134778_R2_fastqc.zip
+FastQC	all_sections	Sample_134768_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134768_R2_fastqc.zip
+FastQC	all_sections	Sample_134721_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134721_R2_fastqc.zip
+FastQC	all_sections	Sample_134718_R2	/Users/luke.thompson/git/tourmaline/00-data/fastq/fastqc-R2/Sample_134718_R2_fastqc.zip

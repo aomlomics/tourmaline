@@ -73,7 +73,7 @@ alignment_muscle_diags: -diags
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
-# filtering - implemented by filtering commands, eg "snakemake dada2_pe_report_filtered", the parameters below are applied to:
+# filtering - implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", the parameters below are applied to:
 #     1. representative sequences
 #     2. taxonomy
 #     3. feature table
@@ -94,19 +94,19 @@ classify_parameters: --verbose
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
-exclude_terms: xxxxxxxx
+exclude_terms: unassigned,eukarya
 
 # filter by length
 # - set minimum and maximum sequence lengths to filter representative sequences by
 # - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-# - leave defaults (0, 10000) to do no filtering
+# - to skip filtering by length: set values to extreme values, eg (0, 10000) or don't run filtering commands
 repseq_min_length: 0
 repseq_max_length: 10000
 
 # filter by abundance and prevalence
 # - set minimum abundance/prevalence limits for filtering
-# - leave default (0) to do no filtering
 # - limit is inclusive, ie, greater than or equal to minimum
+# - to skip filtering by abundance/prevalence: set values to 0 or don't run filtering commands
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
 
