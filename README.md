@@ -1,6 +1,6 @@
 <img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
 
-<img src="png/figure1.png" alt="png/figure1" width="100%"/>
+<img src="png/figure1.png" alt="png/figure1" width="70%"/>
 
 ## Tourmaline
 
