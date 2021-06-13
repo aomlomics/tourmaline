@@ -154,7 +154,7 @@ report_theme: github
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
 
-exclude_terms: unassigned,eukarya
+exclude_terms: unassigned,eukaryota
 
 # filter by LENGTH
 # - set minimum and maximum sequence lengths to filter representative sequences by
