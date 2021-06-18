@@ -1,6 +1,6 @@
 <img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
 
-<img src="png/figure1.png" alt="png/figure1" width="100%"/>
+<img src="png/figure1.png" alt="png/figure1" width="70%"/>
 
 ## Tourmaline
 
@@ -17,7 +17,7 @@ Tourmaline has several features that enhance usability and interoperability:
   - **Directory structure** is the same for every Tourmaline run, so you always know where your outputs are.
   - **On-demand commands** mean that only the commands required for output files not yet generated are run, saving time and computation when re-running part of a workflow.
 * **Parameter optimization.** The configuration file and standard directory structure make it simple to test and compare different parameter sets to optimize your workflow. Included code helps choose read truncation parameters and identify outliers in representative sequences (ASVs).
-* **Reports.** Every Tourmaline run produces an HTML report containing a summary of your metadata and outputs, with links to web-viewable QIIME 2 visualization files.
+* **Visualizations and reports.** Every Tourmaline run produces an HTML report containing a summary of your metadata and outputs, with links to web-viewable QIIME 2 visualization files.
 * **Downstream analysis.** Analyze the output of single or multiple Tourmaline runs programmatically, with qiime2R in R or the QIIME 2 Artifact API in Python, using the provided R and Python notebooks or your own code.
 
 ### What QIIME 2 options does Tourmaline support?
@@ -51,15 +51,20 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install) page for more details.
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 and add the other dependencies:
+To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2:
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
 conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
+```
+
+Activate the environment and install the other Conda- or PIP-installable dependencies:
+
+```
 conda activate qiime2-2021.2
 conda install -c bioconda snakemake biopython muscle clustalo tabulate pandoc tabview
 pip install git+https://github.com/biocore/empress.git

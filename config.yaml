@@ -2,27 +2,39 @@
 # - the user MUST edit these parameters before running with their own data
 # - see https://github.com/aomlomics/tourmaline/wiki for detailed instructions
 
-# metadata file
+# METADATA FILE
+
 metadata: 00-data/metadata.tsv
 
-# fastq data
+# FASTQ DATA
+
 # option 1 - if your fastq sequences are not yet imported, the parameters below will be used to find your manifest file(s)
+
 manifest_pe: 00-data/manifest_pe.csv
 manifest_se: 00-data/manifest_se.csv
+
 # option 2 - if your fastq sequences are already in qza format, the parameters below will be used to find your qza file(s)
+
 fastq_pe_qza: 01-imported/fastq_pe.qza
 fastq_se_qza: 01-imported/fastq_se.qza
 
-# reference database
+# REFERENCE DATABASE
+
 # option 1 - if your reference database is not yet imported, the parameters below will be used to find the fna and tsv files
+
 refseqs_fna: 00-data/refseqs.fna
 reftax_tsv: 00-data/reftax.tsv
+
 # option 2 - if your reference database is already in qza format, the parameters below will be used to find your qza file(s)
+
 refseqs_qza: 01-imported/refseqs.qza
 reftax_qza: 01-imported/reftax.qza
 
+# DENOISE
+
 # dada2 paired-end
-# - denoising parameters for command "qiime dada2 denoise-paired"
+# qiime command: qiime dada2 denoise-paired
+
 dada2pe_trunc_len_f: 240
 dada2pe_trunc_len_r: 190
 dada2pe_trim_left_f: 0
@@ -37,7 +49,8 @@ dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # dada2 single-end
-# - denoising parameters for command "qiime dada2 denoise-single"
+# qiime command: qiime dada2 denoise-single
+
 dada2se_trunc_len: 240
 dada2se_trim_left: 0
 dada2se_max_ee: 2
@@ -49,7 +62,8 @@ dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
 # deblur parameters
-# - denoising parameters for command "qiime deblur denoise-other"
+# qiime command: qiime deblur denoise-other
+
 deblur_trim_length: 240
 deblur_sample_stats: --p-sample-stats
 deblur_mean_error: 0.005
@@ -59,26 +73,71 @@ deblur_min_reads: 10
 deblur_min_size: 2
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
-# multiple sequence alignment
-# - method: choose from: muscle, clustalo, mafft
-# - muscle_maxiters: maximum number of iterations (integer, default 16)
-# - muscle_diags: choose from: -diags (find diagonals - faster for similar sequences) or leave blank
-alignment_method: muscle
-alignment_muscle_maxiters: 2
-alignment_muscle_diags: -diags
+# TAXONOMIC CLASSIFICATION
 
-# taxonomic classification
+# taxonomic classification of the representative sequences
 # - method: choose from: naive-bayes, consensus-blast, consensus-vsearch
 # - parameters: add arbitrary parameters or at least one parameter; see "qiime feature-classifier COMMAND --help"
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
-# filtering - implemented by filtering commands, eg "snakemake dada2_pe_report_filtered", the parameters below are applied to:
+# MULTIPLE SEQUENCE ALIGNMENT
+
+# multiple sequence alignment of the representative sequences
+# - method: choose from: muscle, clustalo, mafft
+# - muscle_maxiters: maximum number of iterations (integer, default 16)
+# - muscle_diags: choose from: -diags (find diagonals - faster for similar sequences) or leave blank
+
+alignment_method: muscle
+alignment_muscle_maxiters: 2
+alignment_muscle_diags: -diags
+
+# OUTLIER DETECTION
+
+# representative sequence outlier detection using odseq
+# - distance_metric: choose from: linear, affine
+# - bootstrap_replicates: number of bootstrap replicates (integer)
+# - threshold: probability to be at right of the bootstrap scores distribution (float)
+
+odseq_distance_metric: linear # choose from: linear, affine
+odseq_bootstrap_replicates: 100
+odseq_threshold: 0.025
+
+# SUBSAMPLING (RAREFACTION)
+
+# subsample (rarefy) data to have an even number of observations per sample
+# - core_sampling_depth: subsampling depth for core diversity analyses
+# - alpha_max_depth: maximum subsampling depth for alpha diversity rarefaction analysis
+
+core_sampling_depth: 500
+alpha_max_depth: 500
+
+# BETA GROUP SIGNIFICANCE
+
+# statistical test for difference between samples grouped by a metadata variable (column)
+# - column: metadata column to test beta group significance
+# - method: choose from: permanova, anosim, permdisp
+# - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
+
+beta_group_column: region
+beta_group_method: permanova
+beta_group_pairwise: --p-pairwise
+
+# REPORT THEME
+
+# report theme for html version
+# choose from: github, gothic, newsprint, night, pixyll, whitey
+
+report_theme: github
+
+# FILTERING
+
+# filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of:
 #     1. representative sequences
 #     2. taxonomy
 #     3. feature table
 
-# filter by featureid
+# filter by FEATUREID
 # - these feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything
 # - to create a feature metadata file for filtering repseqs:
 #     1. go to 02-output-{method}-{filter}/02-alignment-tree
@@ -90,55 +149,34 @@ classify_parameters: --verbose
 # - these paths are hard-coded (they must match those above), not specified in config.yaml
 # - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering commands
 
-# filter by taxonomy
+# filter by TAXONOMY
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
-exclude_terms: xxxxxxxx
 
-# filter by length
+exclude_terms: unassigned,eukaryota
+
+# filter by LENGTH
 # - set minimum and maximum sequence lengths to filter representative sequences by
 # - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-# - leave defaults (0, 10000) to do no filtering
+# - to skip filtering by length: set values to extreme values, eg (0, 10000) or don't run filtering commands
+
 repseq_min_length: 0
 repseq_max_length: 10000
 
-# filter by abundance and prevalence
+# filter by ABUNDANCE & PREVALENCE
 # - set minimum abundance/prevalence limits for filtering
-# - leave default (0) to do no filtering
 # - limit is inclusive, ie, greater than or equal to minimum
+# - to skip filtering by abundance/prevalence: set values to 0 or don't run filtering commands
+
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
 
-# representative sequence outlier detection using odseq
-# - distance_metric: choose from: linear, affine
-# - bootstrap_replicates: number of bootstrap replicates (integer)
-# - threshold: probability to be at right of the bootstrap scores distribution (float)
-odseq_distance_metric: linear # choose from: linear, affine
-odseq_bootstrap_replicates: 100
-odseq_threshold: 0.025
+# THREADS
 
-# subsampling (rarefaction)
-# - core_sampling_depth: subsampling depth for core diversity analyses
-# - alpha_max_depth: maximum subsampling depth for alpha diversity rarefaction analysis
-core_sampling_depth: 500
-alpha_max_depth: 500
+# max number of threads for individual steps
+# threads used will be lower of this and snakemake parameter --cores
 
-# beta group significance
-# - column: metadata column to test beta group significance
-# - method: choose from: permanova, anosim, permdisp
-# - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
-beta_group_column: region
-beta_group_method: permanova
-beta_group_pairwise: --p-pairwise
-
-# report theme for html version
-# - choose from: github, gothic, newsprint, night, pixyll, whitey
-report_theme: github
-
-# threads
-# - max number of threads for individual steps
-# - threads used will be lower of this and snakemake parameter --cores
 dada2pe_threads: 8
 dada2se_threads: 8
 deblur_threads: 8
