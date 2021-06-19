@@ -8,14 +8,16 @@
 # then copy the data files and symlinks from the existing tourmaline directory.
 # Files are only attempted to be copied if they exist.
 
-/bin/rm -r 00-data/*
-[[ -f $1/config.yaml ]] && cp -a $1/config.yaml config.yaml
-[[ -f $1/00-data/manifest_pe.csv ]] && cp -a $1/00-data/manifest_pe.csv 00-data/manifest_pe.csv
-[[ -f $1/00-data/manifest_se.csv ]] && cp -a $1/00-data/manifest_se.csv 00-data/manifest_se.csv
-[[ -f $1/00-data/metadata.tsv ]] && cp -a $1/00-data/metadata.tsv 00-data/metadata.tsv
-[[ -f $1/00-data/repseqs_to_filter_dada2-pe.tsv ]] && cp -a $1/00-data/repseqs_to_filter_dada2-pe.tsv 00-data/repseqs_to_filter_dada2-pe.tsv
-[[ -f $1/00-data/repseqs_to_filter_dada2-se.tsv ]] && cp -a $1/00-data/repseqs_to_filter_dada2-se.tsv 00-data/repseqs_to_filter_dada2-se.tsv
-[[ -f $1/00-data/repseqs_to_filter_deblur-se.tsv ]] && cp -a $1/00-data/repseqs_to_filter_deblur-se.tsv 00-data/repseqs_to_filter_deblur-se.tsv
-[[ -f $1/01-imported/refseqs.qza ]] && cp -a $1/01-imported/refseqs.qza 01-imported/refseqs.qza
-[[ -f $1/01-imported/reftax.qza ]] && cp -a $1/01-imported/reftax.qza 01-imported/reftax.qza
-[[ -f $1/01-imported/classifier.qza ]] && cp -a $1/01-imported/classifier.qza 01-imported/classifier.qza
+echo "Removed:"
+/bin/rm -rv 00-data/*
+[[ -f $1/config.yaml ]] && cp -av $1/config.yaml config.yaml
+echo "Copied:"
+[[ -f $1/00-data/manifest_pe.csv ]] && cp -av $1/00-data/manifest_pe.csv 00-data/manifest_pe.csv
+[[ -f $1/00-data/manifest_se.csv ]] && cp -av $1/00-data/manifest_se.csv 00-data/manifest_se.csv
+[[ -f $1/00-data/metadata.tsv ]] && cp -av $1/00-data/metadata.tsv 00-data/metadata.tsv
+[[ -f $1/00-data/repseqs_to_filter_dada2-pe.tsv ]] && cp -av $1/00-data/repseqs_to_filter_dada2-pe.tsv 00-data/repseqs_to_filter_dada2-pe.tsv
+[[ -f $1/00-data/repseqs_to_filter_dada2-se.tsv ]] && cp -av $1/00-data/repseqs_to_filter_dada2-se.tsv 00-data/repseqs_to_filter_dada2-se.tsv
+[[ -f $1/00-data/repseqs_to_filter_deblur-se.tsv ]] && cp -av $1/00-data/repseqs_to_filter_deblur-se.tsv 00-data/repseqs_to_filter_deblur-se.tsv
+[[ -f $1/01-imported/refseqs.qza ]] && cp -av $1/01-imported/refseqs.qza 01-imported/refseqs.qza
+[[ -f $1/01-imported/reftax.qza ]] && cp -av $1/01-imported/reftax.qza 01-imported/reftax.qza
+[[ -f $1/01-imported/classifier.qza ]] && cp -av $1/01-imported/classifier.qza 01-imported/classifier.qza
