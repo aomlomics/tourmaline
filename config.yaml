@@ -25,7 +25,7 @@ fastq_se_qza: 01-imported/fastq_se.qza
 refseqs_fna: 00-data/refseqs.fna
 reftax_tsv: 00-data/reftax.tsv
 
-# option 2 - if your reference database is already in qza format, the parameters below will be used to find your qza file(s)
+# option 2 - if your reference database is already in qza format, the parameters below will be used to find your qza files
 
 refseqs_qza: 01-imported/refseqs.qza
 reftax_qza: 01-imported/reftax.qza
