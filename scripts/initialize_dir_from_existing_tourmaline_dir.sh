@@ -10,8 +10,8 @@
 
 echo "Removed:"
 /bin/rm -rv 00-data/*
-[[ -f $1/config.yaml ]] && cp -av $1/config.yaml config.yaml
 echo "Copied:"
+[[ -f $1/config.yaml ]] && cp -av $1/config.yaml config.yaml
 [[ -f $1/00-data/manifest_pe.csv ]] && cp -av $1/00-data/manifest_pe.csv 00-data/manifest_pe.csv
 [[ -f $1/00-data/manifest_se.csv ]] && cp -av $1/00-data/manifest_se.csv 00-data/manifest_se.csv
 [[ -f $1/00-data/metadata.tsv ]] && cp -av $1/00-data/metadata.tsv 00-data/metadata.tsv
