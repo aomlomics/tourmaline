@@ -11,7 +11,7 @@ Tourmaline is an amplicon sequence processing workflow for Illumina sequence dat
 Tourmaline has several features that enhance usability and interoperability:
 
 * **Portability.** Native support for Linux and macOS in addition to Docker containers.
-* **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) package, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
+* **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) and [Deblur](https://github.com/biocore/deblur) packages, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
 * **Snakemake.** Managing the workflow with Snakemake provides several benefits: 
   - **Configuration file** contains all parameters in one file, so you can see what your workflow is doing and make changes for a subsequent run.
   - **Directory structure** is the same for every Tourmaline run, so you always know where your outputs are.
@@ -22,17 +22,18 @@ Tourmaline has several features that enhance usability and interoperability:
 
 ### What QIIME 2 options does Tourmaline support?
 
-If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`. Briefly, here are the main QIIME 2 options supported, with QIIME 2 visualization (.qzv) outputs indicated:
+If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`.  The main analysis features and options supported by Tourmaline and specified by the Snakefile are as follows:
 
-* FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
-* Denoising with DADA2 (paired-end and single-end) and Deblur (single-end)
-* Feature classification (taxonomic assignment) with options of naive Bayes, consensus BLAST, and consensus VSEARCH
-* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
-* Interactive taxonomy barplot (.qzv)
-* De novo multiple sequence alignment with MUSCLE, Clustal Omega, or MAFFT (with masking) and tree building with FastTree
-* Tree visualization using Empress (.qzv)
-* Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou's evenness (.qzv)
-* Beta diversity distances, principal coordinates, Emperor plots, and beta group significance (one metadata column) with four metrics: unweighted UniFrac, weighted UniFrac, Jaccard distance, and Bray-Curtis distance (.qzv)
+- FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
+- Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
+- Feature classification (taxonomic assignment) with options of naive Bayes, consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
+- Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
+- De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
+- Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
+- Interactive taxonomy barplot
+- Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
+- Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou’s evenness
+- Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
 
 ### How do I get started? 
 

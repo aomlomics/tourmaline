@@ -99,7 +99,7 @@ alignment_muscle_diags: -diags
 # - bootstrap_replicates: number of bootstrap replicates (integer)
 # - threshold: probability to be at right of the bootstrap scores distribution (float)
 
-odseq_distance_metric: linear # choose from: linear, affine
+odseq_distance_metric: linear
 odseq_bootstrap_replicates: 100
 odseq_threshold: 0.025
 
@@ -154,7 +154,7 @@ report_theme: github
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
 
-exclude_terms: unassigned,eukaryota
+exclude_terms: notataxon
 
 # filter by LENGTH
 # - set minimum and maximum sequence lengths to filter representative sequences by
