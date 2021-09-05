@@ -37,7 +37,7 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 
 ### How do I get started? 
 
-If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/lukenoaa/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below.
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below.
 
 ## Quick Start
 
@@ -52,7 +52,7 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install) page for more details.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details.
 
 #### Option 1: Native installation
 
@@ -103,11 +103,11 @@ Use mounted volumes to:
 * create symbolic links from your container to your FASTQ files and reference database;
 * copy your whole Tourmaline directory out of the container when the run is completed (alternatively, you can clone the Tourmaline directory inside the mounted volume).
 
-See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
+See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 
 ### Setup
 
-If this is your first time running Tourmaline, you'll need to set up your directory. Simplified instructions are below, but see the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for complete instructions. 
+If this is your first time running Tourmaline, you'll need to set up your directory. Simplified instructions are below, but see the Wiki's [Setup](https://github.com/aomlomics/tourmaline/wiki/3-Setup) page for complete instructions. 
 
 Start by cloning the Tourmaline directory and files:
 
@@ -157,9 +157,9 @@ If you're ready to run your own data, the setup is similar to what you did for t
 
 ### Run Snakemake
 
-Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
+Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
-Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page.
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page.
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
@@ -237,7 +237,7 @@ Downloaded files can be deleted after viewing because they are already stored in
 * The whole workflow with test data should take ~3–5 minutes to complete. A normal dataset may take several hours to complete.
 * If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
 * Do not use the `--cores` option. Tourmaline should be run with 1 core (default). The parameters for multiple threads in the configuration file don't do anything at this time.
-* If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/lukenoaa/tourmaline/wiki/2-Install#installation-options).
+* If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/aomlomics/tourmaline/wiki/2-Install#installation-options).
 
 #### Power tips
 
