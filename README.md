@@ -26,7 +26,7 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 
 - FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
 - Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
-- Feature classification (taxonomic assignment) with options of naive Bayes, consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
+- Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
 - Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
 - De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
 - Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)

@@ -99,7 +99,7 @@ alignment_muscle_diags: -diags
 # - bootstrap_replicates: number of bootstrap replicates (integer)
 # - threshold: probability to be at right of the bootstrap scores distribution (float)
 
-odseq_distance_metric: linear # choose from: linear, affine
+odseq_distance_metric: linear
 odseq_bootstrap_replicates: 100
 odseq_threshold: 0.025
 
@@ -162,7 +162,7 @@ exclude_terms: unassigned,eukaryota
 # - to skip filtering by length: set values to extreme values, eg (0, 10000) or don't run filtering commands
 
 repseq_min_length: 0
-repseq_max_length: 10000
+repseq_max_length: 260
 
 # filter by ABUNDANCE & PREVALENCE
 # - set minimum abundance/prevalence limits for filtering
