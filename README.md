@@ -85,10 +85,11 @@ BiocManager::install("odseq")
 
 To run Tourmaline inside a Docker container:
 
-1. Install Docker Desktop (Mac or Windows) or Docker (Linux) from [Docker.com](https://docs.docker.com/get-docker/).
-2. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
-3. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
-4. Run the Docker image (command below).
+1. Install Docker Desktop (Mac, Windows, or Linux) from [Docker.com](https://docs.docker.com/get-docker/).
+2. Open Docker app.
+3. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
+4. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
+5. Run the Docker image (command below).
 
 ```bash
 docker pull aomlomics/tourmaline

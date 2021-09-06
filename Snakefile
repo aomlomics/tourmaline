@@ -581,7 +581,7 @@ rule feature_classifier:
     threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
-        "if [ {params.classifymethod} = 'naive-bayes' ]; then "
+        "if [ {params.classifymethod} = naive-bayes ]; then "
         "    if [ ! -f 01-imported/classifier.qza ]; then "
         "        qiime feature-classifier fit-classifier-naive-bayes "
         "        --i-reference-reads {input.refseqs} "
@@ -594,14 +594,14 @@ rule feature_classifier:
         "    --o-classification {output} "
         "    --p-n-jobs {threads} "
         "    {params.classifyparams}; "
-        "elif [ {params.classifymethod} = 'consensus-blast' ]; then "
+        "elif [ {params.classifymethod} = consensus-blast ]; then "
         "    qiime feature-classifier classify-consensus-blast "
         "    --i-reference-reads {input.refseqs} "
         "    --i-reference-taxonomy {input.reftax} "
         "    --i-query {input.repseqs} "
         "    --o-classification {output} "
         "    {params.classifyparams}; "
-        "elif [ {params.classifymethod} = 'consensus-vsearch' ]; then "
+        "elif [ {params.classifymethod} = consensus-vsearch ]; then "
         "    qiime feature-classifier classify-consensus-vsearch "
         "    --i-reference-reads {input.refseqs} "
         "    --i-reference-taxonomy {input.reftax} "
@@ -672,7 +672,7 @@ rule align_repseqs:
         muscle_diags=config["alignment_muscle_diags"]
     threads: config["alignment_threads"],
     shell:
-        "if [ {params.method} == 'muscle' ]; then "
+        "if [ {params.method} = muscle ]; then "
         "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
         "    muscle "
         "    -maxiters {params.muscle_maxiters} "
@@ -686,7 +686,7 @@ rule align_repseqs:
         "    --type 'FeatureData[AlignedSequence]' "
         "    --input-path {output.alnfasta} "
         "    --output-path {output.alnqza}; "
-        "elif [ {params.method} == 'clustalo' ]; then "
+        "elif [ {params.method} = clustalo ]; then "
         "    echo 'Multiple sequence alignment method: Clustal Omega ...'; "
         "    clustalo --verbose --force "
         "    --in {input.repseqsfasta} "
@@ -699,7 +699,7 @@ rule align_repseqs:
         "    --type 'FeatureData[AlignedSequence]' "
         "    --input-path {output.alnfasta} "
         "    --output-path {output.alnqza}; "
-        "elif [ {params.method} == 'mafft' ]; then "
+        "elif [ {params.method} = mafft ]; then "
         "    echo 'Multiple sequence alignment method: MAFFT ...'; "
         "    qiime alignment mafft "
         "    --i-sequences {input.repseqsqza} "
@@ -762,14 +762,7 @@ rule alignment_count_gaps:
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
     shell:
-        "while read line; do"
-        "    if [[ $line =~ ^\>.* ]]; then "
-        "        echo $line | sed 's/>//' | tr -d '\n' >> {output}; "
-        "        echo -e -n '\t' >> {output}; "
-        "    else "
-        "        echo $line | sed 's/[^-]//g' | awk '{{ print length }}' >> {output}; "
-        "    fi; "
-        "done < {input}"
+        "bash scripts/alignment_count_gaps.sh < {input} > {output}"
 
 rule alignment_gaps_describe:
     input:
