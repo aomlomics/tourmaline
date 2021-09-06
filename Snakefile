@@ -763,7 +763,7 @@ rule alignment_count_gaps:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
     shell:
         "while read line; do"
-        "    if [[ $line =~ ^\>.* ]]; then "
+        "    if [ $line =~ ^\>.* ]; then "
         "        echo $line | sed 's/>//' | tr -d '\n' >> {output}; "
         "        echo -e -n '\t' >> {output}; "
         "    else "
