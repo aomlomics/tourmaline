@@ -35,9 +35,15 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 - Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou’s evenness
 - Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
 
+### Where can I learn more about Tourmaline?
+
+A citable preprint of our manuscript is available on *bioRxiv*:
+
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: a workflow for rapid and reproducible amplicon sequence analysis using QIIME 2 and Snakemake. *bioRxiv* 2021.09.15.460495 (2021). doi:[10.1101/2021.09.15.460495](https://doi.org/10.1101/2021.09.15.460495)
+
 ### How do I get started? 
 
-If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below.
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).
 
 ## Quick Start
 
