@@ -78,7 +78,7 @@ pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
-Finally, open R by entering `R` and install the R dependencies (if prompted, enter "a" to update all packages):
+Finally, open R by entering `R` and install the R dependencies (if prompted, enter "n" to update none of the packages):
 
 ```R
 if (!requireNamespace("BiocManager", quietly = TRUE))
