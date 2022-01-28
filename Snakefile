@@ -37,7 +37,7 @@ rule dada2_pe_taxonomy_unfiltered:
 rule dada2_pe_diversity_unfiltered:
     input:
         "02-output-dada2-pe-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-pe-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -53,7 +53,8 @@ rule dada2_pe_diversity_unfiltered:
         "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_pe_report_unfiltered:
     input:
@@ -74,7 +75,7 @@ rule dada2_pe_taxonomy_filtered:
 rule dada2_pe_diversity_filtered:
     input:
         "02-output-dada2-pe-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-pe-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -90,7 +91,8 @@ rule dada2_pe_diversity_filtered:
         "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_pe_report_filtered:
     input:
@@ -118,7 +120,7 @@ rule dada2_se_taxonomy_unfiltered:
 rule dada2_se_diversity_unfiltered:
     input:
         "02-output-dada2-se-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-se-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -134,7 +136,8 @@ rule dada2_se_diversity_unfiltered:
         "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_se_report_unfiltered:
     input:
@@ -155,7 +158,7 @@ rule dada2_se_taxonomy_filtered:
 rule dada2_se_diversity_filtered:
     input:
         "02-output-dada2-se-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-se-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-se-filtered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -171,7 +174,8 @@ rule dada2_se_diversity_filtered:
         "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_se_report_filtered:
     input:
@@ -199,7 +203,7 @@ rule deblur_se_taxonomy_unfiltered:
 rule deblur_se_diversity_unfiltered:
     input:
         "02-output-deblur-se-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-deblur-se-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -215,7 +219,8 @@ rule deblur_se_diversity_unfiltered:
         "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule deblur_se_report_unfiltered:
     input:
@@ -236,7 +241,7 @@ rule deblur_se_taxonomy_filtered:
 rule deblur_se_diversity_filtered:
     input:
         "02-output-deblur-se-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-deblur-se-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-deblur-se-filtered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -252,7 +257,8 @@ rule deblur_se_diversity_filtered:
         "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule deblur_se_report_filtered:
     input:
@@ -764,18 +770,18 @@ rule alignment_count_gaps:
     shell:
         "bash scripts/alignment_count_gaps.sh < {input} > {output}"
 
-rule alignment_gaps_describe:
-    input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
-    output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
-    run:
-        gaps = pd.read_csv(input[0], header=None, sep='\t')
-        t = gaps.describe()
-        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
+# rule alignment_gaps_describe:
+#     input:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
+#     output:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
+#     run:
+#         gaps = pd.read_csv(input[0], header=None, sep='\t')
+#         t = gaps.describe()
+#         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
+#         with open(output[0], 'w') as target:
+#             target.write(outstr)
+#             target.write('\n')
 
 rule alignment_detect_outliers:
     input:
@@ -1040,6 +1046,42 @@ rule diversity_beta_group_significance:
         "{params.pairwise} "
         "--o-visualization {output}"
 
+rule deicode_auto_rpca:
+    input:
+        table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
+    params:
+        minsamplecount=config["deicode_min_sample_count"],
+        minfeaturecount=config["deicode_min_feature_count"],
+        minfeaturefrequency=config["deicode_min_feature_frequency"],
+        maxiterations=config["deicode_max_iterations"]
+    output:
+        biplot="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot.qza",
+        distancematrix="02-output-{method}-{filter}/04-beta-diversity/deicode_distance_matrix.qza"
+    shell:
+        "qiime deicode auto-rpca "
+        "--i-table {input.table} "
+        "--p-min-sample-count {params.minsamplecount} "
+        "--p-min-feature-count {params.minfeaturecount} "
+        "--p-min-feature-frequency {params.minfeaturefrequency} "
+        "--p-max-iterations {params.maxiterations} "
+        "--o-biplot {output.biplot} "
+        "--o-distance-matrix {output.distancematrix}"
+
+rule emperor_biplot:
+    input:
+        biplot="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot.qza",
+        metadata=config["metadata"]
+    params:
+        numfeatures=config["deicode_num_features"]
+    output:
+        emperor="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
+    shell:
+        "qiime emperor biplot "
+        "--i-biplot {input.biplot} "
+        "--m-sample-metadata-file {input.metadata} "
+        "--o-visualization {output.emperor} "
+        "--p-number-of-features {params.numfeatures}"
+
 # RULES: REPORT ----------------------------------------------------------------
 
 rule summarize_metadata:
@@ -1102,7 +1144,8 @@ rule generate_report_md:
         viswuemp="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_emperor.qzv",
         viswugs="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_group_significance.qzv",
         visuwuemp="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        visbiplotemp="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
     output:
         "03-reports/report_{method}_{filter}.md"
     shell:
@@ -1275,6 +1318,8 @@ rule generate_report_md:
         "echo Weighted UniFrac QZV: \[{input.viswuemp}\]\(../{input.viswuemp}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
         "echo Unweighted UniFrac QZV: \[{input.visuwuemp}\]\(../{input.visuwuemp}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        "echo DEICODE Biplot QZV: \[{input.visbiplotemp}\]\(../{input.visbiplotemp}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
         "echo '### Beta Group Significance' >> {output};"
         "echo '' >> {output};"

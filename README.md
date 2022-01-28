@@ -24,16 +24,17 @@ Tourmaline has several features that enhance usability and interoperability:
 
 If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`.  The main analysis features and options supported by Tourmaline and specified by the Snakefile are as follows:
 
-- FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
-- Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
-- Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
-- Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
-- De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
-- Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
-- Interactive taxonomy barplot
-- Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
-- Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou’s evenness
-- Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
+* FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
+* Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
+* Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
+* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
+* De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
+* Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
+* Interactive taxonomy barplot
+* Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
+* Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou’s evenness
+* Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
+* Robust Aitchison PCA and biplot ordination using [DEICODE](https://doi.org/10.1128/mSystems.00016-19)
 
 ### Where can I learn more about Tourmaline?
 
@@ -74,6 +75,7 @@ Activate the environment and install the other Conda- or PIP-installable depende
 ```
 conda activate qiime2-2021.2
 conda install -c bioconda snakemake biopython muscle clustalo tabulate pandoc tabview
+conda install -c conda-forge deicode
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
