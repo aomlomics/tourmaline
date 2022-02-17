@@ -16,7 +16,7 @@ RUN echo "alias taill='ls -lrt | tail'" >> ~/.bashrc
 RUN echo "bind '\"\e[A\": history-search-backward'" >> ~/.bashrc
 RUN echo "bind '\"\e[B\": history-search-forward'" >> ~/.bashrc
 
-# Install dependencies
+# Install dependencies using apt-get
 RUN apt-get update -y && \
  apt-get install -y \
  build-essential \
@@ -41,6 +41,7 @@ ENV PATH="/opt/conda/envs/qiime2-2021.2/bin:$PATH"
 # This is necessary to install snakemake using conda
 SHELL ["conda", "run", "-n", "qiime2-2021.2", "/bin/bash", "-c"]
  
-# Install snakemake
+# Install snakemake and other dependencies using conda
 RUN conda update -n base -c defaults conda
 RUN conda install -c bioconda snakemake muscle clustalo
+RUN conda install -c conda-forge deicode

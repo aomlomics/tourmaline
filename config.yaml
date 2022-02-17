@@ -115,7 +115,7 @@ alpha_max_depth: 500
 # BETA GROUP SIGNIFICANCE
 
 # statistical test for difference between samples grouped by a metadata variable (column)
-# - column: metadata column to test beta group significance
+# - column: metadata column to test beta group significance; this column must appear in the metadata file (eg, 00-data/metadata.tsv)
 # - method: choose from: permanova, anosim, permdisp
 # - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
 
@@ -163,7 +163,7 @@ report_theme: github
 #          00-data/repseqs_to_filter_dada2-se.tsv
 #          00-data/repseqs_to_filter_deblur-se.tsv
 # - these paths are hard-coded (they must match those above), not specified in config.yaml
-# - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering commands
+# - to skip filtering by feature ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands
 
 # filter by TAXONOMY
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
