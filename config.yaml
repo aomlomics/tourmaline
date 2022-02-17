@@ -166,6 +166,7 @@ report_theme: github
 # - to skip filtering by feature ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands
 
 # filter by TAXONOMY
+# - features with taxonomy containing these terms will be filtered
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
