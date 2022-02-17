@@ -24,20 +24,27 @@ Tourmaline has several features that enhance usability and interoperability:
 
 If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in `Snakefile`, and typical workflows without and with sequence filtering are shown as directed acyclic graphs in the folder `dags`.  The main analysis features and options supported by Tourmaline and specified by the Snakefile are as follows:
 
-- FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
-- Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
-- Feature classification (taxonomic assignment) with options of naive Bayes, consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
-- Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
-- De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
-- Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
-- Interactive taxonomy barplot
-- Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
-- Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou’s evenness
-- Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
+* FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
+* Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
+* Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
+* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
+* De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
+* Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
+* Interactive taxonomy barplot
+* Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
+* Alpha diversity, alpha rarefaction, and alpha group significance with four metrics: Faith's phylogenetic diversity, observed features, Shannon diversity, and Pielou’s evenness
+* Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
+* Robust Aitchison PCA and biplot ordination using [DEICODE](https://doi.org/10.1128/mSystems.00016-19)
+
+### Where can I learn more about Tourmaline?
+
+A citable preprint of our manuscript is available on *bioRxiv*:
+
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: a workflow for rapid and reproducible amplicon sequence analysis using QIIME 2 and Snakemake. *bioRxiv* 2021.09.15.460495 (2021). doi:[10.1101/2021.09.15.460495](https://doi.org/10.1101/2021.09.15.460495)
 
 ### How do I get started? 
 
-If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/lukenoaa/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below.
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).
 
 ## Quick Start
 
@@ -52,7 +59,7 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install) page for more details.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details.
 
 #### Option 1: Native installation
 
@@ -68,11 +75,12 @@ Activate the environment and install the other Conda- or PIP-installable depende
 ```
 conda activate qiime2-2021.2
 conda install -c bioconda snakemake biopython muscle clustalo tabulate pandoc tabview
+conda install -c conda-forge deicode
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
-Finally, open R by entering `R` and install the R dependencies (if prompted, enter "a" to update all packages):
+Finally, open R by entering `R` and install the R dependencies (if prompted, enter "n" to update none of the packages):
 
 ```R
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -85,10 +93,11 @@ BiocManager::install("odseq")
 
 To run Tourmaline inside a Docker container:
 
-1. Install Docker Desktop (Mac or Windows) or Docker (Linux) from [Docker.com](https://docs.docker.com/get-docker/).
-2. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
-3. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
-4. Run the Docker image (command below).
+1. Install Docker Desktop (Mac, Windows, or Linux) from [Docker.com](https://docs.docker.com/get-docker/).
+2. Open Docker app.
+3. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
+4. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
+5. Run the Docker image (command below).
 
 ```bash
 docker pull aomlomics/tourmaline
@@ -103,11 +112,11 @@ Use mounted volumes to:
 * create symbolic links from your container to your FASTQ files and reference database;
 * copy your whole Tourmaline directory out of the container when the run is completed (alternatively, you can clone the Tourmaline directory inside the mounted volume).
 
-See the [Install](https://github.com/lukenoaa/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
+See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install#docker-container) page for more details on installing and running Docker.
 
 ### Setup
 
-If this is your first time running Tourmaline, you'll need to set up your directory. Simplified instructions are below, but see the Wiki's [Setup](https://github.com/lukenoaa/tourmaline/wiki/3-Setup) page for complete instructions. 
+If this is your first time running Tourmaline, you'll need to set up your directory. Simplified instructions are below, but see the Wiki's [Setup](https://github.com/aomlomics/tourmaline/wiki/3-Setup) page for complete instructions. 
 
 Start by cloning the Tourmaline directory and files:
 
@@ -157,9 +166,9 @@ If you're ready to run your own data, the setup is similar to what you did for t
 
 ### Run Snakemake
 
-Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
+Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
-Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/lukenoaa/tourmaline/wiki/4-Run) page.
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page.
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
@@ -237,7 +246,7 @@ Downloaded files can be deleted after viewing because they are already stored in
 * The whole workflow with test data should take ~3–5 minutes to complete. A normal dataset may take several hours to complete.
 * If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
 * Do not use the `--cores` option. Tourmaline should be run with 1 core (default). The parameters for multiple threads in the configuration file don't do anything at this time.
-* If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/lukenoaa/tourmaline/wiki/2-Install#installation-options).
+* If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/aomlomics/tourmaline/wiki/2-Install#installation-options).
 
 #### Power tips
 

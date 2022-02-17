@@ -61,7 +61,7 @@ dada2se_min_fold_parent_over_abundance: 1
 dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
-# deblur parameters
+# deblur (single-end)
 # qiime command: qiime deblur denoise-other
 
 deblur_trim_length: 240
@@ -123,6 +123,22 @@ beta_group_column: region
 beta_group_method: permanova
 beta_group_pairwise: --p-pairwise
 
+# DEICODE BETA DIVERSITY
+
+# robust Aitchison PCA (and biplot ordination) with automatically estimated underlying low-rank structure
+# parameters are set to recommended defaults
+# - min_sample_count: minimum sum cutoff of samples across all features
+# - min_feature_count: minimum sum cufoff of features across all samples
+# - min_feature_frequency: minimum percentage of samples a feature must appear with value greater than zero
+# - max_iterations: number of iterations to optimize the solution
+# - num_features: number of most important features (arrows) to display in the biplot ordination
+
+deicode_min_sample_count: 500
+deicode_min_feature_count: 10
+deicode_min_feature_frequency: 0
+deicode_max_iterations: 5
+deicode_num_features: 5
+
 # REPORT THEME
 
 # report theme for html version
@@ -154,7 +170,7 @@ report_theme: github
 # - terms are not case-sensitive
 # - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
 
-exclude_terms: notataxon
+exclude_terms: unassigned,eukaryota
 
 # filter by LENGTH
 # - set minimum and maximum sequence lengths to filter representative sequences by
@@ -162,7 +178,7 @@ exclude_terms: notataxon
 # - to skip filtering by length: set values to extreme values, eg (0, 10000) or don't run filtering commands
 
 repseq_min_length: 0
-repseq_max_length: 10000
+repseq_max_length: 260
 
 # filter by ABUNDANCE & PREVALENCE
 # - set minimum abundance/prevalence limits for filtering
