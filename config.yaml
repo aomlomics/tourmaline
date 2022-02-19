@@ -109,8 +109,8 @@ odseq_threshold: 0.025
 # - core_sampling_depth: subsampling depth for core diversity analyses
 # - alpha_max_depth: maximum subsampling depth for alpha diversity rarefaction analysis
 
-core_sampling_depth: 500
-alpha_max_depth: 500
+core_sampling_depth: 29000
+alpha_max_depth: 10000
 
 # BETA GROUP SIGNIFICANCE
 
@@ -149,11 +149,11 @@ report_theme: github
 # FILTERING
 
 # filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of:
-#     1. representative sequences
-#     2. taxonomy
-#     3. feature table
+#  1. representative sequences
+#  2. taxonomy
+#  3. feature table
 
-# filter by FEATUREID
+# filter by FEATURE ID
 # - these feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything
 # - to create a feature metadata file for filtering repseqs:
 #     1. go to 02-output-{method}-{filter}/02-alignment-tree
@@ -163,20 +163,20 @@ report_theme: github
 #          00-data/repseqs_to_filter_dada2-se.tsv
 #          00-data/repseqs_to_filter_deblur-se.tsv
 # - these paths are hard-coded (they must match those above), not specified in config.yaml
-# - to skip filtering by feature ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands
+# - TO SKIP FILTERING BY FEATURE ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands
 
 # filter by TAXONOMY
 # - features with taxonomy containing these terms will be filtered
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
-# - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
+# - TO SKIP FILTERING BY TAXONOMY: provide a nonsense term or don't run filtering commands
 
 exclude_terms: unassigned,eukaryota
 
 # filter by LENGTH
 # - set minimum and maximum sequence lengths to filter representative sequences by
 # - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-# - to skip filtering by length: set values to extreme values, eg (0, 10000) or don't run filtering commands
+# - TO SKIP FILTERING BY LENGTH: set values to extreme values, eg (0, 10000) or don't run filtering commands
 
 repseq_min_length: 0
 repseq_max_length: 260
@@ -184,15 +184,17 @@ repseq_max_length: 260
 # filter by ABUNDANCE & PREVALENCE
 # - set minimum abundance/prevalence limits for filtering
 # - limit is inclusive, ie, greater than or equal to minimum
-# - to skip filtering by abundance/prevalence: set values to 0 or don't run filtering commands
+# - TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands
 
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
 
 # THREADS
 
-# max number of threads for individual steps
-# threads used will be lower of this and snakemake parameter --cores
+# - max number of threads for individual rules
+# - threads used will be the lower of this and snakemake parameter --cores
+# - other_threads is used for all other rules, regardless if they can use multiple threads, 
+#   because it prevents multiple rules from running simultaneously with --cores >1
 
 dada2pe_threads: 8
 dada2se_threads: 8
@@ -201,3 +203,4 @@ alignment_threads: 8
 feature_classifier_threads: 8
 phylogeny_fasttree_threads: 8
 diversity_core_metrics_phylogenetic_threads: 8
+other_threads: 8

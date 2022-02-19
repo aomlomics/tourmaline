@@ -271,6 +271,7 @@ rule import_ref_seqs:
         config["refseqs_fna"]
     output:
         config["refseqs_qza"]
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Sequence]' "
@@ -282,6 +283,7 @@ rule import_ref_tax:
         config["reftax_tsv"]
     output:
         config["reftax_qza"]
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Taxonomy]' "
@@ -294,6 +296,7 @@ rule import_fastq_demux_pe:
         config["manifest_pe"]
     output:
         config["fastq_pe_qza"]
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'SampleData[PairedEndSequencesWithQuality]' "
@@ -306,6 +309,7 @@ rule import_fastq_demux_se:
         config["manifest_se"]
     output:
         config["fastq_se_qza"]
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'SampleData[SequencesWithQuality]' "
@@ -320,6 +324,7 @@ rule summarize_fastq_demux_pe:
         config["fastq_pe_qza"]
     output:
         "01-imported/fastq_summary.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime demux summarize "
         "--i-data {input} "
@@ -330,6 +335,7 @@ rule summarize_fastq_demux_se:
         config["fastq_se_qza"]
     output:
         "01-imported/fastq_summary.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime demux summarize "
         "--i-data {input} "
@@ -340,6 +346,7 @@ rule unzip_fastq_summary:
         "01-imported/fastq_summary.qzv"
     output:
         "01-imported/fastq_counts.tsv"
+    threads: config["other_threads"]
     shell:
         "unzip -qq -o {input} -d temp0; "
         "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
@@ -350,6 +357,7 @@ rule describe_fastq_counts:
         "01-imported/fastq_counts.tsv"
     output:
         "01-imported/fastq_counts_describe.md"
+    threads: config["other_threads"]
     run:
         s = pd.read_csv(input[0], index_col=0, sep='\t')
         t = s.describe()
@@ -482,6 +490,7 @@ rule summarize_feature_table:
         metadata=config["metadata"]
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime feature-table summarize "
         "--i-table {input.table} "
@@ -493,6 +502,7 @@ rule unzip_table_to_biom:
         "02-output-{method}-{filter}/00-table-repseqs/table.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
+    threads: config["other_threads"]
     shell:
         "unzip -qq -o {input} -d temp1; "
         "mv temp1/*/data/feature-table.biom {output}; "
@@ -503,6 +513,7 @@ rule summarize_biom_samples:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary_samples.txt"
+    threads: config["other_threads"]
     shell:
         "biom summarize-table "
         "--input-fp {input} "
@@ -515,6 +526,7 @@ rule summarize_biom_features:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary_features.txt"
+    threads: config["other_threads"]
     shell:
         "biom summarize-table "
         "--observations "
@@ -528,6 +540,7 @@ rule visualize_repseqs:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime feature-table tabulate-seqs "
         "--i-data {input} "
@@ -538,6 +551,7 @@ rule unzip_repseqs_to_fasta:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
+    threads: config["other_threads"]
     shell:
         "unzip -qq -o {input} -d temp2; "
         "mv temp2/*/data/dna-sequences.fasta {output}; "
@@ -548,6 +562,7 @@ rule repseqs_detect_amplicon_locus:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt"
+    threads: config["other_threads"]
     shell:
         "python scripts/detect_amplicon_locus.py -i {input} > {output}"
 
@@ -556,6 +571,7 @@ rule repseqs_lengths:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
+    threads: config["other_threads"]
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
@@ -564,6 +580,7 @@ rule repseqs_lengths_describe:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths_describe.md"
+    threads: config["other_threads"]
     run:
         s = pd.read_csv(input[0], header=None, index_col=0, sep='\t')
         t = s.describe()
@@ -622,6 +639,7 @@ rule visualize_taxonomy:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime metadata tabulate "
         "--m-input-file {input} "
@@ -634,6 +652,7 @@ rule taxa_barplot:
         metadata=config["metadata"]
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime taxa barplot "
         "--i-table {input.table} "
@@ -646,6 +665,7 @@ rule unzip_taxonomy_to_tsv:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
+    threads: config["other_threads"]
     shell:
         "unzip -qq -o {input} -d temp3; "
         "mv temp3/*/data/taxonomy.tsv {output}; "
@@ -656,6 +676,7 @@ rule import_taxonomy_to_qza:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Taxonomy]' "
@@ -739,6 +760,7 @@ rule phylogeny_midpoint_root:
         "02-output-{method}-{filter}/02-alignment-tree/unrooted_tree.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza"
+    threads: config["other_threads"]
     shell:
         "qiime phylogeny midpoint-root "
         "--i-tree {input} "
@@ -753,6 +775,7 @@ rule visualize_tree:
         outliers="02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime empress community-plot "
         "--i-tree {input.tree} "
@@ -767,6 +790,7 @@ rule alignment_count_gaps:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
+    threads: config["other_threads"]
     shell:
         "bash scripts/alignment_count_gaps.sh < {input} > {output}"
 
@@ -792,6 +816,7 @@ rule alignment_detect_outliers:
         threshold = config["odseq_threshold"]
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv"
+    threads: config["other_threads"]
     shell:
         "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} temp_odseq; "
         "cat temp_odseq | sed 's/^X//' > {output}; "
@@ -809,6 +834,7 @@ rule tabulate_plot_repseq_properties:
         propdescribe="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties_describe.md",
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
+    threads: config["other_threads"]
     run:
         lengths = pd.read_csv(input['lengths'], names=['length'], index_col=0, sep='\t')
         gaps = pd.read_csv(input['gaps'], names=['gaps'], index_col=0, sep='\t')
@@ -848,6 +874,7 @@ rule import_outliers_to_qza:
         "02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Importance]' "
@@ -860,6 +887,7 @@ rule tabulate_repseqs_to_filter:
     output:
         outliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         unassigned="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_unassigned.tsv"
+    threads: config["other_threads"]
     shell:
         "cat {input.proptsv} | grep -i 'outlier\|true' | cut -f1,4 > {output.outliers}; "
         "cat {input.proptsv} | grep -i 'taxonomy\|unassigned' | cut -f1,5 > {output.unassigned}"
@@ -883,6 +911,7 @@ rule filter_sequences_table:
     output:
         repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
+    threads: config["other_threads"]
     shell:
         # FILTER SEQUENCES BY TAXONOMY
         "qiime taxa filter-seqs "
@@ -932,6 +961,7 @@ rule filter_taxonomy:
     output:
         taxonomytsv="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv",
         taxonomyqza="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"        
+    threads: config["other_threads"]
     run:
         df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
         df_repseqs = pd.read_csv(input['repseqs'], header=None, index_col=0, sep='\t')
@@ -952,6 +982,7 @@ rule diversity_alpha_rarefaction:
         maxdepth=config["alpha_max_depth"]
     output:
         "02-output-{method}-{filter}/03-alpha-diversity/alpha_rarefaction.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime diversity alpha-rarefaction "
         "--i-table {input.table} "
@@ -1021,6 +1052,7 @@ rule diversity_alpha_group_significance:
         metadata=config["metadata"]
     output:
         "02-output-{method}-{filter}/03-alpha-diversity/{metric}_group_significance.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime diversity alpha-group-significance "
         "--i-alpha-diversity {input.alphadiversity} "
@@ -1037,6 +1069,7 @@ rule diversity_beta_group_significance:
         pairwise=config["beta_group_pairwise"]
     output:
         "02-output-{method}-{filter}/04-beta-diversity/{metric}_group_significance.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime diversity beta-group-significance "
         "--i-distance-matrix {input.distancematrix} "
@@ -1057,6 +1090,7 @@ rule deicode_auto_rpca:
     output:
         biplot="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot.qza",
         distancematrix="02-output-{method}-{filter}/04-beta-diversity/deicode_distance_matrix.qza"
+    threads: config["other_threads"]
     shell:
         "qiime deicode auto-rpca "
         "--i-table {input.table} "
@@ -1075,6 +1109,7 @@ rule emperor_biplot:
         numfeatures=config["deicode_num_features"]
     output:
         emperor="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime emperor biplot "
         "--i-biplot {input.biplot} "
@@ -1089,6 +1124,7 @@ rule summarize_metadata:
         metadata=config["metadata"]
     output:
         "03-reports/metadata_summary.md"
+    threads: config["other_threads"]
     run:
         df = pd.read_csv(input.metadata, sep='\t')
         cols = df.columns
@@ -1148,6 +1184,7 @@ rule generate_report_md:
         visbiplotemp="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
     output:
         "03-reports/report_{method}_{filter}.md"
+    threads: config["other_threads"]
     shell:
         "echo '# Tourmaline Report' > {output};"
         "echo '' >> {output};"
@@ -1348,6 +1385,7 @@ rule generate_report_html:
         theme=config["report_theme"]
     output:
         "03-reports/report_{method}_{filter}.html"
+    threads: config["other_threads"]
     shell:
         "pandoc -i {input} -o {output};"
         "echo '<!DOCTYPE html>' > header.html;"
