@@ -4,31 +4,32 @@
 
 # METADATA FILE
 
-metadata: 00-data/metadata.tsv
+# metadata file must be named as follows (or use symbolic link):
+# - 00-data/metadata.tsv
 
-# FASTQ DATA
+# FASTQ DATA (choose one option)
 
-# option 1 - if your fastq sequences are not yet imported, the parameters below will be used to find your manifest file(s)
+# option 1 - if you want to start from manifest files and import per-sample fastq sequences,
+# name your manifest file(s) as follows (or use symbolic links):
+# - paired-end sequences: 00-data/manifest_pe.csv
+# - single-end sequences: 00-data/manifest_se.csv
 
-manifest_pe: 00-data/manifest_pe.csv
-manifest_se: 00-data/manifest_se.csv
+# option 2 - if your fastq sequences are already archived in qza format,
+# name your qza file(s) as follows (or use symbolic links):
+# - paired-end sequences: 01-imported/fastq_pe.qza
+# - single-end sequences: 01-imported/fastq_se.qza
 
-# option 2 - if your fastq sequences are already in qza format, the parameters below will be used to find your qza file(s)
+# REFERENCE DATABASE (choose one option)
 
-fastq_pe_qza: 01-imported/fastq_pe.qza
-fastq_se_qza: 01-imported/fastq_se.qza
+# option 1 - if your reference database is not yet imported, 
+# name your reference fna and tsv files as follows (or use symbolic links):
+# - reference sequences: 00-data/refseqs.fna
+# - reference taxonomy: 00-data/reftax.tsv
 
-# REFERENCE DATABASE
-
-# option 1 - if your reference database is not yet imported, the parameters below will be used to find the fna and tsv files
-
-refseqs_fna: 00-data/refseqs.fna
-reftax_tsv: 00-data/reftax.tsv
-
-# option 2 - if your reference database is already in qza format, the parameters below will be used to find your qza files
-
-refseqs_qza: 01-imported/refseqs.qza
-reftax_qza: 01-imported/reftax.qza
+# option 2 - if your reference database is already archived in qza format,
+# name your your qza files as follows (or use symbolic links):
+# - reference sequences: 01-imported/refseqs.qza
+# - reference taxonomy: 01-imported/reftax.qza
 
 # DENOISE
 
@@ -109,13 +110,13 @@ odseq_threshold: 0.025
 # - core_sampling_depth: subsampling depth for core diversity analyses
 # - alpha_max_depth: maximum subsampling depth for alpha diversity rarefaction analysis
 
-core_sampling_depth: 29000
-alpha_max_depth: 10000
+core_sampling_depth: 500
+alpha_max_depth: 500
 
 # BETA GROUP SIGNIFICANCE
 
 # statistical test for difference between samples grouped by a metadata variable (column)
-# - column: metadata column to test beta group significance; this column must appear in the metadata file (eg, 00-data/metadata.tsv)
+# - column: metadata column to test beta group significance; this column must appear in the metadata file 00-data/metadata.tsv
 # - method: choose from: permanova, anosim, permdisp
 # - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
 
