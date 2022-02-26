@@ -7,6 +7,13 @@
 # metadata file must be named as follows (or use symbolic link):
 # - 00-data/metadata.tsv
 
+# standardization is recommended through use of MIxS/MIMARKS (https://gensc.org/mixs/) column headers, for example:
+# - submitted_to_insdc: {boolean}
+# - investigation_type: [eukaryote|bacteria_archaea|plasmid|virus|organelle|metagenome|metatranscriptome|mimarks-survey|mimarks-specimen|misag|mimag|miuvig]
+# - project_name: {text}
+# - experimental_factor (text or EFO and/or OBI): {termLabel} {[termID]}|{text}
+# - lat_lon (decimal degrees): {float} {float}
+
 # FASTQ DATA (choose one option)
 
 # option 1 - if you want to start from manifest files and import per-sample fastq sequences,
