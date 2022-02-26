@@ -1,6 +1,6 @@
 # config.yaml - configuration file for the Tourmaline Snakemake workflow
-# - the user MUST edit these parameters before running with their own data
-# - see https://github.com/aomlomics/tourmaline/wiki for detailed instructions
+# - user MUST edit these parameters before running their own data
+# - detailed instructions: https://github.com/aomlomics/tourmaline/wiki
 
 # METADATA FILE
 
