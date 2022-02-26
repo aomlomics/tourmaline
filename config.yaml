@@ -1,34 +1,42 @@
 # config.yaml - configuration file for the Tourmaline Snakemake workflow
-# - the user MUST edit these parameters before running with their own data
-# - see https://github.com/aomlomics/tourmaline/wiki for detailed instructions
+# - user MUST edit these parameters before running their own data
+# - detailed instructions: https://github.com/aomlomics/tourmaline/wiki
 
 # METADATA FILE
 
-metadata: 00-data/metadata.tsv
+# metadata file must be named as follows (or use symbolic link):
+# - 00-data/metadata.tsv
 
-# FASTQ DATA
+# standardization is recommended through use of MIxS/MIMARKS (https://gensc.org/mixs/) column headers, for example:
+# - submitted_to_insdc: {boolean}
+# - investigation_type: [eukaryote|bacteria_archaea|plasmid|virus|organelle|metagenome|metatranscriptome|mimarks-survey|mimarks-specimen|misag|mimag|miuvig]
+# - project_name: {text}
+# - experimental_factor (text or EFO and/or OBI): {termLabel} {[termID]}|{text}
+# - lat_lon (decimal degrees): {float} {float}
 
-# option 1 - if your fastq sequences are not yet imported, the parameters below will be used to find your manifest file(s)
+# FASTQ DATA (choose one option)
 
-manifest_pe: 00-data/manifest_pe.csv
-manifest_se: 00-data/manifest_se.csv
+# option 1 - if you want to start from manifest files and import per-sample fastq sequences,
+# name your manifest file(s) as follows (or use symbolic links):
+# - paired-end sequences: 00-data/manifest_pe.csv
+# - single-end sequences: 00-data/manifest_se.csv
 
-# option 2 - if your fastq sequences are already in qza format, the parameters below will be used to find your qza file(s)
+# option 2 - if your fastq sequences are already archived in qza format,
+# name your qza file(s) as follows (or use symbolic links):
+# - paired-end sequences: 01-imported/fastq_pe.qza
+# - single-end sequences: 01-imported/fastq_se.qza
 
-fastq_pe_qza: 01-imported/fastq_pe.qza
-fastq_se_qza: 01-imported/fastq_se.qza
+# REFERENCE DATABASE (choose one option)
 
-# REFERENCE DATABASE
+# option 1 - if your reference database is not yet imported, 
+# name your reference fna and tsv files as follows (or use symbolic links):
+# - reference sequences: 00-data/refseqs.fna
+# - reference taxonomy: 00-data/reftax.tsv
 
-# option 1 - if your reference database is not yet imported, the parameters below will be used to find the fna and tsv files
-
-refseqs_fna: 00-data/refseqs.fna
-reftax_tsv: 00-data/reftax.tsv
-
-# option 2 - if your reference database is already in qza format, the parameters below will be used to find your qza files
-
-refseqs_qza: 01-imported/refseqs.qza
-reftax_qza: 01-imported/reftax.qza
+# option 2 - if your reference database is already archived in qza format,
+# name your your qza files as follows (or use symbolic links):
+# - reference sequences: 01-imported/refseqs.qza
+# - reference taxonomy: 01-imported/reftax.qza
 
 # DENOISE
 
@@ -115,13 +123,29 @@ alpha_max_depth: 500
 # BETA GROUP SIGNIFICANCE
 
 # statistical test for difference between samples grouped by a metadata variable (column)
-# - column: metadata column to test beta group significance
+# - column: metadata column to test beta group significance; this column must appear in the metadata file 00-data/metadata.tsv
 # - method: choose from: permanova, anosim, permdisp
 # - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
 
 beta_group_column: region
 beta_group_method: permanova
 beta_group_pairwise: --p-pairwise
+
+# DEICODE BETA DIVERSITY
+
+# robust Aitchison PCA (and biplot ordination) with automatically estimated underlying low-rank structure
+# parameters are set to recommended defaults
+# - min_sample_count: minimum sum cutoff of samples across all features
+# - min_feature_count: minimum sum cufoff of features across all samples
+# - min_feature_frequency: minimum percentage of samples a feature must appear with value greater than zero
+# - max_iterations: number of iterations to optimize the solution
+# - num_features: number of most important features (arrows) to display in the biplot ordination
+
+deicode_min_sample_count: 500
+deicode_min_feature_count: 10
+deicode_min_feature_frequency: 0
+deicode_max_iterations: 5
+deicode_num_features: 5
 
 # REPORT THEME
 
@@ -133,11 +157,11 @@ report_theme: github
 # FILTERING
 
 # filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of:
-#     1. representative sequences
-#     2. taxonomy
-#     3. feature table
+#  1. representative sequences
+#  2. taxonomy
+#  3. feature table
 
-# filter by FEATUREID
+# filter by FEATURE ID
 # - these feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything
 # - to create a feature metadata file for filtering repseqs:
 #     1. go to 02-output-{method}-{filter}/02-alignment-tree
@@ -147,19 +171,20 @@ report_theme: github
 #          00-data/repseqs_to_filter_dada2-se.tsv
 #          00-data/repseqs_to_filter_deblur-se.tsv
 # - these paths are hard-coded (they must match those above), not specified in config.yaml
-# - to skip filtering by feature ID: provide a nonsense feature ID or don't run filtering commands
+# - TO SKIP FILTERING BY FEATURE ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands
 
 # filter by TAXONOMY
+# - features with taxonomy containing these terms will be filtered
 # - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
 # - terms are not case-sensitive
-# - to skip filtering by taxonomy: provide a nonsense term or don't run filtering commands
+# - TO SKIP FILTERING BY TAXONOMY: provide a nonsense term or don't run filtering commands
 
 exclude_terms: unassigned,eukaryota
 
 # filter by LENGTH
 # - set minimum and maximum sequence lengths to filter representative sequences by
 # - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-# - to skip filtering by length: set values to extreme values, eg (0, 10000) or don't run filtering commands
+# - TO SKIP FILTERING BY LENGTH: set values to extreme values, eg (0, 10000) or don't run filtering commands
 
 repseq_min_length: 0
 repseq_max_length: 260
@@ -167,15 +192,17 @@ repseq_max_length: 260
 # filter by ABUNDANCE & PREVALENCE
 # - set minimum abundance/prevalence limits for filtering
 # - limit is inclusive, ie, greater than or equal to minimum
-# - to skip filtering by abundance/prevalence: set values to 0 or don't run filtering commands
+# - TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands
 
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
 
 # THREADS
 
-# max number of threads for individual steps
-# threads used will be lower of this and snakemake parameter --cores
+# - max number of threads for individual rules
+# - threads used will be the lower of this and snakemake parameter --cores
+# - other_threads is used for all other rules, regardless if they can use multiple threads, 
+#   because it prevents multiple rules from running simultaneously with --cores >1
 
 dada2pe_threads: 8
 dada2se_threads: 8
@@ -184,3 +211,4 @@ alignment_threads: 8
 feature_classifier_threads: 8
 phylogeny_fasttree_threads: 8
 diversity_core_metrics_phylogenetic_threads: 8
+other_threads: 8

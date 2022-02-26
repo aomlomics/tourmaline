@@ -11,14 +11,17 @@ configfile: "config.yaml"
 
 # RULEORDER DIRECTIVES ---------------------------------------------------------
 
+ruleorder: check_inputs_params_pe > import_fastq_demux_pe
+ruleorder: check_inputs_params_se > import_fastq_demux_se
 ruleorder: summarize_fastq_demux_pe > summarize_fastq_demux_se
 ruleorder: feature_classifier > import_taxonomy_to_qza
-ruleorder: filter_taxonomy > import_taxonomy_to_qza > unzip_taxonomy_to_tsv
+ruleorder: filter_taxonomy > import_taxonomy_to_qza > export_taxonomy_to_tsv
 
 # PSEUDO-RULES: DADA2 PAIRED-END -----------------------------------------------
 
 rule dada2_pe_denoise:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table.qzv",
@@ -30,14 +33,16 @@ rule dada2_pe_denoise:
 
 rule dada2_pe_taxonomy_unfiltered:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv"
 
 rule dada2_pe_diversity_unfiltered:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-pe-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -53,14 +58,17 @@ rule dada2_pe_diversity_unfiltered:
         "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-pe-unfiltered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_pe_report_unfiltered:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "03-reports/report_dada2-pe_unfiltered.html"
 
 rule dada2_pe_taxonomy_filtered:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "02-output-dada2-pe-filtered/00-table-repseqs/table.qzv",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_features.txt",
@@ -73,8 +81,9 @@ rule dada2_pe_taxonomy_filtered:
 
 rule dada2_pe_diversity_filtered:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "02-output-dada2-pe-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-pe-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-pe-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -90,16 +99,19 @@ rule dada2_pe_diversity_filtered:
         "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-pe-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-pe-filtered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_pe_report_filtered:
     input:
+        "01-imported/check_inputs_params_pe.done",
         "03-reports/report_dada2-pe_filtered.html"
 
 # PSEUDO-RULES: DADA2 SINGLE-END -----------------------------------------------
 
 rule dada2_se_denoise:
     input:
+        "01-imported/check_inputs_params_se.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table.qzv",
@@ -111,14 +123,16 @@ rule dada2_se_denoise:
 
 rule dada2_se_taxonomy_unfiltered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
 
 rule dada2_se_diversity_unfiltered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-dada2-se-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-se-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-se-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -134,14 +148,17 @@ rule dada2_se_diversity_unfiltered:
         "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-se-unfiltered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_se_report_unfiltered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "03-reports/report_dada2-se_unfiltered.html"
 
 rule dada2_se_taxonomy_filtered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-dada2-se-filtered/00-table-repseqs/table.qzv",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_features.txt",
@@ -154,8 +171,9 @@ rule dada2_se_taxonomy_filtered:
 
 rule dada2_se_diversity_filtered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-dada2-se-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-dada2-se-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-dada2-se-filtered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-dada2-se-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -171,16 +189,19 @@ rule dada2_se_diversity_filtered:
         "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-dada2-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-dada2-se-filtered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule dada2_se_report_filtered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "03-reports/report_dada2-se_filtered.html"
 
 # PSEUDO-RULES: DEBLUR SINGLE-END ----------------------------------------------
 
 rule deblur_se_denoise:
     input:
+        "01-imported/check_inputs_params_se.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table.qzv",
@@ -192,14 +213,16 @@ rule deblur_se_denoise:
 
 rule deblur_se_taxonomy_unfiltered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
 
 rule deblur_se_diversity_unfiltered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-deblur-se-unfiltered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-deblur-se-unfiltered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-deblur-se-unfiltered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -215,14 +238,17 @@ rule deblur_se_diversity_unfiltered:
         "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se-unfiltered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-deblur-se-unfiltered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule deblur_se_report_unfiltered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "03-reports/report_deblur-se_unfiltered.html"
 
 rule deblur_se_taxonomy_filtered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-deblur-se-filtered/00-table-repseqs/table.qzv",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_features.txt",
@@ -235,8 +261,9 @@ rule deblur_se_taxonomy_filtered:
 
 rule deblur_se_diversity_filtered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "02-output-deblur-se-filtered/02-alignment-tree/rooted_tree.qzv",
-        "02-output-deblur-se-filtered/02-alignment-tree/aligned_repseqs_gaps_describe.md",
+        "02-output-deblur-se-filtered/02-alignment-tree/repseqs_properties_describe.md",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_properties.pdf",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         "02-output-deblur-se-filtered/02-alignment-tree/repseqs_to_filter_unassigned.tsv",
@@ -252,19 +279,132 @@ rule deblur_se_diversity_filtered:
         "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_emperor.qzv",
-        "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv"
+        "02-output-deblur-se-filtered/04-beta-diversity/weighted_unifrac_group_significance.qzv",
+        "02-output-deblur-se-filtered/04-beta-diversity/deicode_biplot_emperor.qzv"
 
 rule deblur_se_report_filtered:
     input:
+        "01-imported/check_inputs_params_se.done",
         "03-reports/report_deblur-se_filtered.html"
+
+# RULES: CHECKS ----------------------------------------------------------------
+
+rule check_metadata:
+    output:
+        touch("01-imported/check_metadata.done")
+    threads: config["other_threads"]
+    shell:
+        "if [ -f '00-data/metadata.tsv' ]; then "
+        "    echo 'OK: Metadata file 00-data/metadata.tsv found.'; "
+        "else echo 'Error: Metadata file 00-data/metadata.tsv not found.' && exit 1; "
+        "fi; "
+
+rule summarize_metadata:
+    input:
+        metadata="00-data/metadata.tsv",
+        check="01-imported/check_metadata.done"
+    output:
+        "01-imported/metadata_summary.md",
+        "01-imported/metadata_columns.txt"
+    threads: config["other_threads"]
+    run:
+        df = pd.read_csv(input.metadata, sep='\t')
+        cols = df.columns
+        df2 = pd.DataFrame(columns =[0,1], index=cols)
+        for col in cols:
+            if col in df.columns:
+                vc = df[col].value_counts()
+                if vc.index.shape == (0,):
+                    df2.loc[col, 0] = '(no values in column)'
+                    df2.loc[col, 1] = '--'
+                else:
+                    df2.loc[col, 0] = vc.index[0]
+                    df2.loc[col, 1] = vc.values[0]
+            else:
+                df2.loc[col, 0] = '(column not provided)'
+                df2.loc[col, 1] = '--'
+        df2.columns = ['Most common value', 'Count']
+        df2.index.name = 'Column name'
+        outstr = tabulate(df2, tablefmt="pipe", headers="keys")
+        with open(output[0], 'w') as target:
+            target.write(outstr)
+            target.write('\n')
+        with open(output[1], 'w') as target:
+            [target.write('%s\n' % i) for i in cols]
+
+rule check_inputs_params_pe:
+    input:
+        "01-imported/metadata_columns.txt",
+        check="01-imported/check_metadata.done"
+    params:
+        column=config["beta_group_column"],
+    output:
+        touch("01-imported/check_inputs_params_pe.done")
+    threads: config["other_threads"]
+    shell:
+        "if [ -f '01-imported/fastq_pe.qza' ]; then "
+        "    echo 'OK: FASTQ archive 01-imported/fastq_pe.qza found. FASTQ manifest file 00-data/manifest_pe.csv not required.'; "
+        "elif [ -f '00-data/manifest_pe.csv' ]; then "
+        "    echo 'OK: FASTQ manifest file 00-data/manifest_pe.csv found. It will be used to create FASTQ archive 01-imported/fastq_pe.qza.'; "
+        "else echo 'Error: FASTQ sequence data not found. Either 00-data/manifest_pe.csv or 01-imported/fastq_pe.qza is required.' && exit 1; "
+        "fi; "
+        "if [ -f '01-imported/refseqs.qza' ]; then "
+        "    echo 'OK: Reference sequences archive 01-imported/refseqs.qza found. Reference sequences FASTA file 00-data/refseqs.fna not required.'; "
+        "elif [ -f '00-data/refseqs.fna' ]; then "
+        "    echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found. It will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
+        "else echo 'Error: Reference sequences not found. Either 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
+        "fi; "
+        "if [ -f '01-imported/reftax.qza' ]; then "
+        "    echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found. Reference taxonomy file 00-data/reftax.tsv not required.'; "
+        "elif [ -f '00-data/reftax.tsv' ]; then "
+        "    echo 'OK: Reference taxonomy file 00-data/reftax.tsv found. It will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
+        "else echo 'Error: Reference taxonomy not found. Either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
+        "fi; "
+        "if grep -q ^{params.column}$ {input}; then "
+        "    echo 'OK: Metadata contains the column \"{params.column}\" that is specified as beta_group_column in config.yaml.'; "
+        "else echo 'Error: Metadata does not contain the column \"{params.column}\" that is specified as beta_group_column in config.yaml.' && exit 1; "
+        "fi"
+
+rule check_inputs_params_se:
+    input:
+        "01-imported/metadata_columns.txt"
+    params:
+        column=config["beta_group_column"],
+    output:
+        touch("01-imported/check_inputs_params_se.done")
+    threads: config["other_threads"]
+    shell:
+        "if [ -f '01-imported/fastq_se.qza' ]; then "
+        "    echo 'OK: FASTQ archive 01-imported/fastq_se.qza found. FASTQ manifest file 00-data/manifest_se.csv not required.'; "
+        "elif [ -f '00-data/manifest_se.csv' ]; then "
+        "    echo 'OK: FASTQ manifest file 00-data/manifest_se.csv found. It will be used to create FASTQ archive 01-imported/fastq_se.qza.'; "
+        "else echo 'Error: FASTQ sequence data not found. Either 00-data/manifest_se.csv or 01-imported/fastq_se.qza is required.' && exit 1; "
+        "fi; "
+        "if [ -f '01-imported/refseqs.qza' ]; then "
+        "    echo 'OK: Reference sequences archive 01-imported/refseqs.qza found. Reference sequences FASTA file 00-data/refseqs.fna not required.'; "
+        "elif [ -f '00-data/refseqs.fna' ]; then "
+        "    echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found. It will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
+        "else echo 'Error: Reference sequences not found. Either 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
+        "fi; "
+        "if [ -f '01-imported/reftax.qza' ]; then "
+        "    echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found. Reference taxonomy file 00-data/reftax.tsv not required.'; "
+        "elif [ -f '00-data/reftax.tsv' ]; then "
+        "    echo 'OK: Reference taxonomy file 00-data/reftax.tsv found. It will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
+        "else echo 'Error: Reference taxonomy not found. Either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
+        "fi; "
+        "if grep -q ^{params.column}$ {input}; then "
+        "    echo 'OK: Metadata contains the column \"{params.column}\" that is specified as beta_group_column in config.yaml.'; "
+        "else echo 'Error: Metadata does not contain the column \"{params.column}\" that is specified as beta_group_column in config.yaml.' && exit 1; "
+        "fi"
 
 # RULES: IMPORT ----------------------------------------------------------------
 
 rule import_ref_seqs:
     input:
-        config["refseqs_fna"]
+        "00-data/refseqs.fna"
     output:
-        config["refseqs_qza"]
+        "01-imported/refseqs.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Sequence]' "
@@ -273,9 +413,10 @@ rule import_ref_seqs:
 
 rule import_ref_tax:
     input:
-        config["reftax_tsv"]
+        "00-data/refseqs.tsv"
     output:
-        config["reftax_qza"]
+        "01-imported/reftax.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Taxonomy]' "
@@ -285,25 +426,29 @@ rule import_ref_tax:
 
 rule import_fastq_demux_pe:
     input:
-        config["manifest_pe"]
+        "00-data/manifest_pe.csv",
+        "01-imported/check_inputs_params_pe.done"
     output:
-        config["fastq_pe_qza"]
+        "01-imported/fastq_pe.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'SampleData[PairedEndSequencesWithQuality]' "
-        "--input-path {input} "
+        "--input-path {input[0]} "
         "--output-path {output} "
         "--input-format PairedEndFastqManifestPhred33"
 
 rule import_fastq_demux_se:
     input:
-        config["manifest_se"]
+        "00-data/manifest_se.csv",
+        "01-imported/check_inputs_params_se.done"
     output:
-        config["fastq_se_qza"]
+        "01-imported/fastq_se.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'SampleData[SequencesWithQuality]' "
-        "--input-path {input} "
+        "--input-path {input[0]} "
         "--output-path {output} "
         "--input-format SingleEndFastqManifestPhred33"
 
@@ -311,29 +456,34 @@ rule import_fastq_demux_se:
 
 rule summarize_fastq_demux_pe:
     input:
-        config["fastq_pe_qza"]
+        "01-imported/fastq_pe.qza",
+        "01-imported/check_inputs_params_pe.done"
     output:
         "01-imported/fastq_summary.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime demux summarize "
-        "--i-data {input} "
+        "--i-data {input[0]} "
         "--o-visualization {output}"
 
 rule summarize_fastq_demux_se:
     input:
-        config["fastq_se_qza"]
+        "01-imported/fastq_se.qza",
+        "01-imported/check_inputs_params_se.done"
     output:
         "01-imported/fastq_summary.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime demux summarize "
-        "--i-data {input} "
+        "--i-data {input[0]} "
         "--o-visualization {output}"
 
-rule unzip_fastq_summary:
+rule export_fastq_summary_to_counts:
     input:
         "01-imported/fastq_summary.qzv"
     output:
         "01-imported/fastq_counts.tsv"
+    threads: config["other_threads"]
     shell:
         "unzip -qq -o {input} -d temp0; "
         "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
@@ -344,6 +494,7 @@ rule describe_fastq_counts:
         "01-imported/fastq_counts.tsv"
     output:
         "01-imported/fastq_counts_describe.md"
+    threads: config["other_threads"]
     run:
         s = pd.read_csv(input[0], index_col=0, sep='\t')
         t = s.describe()
@@ -356,7 +507,8 @@ rule describe_fastq_counts:
 
 rule denoise_dada2_pe:
     input:
-        config["fastq_pe_qza"]
+        "01-imported/fastq_pe.qza",
+        "01-imported/check_inputs_params_pe.done"
     params:
         trunclenf=config["dada2pe_trunc_len_f"],
         trunclenr=config["dada2pe_trunc_len_r"],
@@ -377,7 +529,7 @@ rule denoise_dada2_pe:
     threads: config["dada2pe_threads"]
     shell:
         "qiime dada2 denoise-paired "
-        "--i-demultiplexed-seqs {input} "
+        "--i-demultiplexed-seqs {input[0]} "
         "--p-trunc-len-f {params.trunclenf} "
         "--p-trunc-len-r {params.trunclenr} "
         "--p-trim-left-f {params.trimleftf} "
@@ -398,7 +550,8 @@ rule denoise_dada2_pe:
 
 rule denoise_dada2_se:
     input:
-        config["fastq_se_qza"]
+        "01-imported/fastq_se.qza",
+        "01-imported/check_inputs_params_se.done"
     params:
         trunclen=config["dada2se_trunc_len"],
         trimleft=config["dada2se_trim_left"],
@@ -416,7 +569,7 @@ rule denoise_dada2_se:
     threads: config["dada2se_threads"]
     shell:
         "qiime dada2 denoise-single "
-        "--i-demultiplexed-seqs {input} "
+        "--i-demultiplexed-seqs {input[0]} "
         "--p-trunc-len {params.trunclen} "
         "--p-trim-left {params.trimleft} "
         "--p-max-ee {params.maxee} "
@@ -434,8 +587,9 @@ rule denoise_dada2_se:
 
 rule denoise_deblur_se:
     input:
-        seqs=config["fastq_se_qza"],
-        refseqs=config["refseqs_qza"]
+        seqs="01-imported/fastq_se.qza",
+        refseqs="01-imported/refseqs.qza",
+        check="01-imported/check_inputs_params_se.done"
     params:
         trimlength=config["deblur_trim_length"],
         samplestats=config["deblur_sample_stats"],
@@ -473,30 +627,34 @@ rule denoise_deblur_se:
 rule summarize_feature_table:
     input:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
-        metadata=config["metadata"]
+        metadata="00-data/metadata.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime feature-table summarize "
         "--i-table {input.table} "
         "--m-sample-metadata-file {input.metadata} "
         "--o-visualization {output}"
 
-rule unzip_table_to_biom:
+rule export_table_to_biom:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/table.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
+    threads: config["other_threads"]
     shell:
-        "unzip -qq -o {input} -d temp1; "
-        "mv temp1/*/data/feature-table.biom {output}; "
-        "/bin/rm -r temp1"
+        "qiime tools export "
+        "--input-path {input} "
+        "--output-path {output} "
+        "--output-format BIOMV210Format"
 
 rule summarize_biom_samples:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary_samples.txt"
+    threads: config["other_threads"]
     shell:
         "biom summarize-table "
         "--input-fp {input} "
@@ -509,6 +667,7 @@ rule summarize_biom_features:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary_features.txt"
+    threads: config["other_threads"]
     shell:
         "biom summarize-table "
         "--observations "
@@ -522,26 +681,30 @@ rule visualize_repseqs:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime feature-table tabulate-seqs "
         "--i-data {input} "
         "--o-visualization {output}"
 
-rule unzip_repseqs_to_fasta:
+rule export_repseqs_to_fasta:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
+    threads: config["other_threads"]
     shell:
-        "unzip -qq -o {input} -d temp2; "
-        "mv temp2/*/data/dna-sequences.fasta {output}; "
-        "/bin/rm -r temp2"
+        "qiime tools export "
+        "--input-path {input} "
+        "--output-path {output} "
+        "--output-format DNAFASTAFormat"
 
 rule repseqs_detect_amplicon_locus:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt"
+    threads: config["other_threads"]
     shell:
         "python scripts/detect_amplicon_locus.py -i {input} > {output}"
 
@@ -550,6 +713,7 @@ rule repseqs_lengths:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
+    threads: config["other_threads"]
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
@@ -558,6 +722,7 @@ rule repseqs_lengths_describe:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths_describe.md"
+    threads: config["other_threads"]
     run:
         s = pd.read_csv(input[0], header=None, index_col=0, sep='\t')
         t = s.describe()
@@ -570,8 +735,8 @@ rule repseqs_lengths_describe:
 
 rule feature_classifier:
     input:
-        refseqs=config["refseqs_qza"],
-        reftax=config["reftax_qza"],
+        refseqs="01-imported/refseqs.qza",
+        reftax="01-imported/reftax.qza",
         repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
@@ -616,6 +781,7 @@ rule visualize_taxonomy:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime metadata tabulate "
         "--m-input-file {input} "
@@ -625,9 +791,10 @@ rule taxa_barplot:
     input:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
-        metadata=config["metadata"]
+        metadata="00-data/metadata.tsv"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime taxa barplot "
         "--i-table {input.table} "
@@ -635,21 +802,24 @@ rule taxa_barplot:
         "--m-metadata-file {input.metadata} "
         "--o-visualization {output}"
 
-rule unzip_taxonomy_to_tsv:
+rule export_taxonomy_to_tsv:
     input:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
+    threads: config["other_threads"]
     shell:
-        "unzip -qq -o {input} -d temp3; "
-        "mv temp3/*/data/taxonomy.tsv {output}; "
-        "/bin/rm -r temp3"
+        "qiime tools export "
+        "--input-path {input} "
+        "--output-path {output} "
+        "--output-format TSVTaxonomyFormat"
 
 rule import_taxonomy_to_qza:
     input:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Taxonomy]' "
@@ -709,9 +879,10 @@ rule align_repseqs:
         "    --i-alignment tempfile_unmasked_aligned_repseqs.qza "
         "    --o-masked-alignment {output.alnqza}; "
         "    /bin/rm tempfile_unmasked_aligned_repseqs.qza; "
-        "    unzip -qq -o {output.alnqza} -d temp4; "
-        "    mv temp4/*/data/aligned-dna-sequences.fasta {output.alnfasta}; "
-        "    /bin/rm -r temp4; "
+        "    qiime tools export "
+        "    --input-path {output.alnqza} "
+        "    --output-path {output.alnfasta} "
+        "    --output-format AlignedDNAFASTAFormat; "
         "else "
         "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
         "fi"
@@ -733,6 +904,7 @@ rule phylogeny_midpoint_root:
         "02-output-{method}-{filter}/02-alignment-tree/unrooted_tree.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza"
+    threads: config["other_threads"]
     shell:
         "qiime phylogeny midpoint-root "
         "--i-tree {input} "
@@ -742,11 +914,12 @@ rule visualize_tree:
     input:
         tree="02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza",
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
-        metadata=config["metadata"],
+        metadata="00-data/metadata.tsv",
         taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
         outliers="02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime empress community-plot "
         "--i-tree {input.tree} "
@@ -761,21 +934,22 @@ rule alignment_count_gaps:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
+    threads: config["other_threads"]
     shell:
         "bash scripts/alignment_count_gaps.sh < {input} > {output}"
 
-rule alignment_gaps_describe:
-    input:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
-    output:
-        "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
-    run:
-        gaps = pd.read_csv(input[0], header=None, sep='\t')
-        t = gaps.describe()
-        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
+# rule alignment_gaps_describe:
+#     input:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
+#     output:
+#         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps_describe.md"
+#     run:
+#         gaps = pd.read_csv(input[0], header=None, sep='\t')
+#         t = gaps.describe()
+#         outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Alignment gaps per sequence'])
+#         with open(output[0], 'w') as target:
+#             target.write(outstr)
+#             target.write('\n')
 
 rule alignment_detect_outliers:
     input:
@@ -786,6 +960,7 @@ rule alignment_detect_outliers:
         threshold = config["odseq_threshold"]
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv"
+    threads: config["other_threads"]
     shell:
         "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} temp_odseq; "
         "cat temp_odseq | sed 's/^X//' > {output}; "
@@ -803,6 +978,7 @@ rule tabulate_plot_repseq_properties:
         propdescribe="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties_describe.md",
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
+    threads: config["other_threads"]
     run:
         lengths = pd.read_csv(input['lengths'], names=['length'], index_col=0, sep='\t')
         gaps = pd.read_csv(input['gaps'], names=['gaps'], index_col=0, sep='\t')
@@ -842,6 +1018,7 @@ rule import_outliers_to_qza:
         "02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
+    threads: config["other_threads"]
     shell:
         "qiime tools import "
         "--type 'FeatureData[Importance]' "
@@ -854,6 +1031,7 @@ rule tabulate_repseqs_to_filter:
     output:
         outliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         unassigned="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_unassigned.tsv"
+    threads: config["other_threads"]
     shell:
         "cat {input.proptsv} | grep -i 'outlier\|true' | cut -f1,4 > {output.outliers}; "
         "cat {input.proptsv} | grep -i 'taxonomy\|unassigned' | cut -f1,5 > {output.unassigned}"
@@ -877,6 +1055,7 @@ rule filter_sequences_table:
     output:
         repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
+    threads: config["other_threads"]
     shell:
         # FILTER SEQUENCES BY TAXONOMY
         "qiime taxa filter-seqs "
@@ -926,6 +1105,7 @@ rule filter_taxonomy:
     output:
         taxonomytsv="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv",
         taxonomyqza="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"        
+    threads: config["other_threads"]
     run:
         df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
         df_repseqs = pd.read_csv(input['repseqs'], header=None, index_col=0, sep='\t')
@@ -941,11 +1121,12 @@ rule diversity_alpha_rarefaction:
     input:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         phylogeny="02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza",
-        metadata=config["metadata"]
+        metadata="00-data/metadata.tsv"
     params:
         maxdepth=config["alpha_max_depth"]
     output:
         "02-output-{method}-{filter}/03-alpha-diversity/alpha_rarefaction.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime diversity alpha-rarefaction "
         "--i-table {input.table} "
@@ -962,7 +1143,7 @@ rule diversity_core_metrics_phylogenetic:
     input:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         phylogeny="02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza",
-        metadata=config["metadata"]
+        metadata="00-data/metadata.tsv"
     params:
         samplingdepth=config["core_sampling_depth"]
     output:
@@ -1012,9 +1193,10 @@ rule diversity_core_metrics_phylogenetic:
 rule diversity_alpha_group_significance:
     input:
         alphadiversity="02-output-{method}-{filter}/03-alpha-diversity/{metric}_vector.qza",
-        metadata=config["metadata"]
+        metadata="00-data/metadata.tsv"
     output:
         "02-output-{method}-{filter}/03-alpha-diversity/{metric}_group_significance.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime diversity alpha-group-significance "
         "--i-alpha-diversity {input.alphadiversity} "
@@ -1024,13 +1206,14 @@ rule diversity_alpha_group_significance:
 rule diversity_beta_group_significance:
     input:
         distancematrix="02-output-{method}-{filter}/04-beta-diversity/{metric}_distance_matrix.qza",
-        metadata=config["metadata"]
+        metadata="00-data/metadata.tsv"
     params:
         column=config["beta_group_column"],
         method=config["beta_group_method"],
         pairwise=config["beta_group_pairwise"]
     output:
         "02-output-{method}-{filter}/04-beta-diversity/{metric}_group_significance.qzv"
+    threads: config["other_threads"]
     shell:
         "qiime diversity beta-group-significance "
         "--i-distance-matrix {input.distancematrix} "
@@ -1040,40 +1223,50 @@ rule diversity_beta_group_significance:
         "{params.pairwise} "
         "--o-visualization {output}"
 
-# RULES: REPORT ----------------------------------------------------------------
-
-rule summarize_metadata:
+rule deicode_auto_rpca:
     input:
-        metadata=config["metadata"]
+        table="02-output-{method}-{filter}/00-table-repseqs/table.qza"
+    params:
+        minsamplecount=config["deicode_min_sample_count"],
+        minfeaturecount=config["deicode_min_feature_count"],
+        minfeaturefrequency=config["deicode_min_feature_frequency"],
+        maxiterations=config["deicode_max_iterations"]
     output:
-        "03-reports/metadata_summary.md"
-    run:
-        df = pd.read_csv(input.metadata, sep='\t')
-        cols = df.columns
-        df2 = pd.DataFrame(columns =[0,1], index=cols)
-        for col in cols:
-            if col in df.columns:
-                vc = df[col].value_counts()
-                if vc.index.shape == (0,):
-                    df2.loc[col, 0] = '(no values in column)'
-                    df2.loc[col, 1] = '--'
-                else:
-                    df2.loc[col, 0] = vc.index[0]
-                    df2.loc[col, 1] = vc.values[0]
-            else:
-                df2.loc[col, 0] = '(column not provided)'
-                df2.loc[col, 1] = '--'
-        df2.columns = ['Most common value', 'Count']
-        df2.index.name = 'Column name'
-        outstr = tabulate(df2, tablefmt="pipe", headers="keys")
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
+        biplot="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot.qza",
+        distancematrix="02-output-{method}-{filter}/04-beta-diversity/deicode_distance_matrix.qza"
+    threads: config["other_threads"]
+    shell:
+        "qiime deicode auto-rpca "
+        "--i-table {input.table} "
+        "--p-min-sample-count {params.minsamplecount} "
+        "--p-min-feature-count {params.minfeaturecount} "
+        "--p-min-feature-frequency {params.minfeaturefrequency} "
+        "--p-max-iterations {params.maxiterations} "
+        "--o-biplot {output.biplot} "
+        "--o-distance-matrix {output.distancematrix}"
+
+rule emperor_biplot:
+    input:
+        biplot="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot.qza",
+        metadata="00-data/metadata.tsv"
+    params:
+        numfeatures=config["deicode_num_features"]
+    output:
+        emperor="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
+    threads: config["other_threads"]
+    shell:
+        "qiime emperor biplot "
+        "--i-biplot {input.biplot} "
+        "--m-sample-metadata-file {input.metadata} "
+        "--o-visualization {output.emperor} "
+        "--p-number-of-features {params.numfeatures}"
+
+# RULES: REPORT ----------------------------------------------------------------
 
 rule generate_report_md:
     input:
         configfile="config.yaml",
-        mdsummary="03-reports/metadata_summary.md",
+        mdsummary="01-imported/metadata_summary.md",
         fastq="01-imported/fastq_counts_describe.md",
         amplicontype="02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt",
         repseqstsv="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.tsv",
@@ -1102,9 +1295,11 @@ rule generate_report_md:
         viswuemp="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_emperor.qzv",
         viswugs="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_group_significance.qzv",
         visuwuemp="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
-        visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv"
+        visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
+        visbiplotemp="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
     output:
         "03-reports/report_{method}_{filter}.md"
+    threads: config["other_threads"]
     shell:
         "echo '# Tourmaline Report' > {output};"
         "echo '' >> {output};"
@@ -1276,6 +1471,8 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo Unweighted UniFrac QZV: \[{input.visuwuemp}\]\(../{input.visuwuemp}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
+        "echo DEICODE Biplot QZV: \[{input.visbiplotemp}\]\(../{input.visbiplotemp}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
         "echo '### Beta Group Significance' >> {output};"
         "echo '' >> {output};"
         "echo Bray-Curtis QZV: \[{input.visbcgs}\]\(../{input.visbcgs}\){{target=\"_blank\"}} >> {output};"
@@ -1303,6 +1500,7 @@ rule generate_report_html:
         theme=config["report_theme"]
     output:
         "03-reports/report_{method}_{filter}.html"
+    threads: config["other_threads"]
     shell:
         "pandoc -i {input} -o {output};"
         "echo '<!DOCTYPE html>' > header.html;"
