@@ -1,13 +1,13 @@
 # config.yaml - configuration file for the Tourmaline Snakemake workflow
-# - user MUST edit these parameters before running their own data
-# - detailed instructions: https://github.com/aomlomics/tourmaline/wiki
+# User MUST edit these parameters before running their own data.
+# Detailed instructions: https://github.com/aomlomics/tourmaline/wiki.
 
 # METADATA FILE
 
-# metadata file must be named as follows (or use symbolic link):
+# Metadata file must be named as follows (or use symbolic link):
 # - 00-data/metadata.tsv
 
-# standardization is recommended through use of MIxS/MIMARKS (https://gensc.org/mixs/) column headers, for example:
+# Standardization is recommended through use of MIxS/MIMARKS (https://gensc.org/mixs/) column headers, for example:
 # - submitted_to_insdc: {boolean}
 # - investigation_type: [eukaryote|bacteria_archaea|plasmid|virus|organelle|metagenome|metatranscriptome|mimarks-survey|mimarks-specimen|misag|mimag|miuvig]
 # - project_name: {text}
@@ -16,32 +16,32 @@
 
 # FASTQ DATA (choose one option)
 
-# option 1 - if you want to start from manifest files and import per-sample fastq sequences,
-# name your manifest file(s) as follows (or use symbolic links):
+# Option 1 - if you want to start from manifest files and import per-sample fastq sequences,
+# Name your manifest file(s) as follows (or use symbolic links):
 # - paired-end sequences: 00-data/manifest_pe.csv
 # - single-end sequences: 00-data/manifest_se.csv
 
-# option 2 - if your fastq sequences are already archived in qza format,
-# name your qza file(s) as follows (or use symbolic links):
+# Option 2 - if your fastq sequences are already archived in qza format,
+# Name your qza file(s) as follows (or use symbolic links):
 # - paired-end sequences: 01-imported/fastq_pe.qza
 # - single-end sequences: 01-imported/fastq_se.qza
 
 # REFERENCE DATABASE (choose one option)
 
-# option 1 - if your reference database is not yet imported, 
-# name your reference fna and tsv files as follows (or use symbolic links):
+# Option 1 - if your reference database is not yet imported, 
+# Name your reference fna and tsv files as follows (or use symbolic links):
 # - reference sequences: 00-data/refseqs.fna
 # - reference taxonomy: 00-data/reftax.tsv
 
-# option 2 - if your reference database is already archived in qza format,
-# name your your qza files as follows (or use symbolic links):
+# Option 2 - if your reference database is already archived in qza format,
+# Name your your qza files as follows (or use symbolic links):
 # - reference sequences: 01-imported/refseqs.qza
 # - reference taxonomy: 01-imported/reftax.qza
 
 # DENOISE
 
-# dada2 paired-end
-# qiime command: qiime dada2 denoise-paired
+# DADA2 PAIRED-END
+# For more info run: qiime dada2 denoise-paired --help
 
 dada2pe_trunc_len_f: 240
 dada2pe_trunc_len_r: 190
@@ -56,8 +56,8 @@ dada2pe_min_fold_parent_over_abundance: 1
 dada2pe_n_reads_learn: 1000000
 dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
-# dada2 single-end
-# qiime command: qiime dada2 denoise-single
+# DADA2 SINGLE-END
+# For more info run: qiime dada2 denoise-single --help
 
 dada2se_trunc_len: 240
 dada2se_trim_left: 0
@@ -69,8 +69,8 @@ dada2se_min_fold_parent_over_abundance: 1
 dada2se_n_reads_learn: 1000000
 dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
-# deblur (single-end)
-# qiime command: qiime deblur denoise-other
+# DEBLUR SINGLE-END
+# For more info run: qiime deblur denoise-other --help
 
 deblur_trim_length: 240
 deblur_sample_stats: --p-sample-stats
@@ -83,18 +83,20 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # TAXONOMIC CLASSIFICATION
 
-# taxonomic classification of the representative sequences
+# Taxonomic classification of the representative sequences.
 # - method: choose from: naive-bayes, consensus-blast, consensus-vsearch
 # - parameters: add arbitrary parameters or at least one parameter; see "qiime feature-classifier COMMAND --help"
+# For more info run: qiime feature-classifier [fit-classifier-naive-bayes|classify-sklearn|classify-consensus-blast|classify-consensus-vsearch] --help
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
 # MULTIPLE SEQUENCE ALIGNMENT
 
-# multiple sequence alignment of the representative sequences
+# Multiple sequence alignment of the representative sequences.
 # - method: choose from: muscle, clustalo, mafft
 # - muscle_maxiters: maximum number of iterations (integer, default 16)
 # - muscle_diags: choose from: -diags (find diagonals - faster for similar sequences) or leave blank
+# For more info run: muscle, clustalo --help, qiime alignment [mafft|mask] --help
 
 alignment_method: muscle
 alignment_muscle_maxiters: 2
@@ -102,10 +104,11 @@ alignment_muscle_diags: -diags
 
 # OUTLIER DETECTION
 
-# representative sequence outlier detection using odseq
+# Representative sequence outlier detection using odseq.
 # - distance_metric: choose from: linear, affine
 # - bootstrap_replicates: number of bootstrap replicates (integer)
 # - threshold: probability to be at right of the bootstrap scores distribution (float)
+# For more info see: https://www.bioconductor.org/packages/release/bioc/html/odseq.html
 
 odseq_distance_metric: linear
 odseq_bootstrap_replicates: 100
@@ -113,7 +116,7 @@ odseq_threshold: 0.025
 
 # SUBSAMPLING (RAREFACTION)
 
-# subsample (rarefy) data to have an even number of observations per sample
+# Subsample (rarefy) data to have an even number of observations per sample.
 # - core_sampling_depth: subsampling depth for core diversity analyses
 # - alpha_max_depth: maximum subsampling depth for alpha diversity rarefaction analysis
 
@@ -122,7 +125,7 @@ alpha_max_depth: 500
 
 # BETA GROUP SIGNIFICANCE
 
-# statistical test for difference between samples grouped by a metadata variable (column)
+# Statistical test for difference between samples grouped by a metadata variable (column).
 # - column: metadata column to test beta group significance; this column must appear in the metadata file 00-data/metadata.tsv
 # - method: choose from: permanova, anosim, permdisp
 # - pairwise: choose from: --p-no-pairwise, --p-pairwise (can be very slow)
@@ -133,13 +136,14 @@ beta_group_pairwise: --p-pairwise
 
 # DEICODE BETA DIVERSITY
 
-# robust Aitchison PCA (and biplot ordination) with automatically estimated underlying low-rank structure
-# parameters are set to recommended defaults
+# Robust Aitchison PCA (and biplot ordination) with automatically estimated underlying low-rank structure.
+# Parameters are set to recommended defaults:
 # - min_sample_count: minimum sum cutoff of samples across all features
 # - min_feature_count: minimum sum cufoff of features across all samples
 # - min_feature_frequency: minimum percentage of samples a feature must appear with value greater than zero
 # - max_iterations: number of iterations to optimize the solution
 # - num_features: number of most important features (arrows) to display in the biplot ordination
+# For more info run: qiime deicode auto-rpca --help
 
 deicode_min_sample_count: 500
 deicode_min_feature_count: 10
@@ -149,60 +153,64 @@ deicode_num_features: 5
 
 # REPORT THEME
 
-# report theme for html version
-# choose from: github, gothic, newsprint, night, pixyll, whitey
+# Report theme for html version.
+# Choose from: github, gothic, newsprint, night, pixyll, whitey.
 
 report_theme: github
 
 # FILTERING
 
-# filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of:
-#  1. representative sequences
-#  2. taxonomy
-#  3. feature table
+# Filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of:
+#   1. representative sequences
+#   2. taxonomy
+#   3. feature table
 
-# filter by FEATURE ID
-# - these feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything
-# - to create a feature metadata file for filtering repseqs:
-#     1. go to 02-output-{method}-{filter}/02-alignment-tree
-#     2. merge (removing duplicates) or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
-#     3. rename to the file name below corresponding to your method:
-#          00-data/repseqs_to_filter_dada2-pe.tsv
-#          00-data/repseqs_to_filter_dada2-se.tsv
-#          00-data/repseqs_to_filter_deblur-se.tsv
-# - these paths are hard-coded (they must match those above), not specified in config.yaml
-# - TO SKIP FILTERING BY FEATURE ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands
+# FILTER BY FEATURE ID
+# These feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything.
+# To create a feature metadata file for filtering repseqs:
+#   1. go to 02-output-{method}-{filter}/02-alignment-tree
+#   2. merge (removing duplicates) or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
+#   3. rename to the file name below corresponding to your method:
+#       00-data/repseqs_to_filter_dada2-pe.tsv
+#       00-data/repseqs_to_filter_dada2-se.tsv
+#       00-data/repseqs_to_filter_deblur-se.tsv
+# These paths are hard-coded (they must match those above), not specified in config.yaml
+# For more info run: qiime feature-table [filter-seqs|filter-features] --help
+# TO SKIP FILTERING BY FEATURE ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands.
 
-# filter by TAXONOMY
-# - features with taxonomy containing these terms will be filtered
-# - separate terms with commas (e.g., mitochondria,chloroplast,eukaryota)
-# - terms are not case-sensitive
-# - TO SKIP FILTERING BY TAXONOMY: provide a nonsense term or don't run filtering commands
+# FILTER BY TAXONOMY
+# Features with taxonomy containing these terms will be filtered.
+# Separate terms with commas (e.g., mitochondria,chloroplast,eukaryota).
+# Terms are not case-sensitive.
+# For more info run: qiime taxa filter-seqs --help
+# TO SKIP FILTERING BY TAXONOMY: provide a nonsense term or don't run filtering commands.
 
 exclude_terms: unassigned,eukaryota
 
-# filter by LENGTH
-# - set minimum and maximum sequence lengths to filter representative sequences by
-# - limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum
-# - TO SKIP FILTERING BY LENGTH: set values to extreme values, eg (0, 10000) or don't run filtering commands
+# FILTER BY LENGTH
+# Set minimum and maximum sequence lengths to filter representative sequences by.
+# Limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum.
+# For more info run: qiime feature-table filter-seqs --help
+# TO SKIP FILTERING BY LENGTH: set values to extreme values, eg (0, 10000) or don't run filtering commands.
 
 repseq_min_length: 0
 repseq_max_length: 260
 
-# filter by ABUNDANCE & PREVALENCE
-# - set minimum abundance/prevalence limits for filtering
-# - limit is inclusive, ie, greater than or equal to minimum
-# - TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands
+# FILTER BY ABUNDANCE & PREVALENCE
+# Set minimum abundance/prevalence limits for filtering.
+# Limit is inclusive, ie, greater than or equal to minimum.
+# For more info run: qiime feature-table filter-features-conditionally --help
+# TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands.
 
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
 
 # THREADS
 
-# - max number of threads for individual rules
-# - threads used will be the lower of this and snakemake parameter --cores
-# - other_threads is used for all other rules, regardless if they can use multiple threads, 
-#   because it prevents multiple rules from running simultaneously with --cores >1
+# Max number of threads for individual rules.
+# Threads used will be the lower of this and snakemake parameter --cores.
+# Parameter other_threads is used for all other rules, regardless if they can use multiple threads, 
+# because it prevents multiple rules from running simultaneously with --cores >1.
 
 dada2pe_threads: 8
 dada2se_threads: 8
