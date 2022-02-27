@@ -24,7 +24,7 @@ rule dada2_pe_denoise:
         "01-imported/check_inputs_params_pe.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
-        "02-output-dada2-pe-unfiltered/00-table-repseqs/table.qzv",
+        "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs.qzv",
@@ -69,7 +69,7 @@ rule dada2_pe_report_unfiltered:
 rule dada2_pe_taxonomy_filtered:
     input:
         "01-imported/check_inputs_params_pe.done",
-        "02-output-dada2-pe-filtered/00-table-repseqs/table.qzv",
+        "02-output-dada2-pe-filtered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs.qzv",
@@ -114,7 +114,7 @@ rule dada2_se_denoise:
         "01-imported/check_inputs_params_se.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
-        "02-output-dada2-se-unfiltered/00-table-repseqs/table.qzv",
+        "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/repseqs.qzv",
@@ -159,7 +159,7 @@ rule dada2_se_report_unfiltered:
 rule dada2_se_taxonomy_filtered:
     input:
         "01-imported/check_inputs_params_se.done",
-        "02-output-dada2-se-filtered/00-table-repseqs/table.qzv",
+        "02-output-dada2-se-filtered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs.qzv",
@@ -204,7 +204,7 @@ rule deblur_se_denoise:
         "01-imported/check_inputs_params_se.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
-        "02-output-deblur-se-unfiltered/00-table-repseqs/table.qzv",
+        "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary.qzv",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_features.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/repseqs.qzv",
@@ -249,7 +249,7 @@ rule deblur_se_report_unfiltered:
 rule deblur_se_taxonomy_filtered:
     input:
         "01-imported/check_inputs_params_se.done",
-        "02-output-deblur-se-filtered/00-table-repseqs/table.qzv",
+        "02-output-deblur-se-filtered/00-table-repseqs/table_summary.qzv",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_features.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs.qzv",
@@ -629,7 +629,7 @@ rule summarize_feature_table:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         metadata="00-data/metadata.tsv"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/table.qzv"
+        "02-output-{method}-{filter}/00-table-repseqs/table_summary.qzv"
     threads: config["other_threads"]
     shell:
         "qiime feature-table summarize "
@@ -1281,7 +1281,7 @@ rule generate_report_md:
         visrepseqs="02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv",
         tsvtaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv",
         vistaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv",
-        vistable="02-output-{method}-{filter}/00-table-repseqs/table.qzv",
+        vistable="02-output-{method}-{filter}/00-table-repseqs/table_summary.qzv",
         vistaxbar="02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv",
         visalpharare="02-output-{method}-{filter}/03-alpha-diversity/alpha_rarefaction.qzv",
         visevengs="02-output-{method}-{filter}/03-alpha-diversity/evenness_group_significance.qzv",
