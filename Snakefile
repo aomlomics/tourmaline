@@ -24,7 +24,7 @@ rule dada2_pe_denoise:
         "01-imported/check_inputs_params_pe.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
-        "02-output-dada2-pe-unfiltered/00-table-repseqs/table.qzv",
+        "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs.qzv",
@@ -69,7 +69,7 @@ rule dada2_pe_report_unfiltered:
 rule dada2_pe_taxonomy_filtered:
     input:
         "01-imported/check_inputs_params_pe.done",
-        "02-output-dada2-pe-filtered/00-table-repseqs/table.qzv",
+        "02-output-dada2-pe-filtered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs.qzv",
@@ -114,7 +114,7 @@ rule dada2_se_denoise:
         "01-imported/check_inputs_params_se.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
-        "02-output-dada2-se-unfiltered/00-table-repseqs/table.qzv",
+        "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-se-unfiltered/00-table-repseqs/repseqs.qzv",
@@ -159,7 +159,7 @@ rule dada2_se_report_unfiltered:
 rule dada2_se_taxonomy_filtered:
     input:
         "01-imported/check_inputs_params_se.done",
-        "02-output-dada2-se-filtered/00-table-repseqs/table.qzv",
+        "02-output-dada2-se-filtered/00-table-repseqs/table_summary.qzv",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/table_summary_features.txt",
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs.qzv",
@@ -204,7 +204,7 @@ rule deblur_se_denoise:
         "01-imported/check_inputs_params_se.done",
         "01-imported/fastq_summary.qzv",
         "01-imported/fastq_counts_describe.md",
-        "02-output-deblur-se-unfiltered/00-table-repseqs/table.qzv",
+        "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary.qzv",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/table_summary_features.txt",
         "02-output-deblur-se-unfiltered/00-table-repseqs/repseqs.qzv",
@@ -249,7 +249,7 @@ rule deblur_se_report_unfiltered:
 rule deblur_se_taxonomy_filtered:
     input:
         "01-imported/check_inputs_params_se.done",
-        "02-output-deblur-se-filtered/00-table-repseqs/table.qzv",
+        "02-output-deblur-se-filtered/00-table-repseqs/table_summary.qzv",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_samples.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/table_summary_features.txt",
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs.qzv",
@@ -629,7 +629,7 @@ rule summarize_feature_table:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         metadata="00-data/metadata.tsv"
     output:
-        "02-output-{method}-{filter}/00-table-repseqs/table.qzv"
+        "02-output-{method}-{filter}/00-table-repseqs/table_summary.qzv"
     threads: config["other_threads"]
     shell:
         "qiime feature-table summarize "
@@ -1281,7 +1281,7 @@ rule generate_report_md:
         visrepseqs="02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv",
         tsvtaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv",
         vistaxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv",
-        vistable="02-output-{method}-{filter}/00-table-repseqs/table.qzv",
+        vistable="02-output-{method}-{filter}/00-table-repseqs/table_summary.qzv",
         vistaxbar="02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv",
         visalpharare="02-output-{method}-{filter}/03-alpha-diversity/alpha_rarefaction.qzv",
         visevengs="02-output-{method}-{filter}/03-alpha-diversity/evenness_group_significance.qzv",
@@ -1308,11 +1308,11 @@ rule generate_report_md:
         "echo 'To view the linked files below: ' >> {output};"
         "echo '' >> {output};"
         "echo '* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org){{target=\"_blank\"}}.' >> {output};"
-        "echo '* TSV (tab-separated values): click to download, then open in Microsoft Excel or Tabview (command line tool that comes with Tourmaline).' >> {output};"
+        "echo '* TSV (tab-separated values): click to download, then open in Microsoft Excel or Tabview (command line tool).' >> {output};"
         "echo '* PDF (portable document format): click to open and view in new tab.' >> {output};"
         "echo '* Markdown and text: click to open and view in new tab.' >> {output};"
         "echo '' >> {output};"
-        "echo 'Note: Downloaded files can be deleted after viewing because they are already stored in your Tourmaline directory.' >> {output};"
+        "echo 'Note: Downloaded files can be deleted after viewing, as they are already stored in your Tourmaline directory.' >> {output};"
         "echo '' >> {output};"
         "echo 'For information on Tourmaline outputs, visit [https://github.com/aomlomics/tourmaline](https://github.com/aomlomics/tourmaline){{target=\"_blank\"}}.' >> {output};"
         "echo '' >> {output};"
@@ -1343,12 +1343,6 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '## Representative Sequences Information' >> {output};"
         "echo '' >> {output};"
-        "echo '### Representative Sequences Properties Summary' >> {output};"
-        "echo '' >> {output};"
-        "echo Markdown: \[{input.repseqsdescribe}\]\(../{input.repseqsdescribe}\){{target=\"_blank\"}} >> {output};"
-        "echo '' >> {output};"
-        "cat {input.repseqsdescribe} >> {output};"
-        "echo '' >> {output};"
         "echo '### Representative Sequences Properties Table' >> {output};"
         "echo '' >> {output};"
         "echo TSV: \[{input.repseqstsv}\]\(../{input.repseqstsv}\){{target=\"_blank\"}} >> {output};"
@@ -1363,9 +1357,17 @@ rule generate_report_md:
         "echo '* observations - total observations summed across all samples (unrarefied)' >> {output};"
         "echo '* log10(observations) - log base-10 of total observations' >> {output};"
         "echo '' >> {output};"
+        "echo '### Representative Sequences Properties Summary' >> {output};"
+        "echo '' >> {output};"
+        "echo Markdown: \[{input.repseqsdescribe}\]\(../{input.repseqsdescribe}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        "cat {input.repseqsdescribe} >> {output};"
+        "echo '' >> {output};"
         "echo '### Representative Sequences Properties Plot' >> {output};"
         "echo '' >> {output};"
         "echo PDF: \[{input.repseqspdf}\]\(../{input.repseqspdf}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        #"echo '<img src=\"../{input.repseqspdf}\" alt=\"../{input.repseqspdf}\" width=\"70%\"/>' >> {output};"
         "echo '' >> {output};"
         "echo 'Plot elements:' >> {output};"
         "echo '' >> {output};"

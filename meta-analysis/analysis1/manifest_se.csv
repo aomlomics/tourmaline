@@ -1,0 +1,9 @@
+sample-id,absolute-filepath,direction
+SC56.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134717_R1.fastq.gz,forward
+SC54.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134719_R1.fastq.gz,forward
+SC53.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134721_R1.fastq.gz,forward
+SC51.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134723_R1.fastq.gz,forward
+SC18.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134768_R1.fastq.gz,forward
+SC16.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134772_R1.fastq.gz,forward
+SC13.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134778_R1.fastq.gz,forward
+SC07.22,/Users/luke.thompson/git/tourmaline/00-data/fastq/Sample_134790_R1.fastq.gz,forward
