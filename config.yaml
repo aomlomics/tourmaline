@@ -160,21 +160,14 @@ report_theme: github
 
 # FILTERING
 
-# Filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of:
-#   1. representative sequences
-#   2. taxonomy
-#   3. feature table
+# Filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of
+# representative sequences, taxonomy, and feature table.
 
 # FILTER BY FEATURE ID
-# These feature metadata tsv files have a header line with two columns: 1. "featureid", 2. anything.
-# To create a feature metadata file for filtering repseqs:
-#   1. go to 02-output-{method}-{filter}/02-alignment-tree
-#   2. merge (removing duplicates) or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv
-#   3. rename to the file name below corresponding to your method:
-#       00-data/repseqs_to_filter_dada2-pe.tsv
-#       00-data/repseqs_to_filter_dada2-se.tsv
-#       00-data/repseqs_to_filter_deblur-se.tsv
-# These paths are hard-coded (they must match those above), not specified in config.yaml
+# The file of feature IDs to be filtered must have a header line with two columns: 1. "featureid", 2. anything.
+# The file must be named 00-data/repseqs_to_filter_{method}.tsv, where method is dada2-pe, dada2-se, or deblur-se.
+# If filtering outliers, just copy 02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv to the above filename.
+# Add any additional feature IDs to be filtered (no duplicates allowed).
 # For more info run: qiime feature-table [filter-seqs|filter-features] --help
 # TO SKIP FILTERING BY FEATURE ID: provide only nonsense feature IDs in the above files (default) or don't run filtering commands.
 
