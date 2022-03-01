@@ -80,7 +80,7 @@ pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
-Finally, open R by entering `R` and install the R dependencies (if prompted, enter "a" to update all packages):
+Finally, open R by entering `R` and install the R dependencies (if prompted, enter "n" to update none of the packages):
 
 ```R
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -93,10 +93,11 @@ BiocManager::install("odseq")
 
 To run Tourmaline inside a Docker container:
 
-1. Install Docker Desktop (Mac or Windows) or Docker (Linux) from [Docker.com](https://docs.docker.com/get-docker/).
-2. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
-3. Download the [Tourmaline Docker image](https://hub.docker.com/repository/docker/aomlomics/tourmaline) from DockerHub (command below).
-4. Run the Docker image (command below).
+1. Install Docker Desktop (Mac, Windows, or Linux) from [Docker.com](https://docs.docker.com/get-docker/).
+2. Open Docker app.
+3. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
+4. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
+5. Run the Docker image (command below).
 
 ```bash
 docker pull aomlomics/tourmaline
@@ -230,9 +231,9 @@ snakemake dada2_pe_report_filtered
 
 #### View report and output files
 
-Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/) or [Firefox](https://www.mozilla.org/en-US/firefox/new/). To view the linked files: 
+Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/){target="_blank"} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){target="_blank"}. To view the linked files: 
 
-* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org). Empress trees (e.g., `rooted_tree.qzv`) may take more than 10 minutes to load.
+* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org){target="_blank"}. Empress trees (e.g., `rooted_tree.qzv`) may take more than 10 minutes to load.
 * TSV (tab-separated values): click to download, then open in Microsoft Excel or Tabview (command line tool that comes with Tourmaline).
 * PDF (portable document format): click to open and view in new tab.
 
