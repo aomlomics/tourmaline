@@ -80,7 +80,7 @@ pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 ```
 
-Finally, open R by entering `R` and install the R dependencies (if prompted, enter "n" to update none of the packages):
+Finally, open R by entering `R` and install the R dependencies (if prompted, enter "a" to update all packages):
 
 ```R
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -93,11 +93,10 @@ BiocManager::install("odseq")
 
 To run Tourmaline inside a Docker container:
 
-1. Install Docker Desktop (Mac, Windows, or Linux) from [Docker.com](https://docs.docker.com/get-docker/).
-2. Open Docker app.
-3. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
-4. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
-5. Run the Docker image (command below).
+1. Install Docker Desktop (Mac or Windows) or Docker (Linux) from [Docker.com](https://docs.docker.com/get-docker/).
+2. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
+3. Download the [Tourmaline Docker image](https://hub.docker.com/repository/docker/aomlomics/tourmaline) from DockerHub (command below).
+4. Run the Docker image (command below).
 
 ```bash
 docker pull aomlomics/tourmaline
@@ -231,9 +230,9 @@ snakemake dada2_pe_report_filtered
 
 #### View report and output files
 
-Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/){target="_blank"} or [Firefox](https://www.mozilla.org/en-US/firefox/new/){target="_blank"}. To view the linked files: 
+Open your HTML report (e.g., `03-reports/report_dada2-pe_unfiltered.html`) in [Chrome](https://www.google.com/chrome/) or [Firefox](https://www.mozilla.org/en-US/firefox/new/). To view the linked files: 
 
-* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org){target="_blank"}. Empress trees (e.g., `rooted_tree.qzv`) may take more than 10 minutes to load.
+* QZV (QIIME 2 visualization): click to download, then drag and drop in [https://view.qiime2.org](https://view.qiime2.org). Empress trees (e.g., `rooted_tree.qzv`) may take more than 10 minutes to load.
 * TSV (tab-separated values): click to download, then open in Microsoft Excel or Tabview (command line tool that comes with Tourmaline).
 * PDF (portable document format): click to open and view in new tab.
 
@@ -245,17 +244,13 @@ Downloaded files can be deleted after viewing because they are already stored in
 
 * The whole workflow with test data should take ~3–5 minutes to complete. A normal dataset may take several hours to complete.
 * If any of the above commands don't work, read the error messages carefully, try to figure out what went wrong, and attempt to fix the offending file. A common issue is the file paths in your FASTQ manifest file need to be updated.
-* Do not use the `--cores` option. Tourmaline should be run with 1 core (default). The parameters for multiple threads in the configuration file don't do anything at this time.
 * If you are running in a Docker container and you get an error like "Signals.SIGKILL: 9", you probably need to give Docker more memory. See the Wiki section on [Installation options](https://github.com/aomlomics/tourmaline/wiki/2-Install#installation-options).
 
 #### Power tips
 
 * The whole workflow can be run with just the command `snakemake dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
-
 * If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run.
-
 * You can always delete any file you want to regenerate. Then there are several ways to regenerate it: run `snakemake FILE` and Snakemake will determine which rules (commands) need to be run to generate that file; or, run `snakemake RULE` where the rule generates the desired file as output.
-
 * If you've run Tourmaline on your dataset before, you can speed up the setup process and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the some of the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
 
   ```bash
