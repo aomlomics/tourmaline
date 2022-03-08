@@ -1383,7 +1383,7 @@ rule generate_report_md:
         "echo '' >> {output};"
         "echo '### Representative Sequences to Filter' >> {output};"
         "echo '' >> {output};"
-        "echo 'To filter, go to 02-output-{{method}}-{{filter}}/02-alignment-tree, merge or copy repseqs_to_filter_outliers.tsv and/or repseqs_to_filter_unassigned.tsv, rename to 00-data/repseqs_to_filter_{{method}}.tsv, then run Snakemake in filtered mode.' >> {output};"
+        "echo 'To filter, copy 02-output-{{method}}-{{filter}}/02-alignment-tree/repseqs_to_filter_outliers.tsv to 00-data/repseqs_to_filter_{{method}}.tsv, then run Snakemake in filtered mode.' >> {output};"
         "echo '' >> {output};"
         "echo Outliers TSV: \[{input.repseqsoutliers}\]\(../{input.repseqsoutliers}\){{target=\"_blank\"}} >> {output};"
         "echo '' >> {output};"
