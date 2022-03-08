@@ -63,7 +63,7 @@ Before you download the Tourmaline commands and directory structure from GitHub,
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2:
+To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
