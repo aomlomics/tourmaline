@@ -63,7 +63,7 @@ Before you download the Tourmaline commands and directory structure from GitHub,
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2:
+To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
@@ -152,17 +152,22 @@ Go to **Run Snakemake**.
 
 #### Setup for your data
 
-If you're ready to run your own data, the setup is similar to what you did for the test data:
+Before setting up to run your own data, please note:
 
-* Prepare reference database:
-  * Option 1: Put taxonomy and FASTA files in `00-data`. Check that filenames match those in `config.yaml`.
-  * Option 2: Put imported QIIME 2 archives in `01-imported`. Check that filenames match those in `config.yaml`.
-* Prepare sequence data:
-  * Option 1: Edit FASTQ manifests in `00-data` so file paths point to your .fastq.gz files (they can be anywhere on your computer) and sample names match the metadata file. You can use a text editor such as Sublime Text, nano, vim, etc. Check that manifest filenames match those in `config.yaml`.
-  * Option 2: Put your pre-imported FASTQ .qza files in `01-imported`. Check that .qza filenames match those in `config.yaml`.
-* Edit metadata file `metadata.tsv` to contain your sample names and any relevant metadata for your samples. You can use a spreadsheet editor like Microsoft Excel or LibreOffice, but make sure to export the output in tab-delimited format.
-* Edit configuration file `config.yaml` to change input file names (or preferably, rename your input files to match the defaults), DADA2/Deblur parameters (sequence truncation/trimming, sample pooling, chimera removal, etc.), rarefaction depth, taxonomic classification method, and other parameters. This YAML (yet another markup language) file is a regular text file that can be edited in Sublime Text, nano, vim, etc.
-* Go to **Run Snakemake**.
+* Symbolic links can be used for any of the input files, which may be useful for large files (e.g., the FASTQ and reference database .qza files).
+* If you plan on using Deblur, sample names must not contain underscores (only alphanumerics, dashes, and/or periods).
+
+Now edit, replace, or store the required input files as described here:
+
+1. Edit or replace the metadata file `00-data/metadata.tsv`. The first column header should be "sample_name", with sample names matching the FASTQ manifest(s), and additional columns containing any relevant metadata for your samples. You can use a spreadsheet editor like Microsoft Excel or LibreOffice, but make sure to export the output in tab-delimited text format.
+2. Prepare FASTQ data:
+    * Option 1: Edit or replace the FASTQ manifests `00-data/manifest_pe.csv` (paired-end) and/or `00-data/manifest_se.csv` (single-end). Ensure that (1) file paths in the column "absolute-filepath" point to your .fastq.gz files (they can be anywhere on your computer) and (2) sample names match the metadata file. You can use a text editor such as Sublime Text, nano, vim, etc.
+    * Option 2: Store your pre-imported FASTQ .qza files as `01-imported/fastq_pe.qza` (paired-end) and/or `01-imported/fastq_se.qza` (single-end).
+3. Prepare reference database:
+    * Option 1: Store the reference FASTA and taxonomy files as `00-data/refseqs.fna` and `00-data/reftax.tsv`.
+    * Option 2: Store the pre-imported reference FASTA and taxonomy .qza files as `01-imported/refseqs.qza` and `01-imported/reftax.qza`.
+4. Edit the configuration file `config.yaml` to set DADA2 and/or Deblur parameters (sequence truncation/trimming, sample pooling, chimera removal, etc.), rarefaction depth, taxonomic classification method, and other parameters. This YAML (yet another markup language) file is a regular text file that can be edited in Sublime Text, nano, vim, etc.
+5. Go to **Run Snakemake**.
 
 ### Run Snakemake
 
@@ -204,10 +209,12 @@ snakemake dada2_pe_report_unfiltered
 
 #### Filtered mode
 
-Filtering is done on representative sequences and the feature table, and downstream outputs will be filtered; the taxonomy file itself is not filtered. Filtering can be done by taxonomy keywords and/or by feature IDs of specific representative sequences. To filter by these two methods, before running *taxonomy_filtered*, do this:
+After viewing the *unfiltered* results—the taxonomy summary and taxa barplot, the representative sequence summary plot and table, or the list of unassigned and potential outlier representative sequences—the user may wish to filter (remove) certain taxonomic groups or representative sequences. If so, the user should first check the following parameters and/or files:
 
-* Taxonomy keyword: Place the keywords in `config.yaml` in the field "exclude_terms", separated by commas. Searching is not case-sensitive.
-* Specific representative sequences: Go to `2-output-dada2-pe-unfiltered/02-alignment-tree` and copy or merge `repseqs_to_filter_outliers.tsv` and/or `repseqs_to_filter_unassigned.tsv` to `00-data/repseqs_to_filter_dada2-pe.tsv`. If merging the two files, take care to remove duplicate feature IDs, because duplicates will cause the filtering step to fail.
+* copy `2-output-dada2-pe-unfiltered/02-alignment-tree/repseqs_to_filter_outliers.tsv` to `00-data/repseqs_to_filter_dada2-pe.tsv` to filter outliers, or manually include feature IDs in `00-data/repseqs_to_filter_dada2-pe.tsv` to filter those feature IDs (change "dada2-pe" to "dada2-se" or "deblur-se" as appropriate);
+*  `exclude_terms` in `config.yaml` – add taxa to exclude from representative sequences, if desired;
+*  `repseq_min_length` and `repseq_max_length` in `config.yaml` – set minimum and/or maximum lengths for filtering representative sequences, if desired;
+*  `repseq_min_abundance` and `repseq_min_prevalence` in `config.yaml` – set minimum abundance and/or prevalence values for filtering representative sequences, if desired.
 
 Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
 
@@ -282,12 +289,4 @@ Some alternative pipelines for amplicon sequence analysis include the following:
 
 * Anacapa Toolkit from UCLA: https://github.com/limey-bean/Anacapa
 * Banzai from MBON: https://github.com/jimmyodonnell/banzai
-* Sarah Hu's QIIME 2 Snakemake workflow: https://github.com/shu251/tagseq-qiime2-snakemake
-
-## License
-
-Software code created by U.S. Government employees is not subject to copyright in the United States (17 U.S.C. §105). The United States/Department of Commerce reserve all rights to seek and obtain copyright protection in countries other than the United States for Software authored in its entirety by the Department of Commerce. To this end, the Department of Commerce hereby grants to Recipient a royalty-free, nonexclusive license to use, copy, and create derivative works of the Software outside of the United States.
-
-## Disclaimer
-
-This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration, or the United States Department of Commerce. All NOAA GitHub project code is provided on an ‘as is’ basis and the user assumes responsibility for its use. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
+* Tagseq QIIME 2 Snakemake workflow: https://github.com/shu251/tagseq-qiime2-snakemake

@@ -173,12 +173,12 @@ report_theme: github
 
 # FILTER BY TAXONOMY
 # Features with taxonomy containing these terms will be filtered.
-# Separate terms with commas (e.g., mitochondria,chloroplast,eukaryota).
+# Separate terms with commas (e.g., mitochondria,chloroplast,eukaryota,unassigned).
 # Terms are not case-sensitive.
 # For more info run: qiime taxa filter-seqs --help
 # TO SKIP FILTERING BY TAXONOMY: provide a nonsense term or don't run filtering commands.
 
-exclude_terms: unassigned,eukaryota
+exclude_terms: eukaryota,archaea,mitochondria,chloroplast,unassigned
 
 # FILTER BY LENGTH
 # Set minimum and maximum sequence lengths to filter representative sequences by.
