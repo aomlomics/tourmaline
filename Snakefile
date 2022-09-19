@@ -487,7 +487,7 @@ rule export_fastq_summary_to_counts:
     shell:
         "unzip -qq -o {input} -d temp0; "
         "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
-        "/bin/rm -rf temp0"
+        "/bin/rm -r temp0"
 
 rule describe_fastq_counts:
     input:
@@ -851,7 +851,7 @@ rule align_repseqs:
         "    -out temp_aligned_repseqs.fasta; "
         "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
         "    echo 'Line breaks removed to generate {output.alnfasta}'; "
-        "    /bin/rm -f temp_aligned_repseqs.fasta; "
+        "    /bin/rm temp_aligned_repseqs.fasta; "
         "    qiime tools import "
         "    --type 'FeatureData[AlignedSequence]' "
         "    --input-path {output.alnfasta} "
@@ -864,7 +864,7 @@ rule align_repseqs:
         "    --threads={threads}; "
         "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
         "    echo 'Line breaks removed to generate {output.alnfasta}'; "
-        "    /bin/rm -f temp_aligned_repseqs.fasta; "
+        "    /bin/rm temp_aligned_repseqs.fasta; "
         "    qiime tools import "
         "    --type 'FeatureData[AlignedSequence]' "
         "    --input-path {output.alnfasta} "
@@ -878,7 +878,7 @@ rule align_repseqs:
         "    qiime alignment mask "
         "    --i-alignment tempfile_unmasked_aligned_repseqs.qza "
         "    --o-masked-alignment {output.alnqza}; "
-        "    /bin/rm -f tempfile_unmasked_aligned_repseqs.qza; "
+        "    /bin/rm tempfile_unmasked_aligned_repseqs.qza; "
         "    qiime tools export "
         "    --input-path {output.alnqza} "
         "    --output-path {output.alnfasta} "
@@ -964,7 +964,7 @@ rule alignment_detect_outliers:
     shell:
         "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} temp_odseq; "
         "cat temp_odseq | sed 's/^X//' > {output}; "
-        "/bin/rm -f temp_odseq"
+        "/bin/rm temp_odseq"
 
 rule tabulate_plot_repseq_properties:
     input:
@@ -1093,10 +1093,10 @@ rule filter_sequences_table:
         "--p-no-exclude-ids "
         "--o-filtered-data {output.repseqs}; "
         # REMOVE TEMP FILES
-        "/bin/rm -f temp_repseqs1.qza; "
-        "/bin/rm -f temp_repseqs2.qza; "
-        "/bin/rm -f temp_repseqs3.qza; "
-        "/bin/rm -f temp_table.qza"
+        "/bin/rm temp_repseqs1.qza; "
+        "/bin/rm temp_repseqs2.qza; "
+        "/bin/rm temp_repseqs3.qza; "
+        "/bin/rm temp_table.qza"
 
 rule filter_taxonomy:
     input:
@@ -1517,4 +1517,4 @@ rule generate_report_html:
         "echo '</body>' >> temp.html;"
         "echo '</html>' >> temp.html;"
         "mv temp.html {output};"
-        "/bin/rm -f header.html"
+        "/bin/rm header.html"
