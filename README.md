@@ -38,9 +38,9 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 
 ### Where can I learn more about Tourmaline?
 
-A citable preprint of our manuscript is available on *bioRxiv*:
+The Tourmaline paper is published in *GigaScience*:
 
-* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: a workflow for rapid and reproducible amplicon sequence analysis using QIIME 2 and Snakemake. *bioRxiv* 2021.09.15.460495 (2021). doi:[10.1101/2021.09.15.460495](https://doi.org/10.1101/2021.09.15.460495)
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Lim, S. J., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066, https://doi.org/10.1093/gigascience/giac066
 
 ### How do I get started? 
 
