@@ -59,7 +59,7 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have a Mac with an Apple M1 chip, we recommend using Docker to install, following the M1 chip instructions. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details.
 
 #### Option 1: Native installation
 
@@ -102,6 +102,12 @@ To run Tourmaline inside a Docker container:
 ```bash
 docker pull aomlomics/tourmaline
 docker run -v $HOME:/data -it aomlomics/tourmaline
+```
+
+If installing on a Mac with an Apple M1 chip, run the Docker image with the `--platform linux/amd64` command. It will take a few minutes for the image to load the first time it is run.
+
+```bash
+docker run --platform linux/amd64 -v $HOME:/data -it aomlomics/tourmaline
 ```
 
 The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Note that symbolic links in a mounted volume will not work.
