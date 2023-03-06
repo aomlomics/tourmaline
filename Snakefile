@@ -413,7 +413,7 @@ rule import_ref_seqs:
 
 rule import_ref_tax:
     input:
-        "00-data/refseqs.tsv"
+        "00-data/reftax.tsv"
     output:
         "01-imported/reftax.qza"
     threads: config["other_threads"]
