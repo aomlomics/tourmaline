@@ -294,7 +294,7 @@ rule check_metadata:
         touch("01-imported/check_metadata.done")
     threads: config["other_threads"]
     shell:
-        "if [ -f '00-data/metadata.tsv' ]; then "
+        "if [ -r '00-data/metadata.tsv' ]; then "
         "    echo 'OK: Metadata file 00-data/metadata.tsv found.'; "
         "else echo 'Error: Metadata file 00-data/metadata.tsv not found.' && exit 1; "
         "fi; "
@@ -342,21 +342,21 @@ rule check_inputs_params_pe:
         touch("01-imported/check_inputs_params_pe.done")
     threads: config["other_threads"]
     shell:
-        "if [ -f '01-imported/fastq_pe.qza' ]; then "
+        "if [ -r '01-imported/fastq_pe.qza' ]; then "
         "    echo 'OK: FASTQ archive 01-imported/fastq_pe.qza found; FASTQ manifest file 00-data/manifest_pe.csv not required.'; "
-        "elif [ -f '00-data/manifest_pe.csv' ]; then "
+        "elif [ -r '00-data/manifest_pe.csv' ]; then "
         "    echo 'OK: FASTQ manifest file 00-data/manifest_pe.csv found; it will be used to create FASTQ archive 01-imported/fastq_pe.qza.'; "
         "else echo 'Error: FASTQ sequence data not found; either 00-data/manifest_pe.csv or 01-imported/fastq_pe.qza is required.' && exit 1; "
         "fi; "
-        "if [ -f '01-imported/refseqs.qza' ]; then "
+        "if [ -r '01-imported/refseqs.qza' ]; then "
         "    echo 'OK: Reference sequences archive 01-imported/refseqs.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
-        "elif [ -f '00-data/refseqs.fna' ]; then "
+        "elif [ -r '00-data/refseqs.fna' ]; then "
         "    echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found; it will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
         "else echo 'Error: Reference sequences not found; either 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
         "fi; "
-        "if [ -f '01-imported/reftax.qza' ]; then "
+        "if [ -r '01-imported/reftax.qza' ]; then "
         "    echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found; reference taxonomy file 00-data/reftax.tsv not required.'; "
-        "elif [ -f '00-data/reftax.tsv' ]; then "
+        "elif [ -r '00-data/reftax.tsv' ]; then "
         "    echo 'OK: Reference taxonomy file 00-data/reftax.tsv found; it will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
         "else echo 'Error: Reference taxonomy not found; either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
         "fi; "
@@ -374,21 +374,21 @@ rule check_inputs_params_se:
         touch("01-imported/check_inputs_params_se.done")
     threads: config["other_threads"]
     shell:
-        "if [ -f '01-imported/fastq_se.qza' ]; then "
+        "if [ -r '01-imported/fastq_se.qza' ]; then "
         "    echo 'OK: FASTQ archive 01-imported/fastq_se.qza found; FASTQ manifest file 00-data/manifest_se.csv not required.'; "
-        "elif [ -f '00-data/manifest_se.csv' ]; then "
+        "elif [ -r '00-data/manifest_se.csv' ]; then "
         "    echo 'OK: FASTQ manifest file 00-data/manifest_se.csv found; it will be used to create FASTQ archive 01-imported/fastq_se.qza.'; "
         "else echo 'Error: FASTQ sequence data not found; either 00-data/manifest_se.csv or 01-imported/fastq_se.qza is required.' && exit 1; "
         "fi; "
-        "if [ -f '01-imported/refseqs.qza' ]; then "
+        "if [ -r '01-imported/refseqs.qza' ]; then "
         "    echo 'OK: Reference sequences archive 01-imported/refseqs.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
-        "elif [ -f '00-data/refseqs.fna' ]; then "
+        "elif [ -r '00-data/refseqs.fna' ]; then "
         "    echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found; it will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
         "else echo 'Error: Reference sequences not found; either 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
         "fi; "
-        "if [ -f '01-imported/reftax.qza' ]; then "
+        "if [ -r '01-imported/reftax.qza' ]; then "
         "    echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found; reference taxonomy file 00-data/reftax.tsv not required.'; "
-        "elif [ -f '00-data/reftax.tsv' ]; then "
+        "elif [ -r '00-data/reftax.tsv' ]; then "
         "    echo 'OK: Reference taxonomy file 00-data/reftax.tsv found; it will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
         "else echo 'Error: Reference taxonomy not found; either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
         "fi; "
@@ -747,7 +747,7 @@ rule feature_classifier:
     shell:
         "echo classify_method: {params.classifymethod}; "
         "if [ {params.classifymethod} = naive-bayes ]; then "
-        "    if [ ! -f 01-imported/classifier.qza ]; then "
+        "    if [ ! -r 01-imported/classifier.qza ]; then "
         "        qiime feature-classifier fit-classifier-naive-bayes "
         "        --i-reference-reads {input.refseqs} "
         "        --i-reference-taxonomy {input.reftax} "
