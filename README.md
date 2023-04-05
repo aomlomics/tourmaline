@@ -263,7 +263,7 @@ Downloaded files can be deleted after viewing because they are already stored in
 #### Power tips
 
 * The whole workflow can be run with just the command `snakemake dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
-* If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run.
+* If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run. If you want to save these outputs and rerun with different parameters, you can change the name of the output directories and report files to something informative and leave them in the Tourmaline directory.
 * You can always delete any file you want to regenerate. Then there are several ways to regenerate it: run `snakemake FILE` and Snakemake will determine which rules (commands) need to be run to generate that file; or, run `snakemake RULE` where the rule generates the desired file as output.
 * If you've run Tourmaline on your dataset before, you can speed up the setup process and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the some of the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
 
@@ -287,7 +287,11 @@ Downloaded files can be deleted after viewing because they are already stored in
   01-imported/classifier.qza
   ```
 
-  Ensure you make any changes to your configuration file and (if necessary) delete any files you want to be regenerated before you run Snakemake.
+  Ensure you make any changes to your configuration file and (if necessary) delete any files you want to be regenerated before you run Snakemake. If you copy over output files from a previous Tourmaline run manually that you do not want to be regenerated (eg, `02-output-{method}-unfiltered`), you should use the `cp -p` flag to preserve timestamps. 
+  
+  ```
+  cp -rp tourmaline-old/02-output-dada2-pe-unfiltered/ tourmaline-new/
+  ```
 
 #### Alternatives
 
