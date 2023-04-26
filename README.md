@@ -48,7 +48,7 @@ If this is your first time using Tourmaline or Snakemake, you may want to browse
 
 ### Contact us 
 
-* Questions? Join the conversation on [gitter](https://matrix.to/#/#aomlomics_tourmaline:gitter.im).
+* Questions? Join the conversation on [gitter](https://gitter.im/aomlomics/tourmaline).
 * Have a feature request? Raise an issue on [GitHub](https://github.com/aomlomics/tourmaline/issues).
 
 ## Quick Start
