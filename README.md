@@ -44,7 +44,12 @@ The Tourmaline paper is published in *GigaScience*:
 
 ### How do I get started? 
 
-If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).  
+
+### Contact us 
+
+* Questions? Join the conversation on [gitter](https://matrix.to/#/#aomlomics_tourmaline:gitter.im).
+* Have a feature request? Raise an issue on [GitHub](https://github.com/aomlomics/tourmaline/issues).
 
 ## Quick Start
 
