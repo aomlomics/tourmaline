@@ -742,7 +742,8 @@ rule feature_classifier:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
         classifymethod=config["classify_method"],
-        classifyparams=config["classify_parameters"]
+        classifyparams=config["classify_parameters"],
+        searchout="02-output-{method}-unfiltered/01-taxonomy/search_results.qza"
     threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
@@ -765,6 +766,7 @@ rule feature_classifier:
         "    --i-reference-taxonomy {input.reftax} "
         "    --i-query {input.repseqs} "
         "    --o-classification {output} "
+        "    --o-search-results {params.searchout} "
         "    {params.classifyparams}; "
         "elif [ {params.classifymethod} = consensus-vsearch ]; then "
         "    qiime feature-classifier classify-consensus-vsearch "
@@ -772,6 +774,7 @@ rule feature_classifier:
         "    --i-reference-taxonomy {input.reftax} "
         "    --i-query {input.repseqs} "
         "    --o-classification {output} "
+        "    --o-search-results {params.searchout} "
         "    --p-threads {threads} "
         "    {params.classifyparams}; "
         "fi"
@@ -838,17 +841,16 @@ rule align_repseqs:
         alnqza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     params:
         method=config["alignment_method"],
-        muscle_maxiters=config["alignment_muscle_maxiters"],
-        muscle_diags=config["alignment_muscle_diags"]
+        muscle_iters=config["alignment_muscle_iters"]
     threads: config["alignment_threads"],
     shell:
         "if [ {params.method} = muscle ]; then "
         "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
         "    muscle "
-        "    -maxiters {params.muscle_maxiters} "
-        "    {params.muscle_diags} "
-        "    -in {input.repseqsfasta} "
-        "    -out temp_aligned_repseqs.fasta; "
+        "    -threads {threads} "
+        "    -refineiters {params.muscle_iters} "
+        "    -align {input.repseqsfasta} "
+        "    -output temp_aligned_repseqs.fasta; "
         "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
         "    echo 'Line breaks removed to generate {output.alnfasta}'; "
         "    /bin/rm temp_aligned_repseqs.fasta; "

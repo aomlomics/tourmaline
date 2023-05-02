@@ -93,14 +93,12 @@ classify_parameters: --verbose
 # MULTIPLE SEQUENCE ALIGNMENT
 
 # Multiple sequence alignment of the representative sequences.
-# - method: choose from: muscle, clustalo, mafft
-# - muscle_maxiters: maximum number of iterations (integer, default 16)
-# - muscle_diags: choose from: -diags (find diagonals - faster for similar sequences) or leave blank
+# - method: choose from: muscle v5, clustalo, mafft
+# - muscle_iters: number of refinement iterations (integer, default 100)
 # For more info run: muscle, clustalo --help, qiime alignment [mafft|mask] --help
 
 alignment_method: muscle
-alignment_muscle_maxiters: 2
-alignment_muscle_diags: -diags
+alignment_muscle_iters: 50
 
 # OUTLIER DETECTION
 
