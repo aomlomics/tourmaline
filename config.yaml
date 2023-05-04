@@ -38,6 +38,9 @@
 # - reference sequences: 01-imported/refseqs.qza
 # - reference taxonomy: 01-imported/reftax.qza
 
+# Provide a descriptive name for the reference database used, no spaces (e.g., original file name, source and version)
+database_name: silva-138-99-515-806_q2-2021.2
+
 # DENOISE
 
 # DADA2 PAIRED-END

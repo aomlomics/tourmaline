@@ -1299,6 +1299,8 @@ rule generate_report_md:
         visuwuemp="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         visbiplotemp="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
+    params:
+        refdatabase=config["database_name"]
     output:
         "03-reports/report_{method}_{filter}.md"
     threads: config["other_threads"]
@@ -1402,6 +1404,10 @@ rule generate_report_md:
         "echo '### Visualization of Taxonomy' >> {output};"
         "echo '' >> {output};"
         "echo QZV: \[{input.vistaxonomy}\]\(../{input.vistaxonomy}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        "echo '### Taxonomy Reference Database' >> {output};"
+        "echo '' >> {output};"
+        "echo '{params.refdatabase}' >> {output};"
         "echo '' >> {output};"
         "echo '### Predicted Amplicon Type' >> {output};"
         "echo '' >> {output};"
