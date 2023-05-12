@@ -847,6 +847,7 @@ rule align_repseqs:
         "if [ {params.method} = muscle ]; then "
         "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
         "    muscle "
+        "    -super5 "
         "    -threads {threads} "
         "    -refineiters {params.muscle_iters} "
         "    -align {input.repseqsfasta} "
