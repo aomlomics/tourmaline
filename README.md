@@ -137,8 +137,8 @@ Download reference database sequence and taxonomy files, named `refseqs.qza` and
 
 ```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2021.2/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2021.2/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
