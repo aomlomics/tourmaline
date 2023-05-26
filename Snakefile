@@ -36,7 +36,8 @@ rule dada2_pe_taxonomy_unfiltered:
         "01-imported/check_inputs_params_pe.done",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_pe_diversity_unfiltered:
     input:
@@ -77,7 +78,8 @@ rule dada2_pe_taxonomy_filtered:
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-pe-filtered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_pe_diversity_filtered:
     input:
@@ -126,7 +128,8 @@ rule dada2_se_taxonomy_unfiltered:
         "01-imported/check_inputs_params_se.done",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_se_diversity_unfiltered:
     input:
@@ -167,7 +170,8 @@ rule dada2_se_taxonomy_filtered:
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-se-filtered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_se_diversity_filtered:
     input:
@@ -216,7 +220,8 @@ rule deblur_se_taxonomy_unfiltered:
         "01-imported/check_inputs_params_se.done",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.qzv",
-        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_sample_table.tsv"
 
 rule deblur_se_diversity_unfiltered:
     input:
@@ -257,7 +262,8 @@ rule deblur_se_taxonomy_filtered:
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.qzv",
-        "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-deblur-se-filtered/01-taxonomy/taxa_sample_table.tsv"
 
 rule deblur_se_diversity_filtered:
     input:
@@ -804,6 +810,30 @@ rule taxa_barplot:
         "--i-taxonomy {input.taxonomy} "
         "--m-metadata-file {input.metadata} "
         "--o-visualization {output}"
+
+rule export_taxa_biom:
+    input:
+        table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
+        taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
+    output:
+        "02-output-{method}-{filter}/01-taxonomy/taxa_sample_table.tsv"
+    params:
+        taxalevel=config["classify_taxalevel"]
+    threads: config["other_threads"]
+    shell:
+        "qiime taxa collapse "
+        "--i-table {input.table} "
+        "--i-taxonomy {input.taxonomy} "
+        "--p-level {params.taxalevel} "
+        "--o-collapsed-table tempfile_collapsed.qza;"
+        "qiime tools export "
+        "--input-path tempfile_collapsed.qza "
+        "--output-path temp_export;"
+        "biom convert "
+        "-i temp_export/feature-table.biom "
+        "-o {output} "
+        "--to-tsv;"
+        "/bin/rm -r tempfile_collapsed.qza temp_export/"
 
 rule export_taxonomy_to_tsv:
     input:

@@ -90,6 +90,11 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
+# Table of feature counts per sample collapsed by chosen taxonomic level.
+# taxa_level - taxonomic level at which the features should be collapsed. Default 7
+# For more info run: qiime taxa collapse --help
+classify_taxalevel: 7
+
 # MULTIPLE SEQUENCE ALIGNMENT
 
 # Multiple sequence alignment of the representative sequences.
