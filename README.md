@@ -64,11 +64,11 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have a Mac with an Apple M1 chip, we recommend using Docker to install, following the M1 chip instructions. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have an Apple Silicon chip (M1, M2 Macs), the instructions to install QIIME 2 vary slightly. 
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
+To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
@@ -85,6 +85,19 @@ pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
 conda install -c bioconda bioconductor-msa bioconductor-odseq
 ```
+
+##### Apple Silicon Macs
+
+Follow these instructions for Macs with M1/M2 chips.
+
+```bash
+wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
+CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
+conda activate qiime2-2023.2
+conda config --env --set subdir osx-64
+```
+
+Then continue to install the other Conda- or PIP-installable dependencies.
 
 #### Option 2: Docker container (not updated yet)
 
@@ -137,8 +150,8 @@ Download reference database sequence and taxonomy files, named `refseqs.qza` and
 
 ```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2021.2/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2021.2/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
