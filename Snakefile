@@ -1047,13 +1047,16 @@ rule filter_sequences_table:
         table="02-output-{method}-unfiltered/00-table-repseqs/table.qza",
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza",
         repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza",
-        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
+        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv",
+        samplestofilter="00-data/samples_to_filter_{method}.tsv",
+        metadata="00-data/metadata.tsv"
     params:
         excludeterms=config["exclude_terms"],
         minlength=config["repseq_min_length"],
         maxlength=config["repseq_max_length"],
         minabund=config["repseq_min_abundance"],
         minprev=config["repseq_min_prevalence"],
+        metadatafilt=config["metadata_filter"]
     output:
         repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
@@ -1077,14 +1080,30 @@ rule filter_sequences_table:
         "--m-metadata-file {input.repseqstofilter} "
         "--p-exclude-ids "
         "--o-filtered-data temp_repseqs3.qza; "
-        # FILTER TABLE BY IDS
+        # FILTER TABLE BY FEATURE IDS
         "qiime feature-table filter-features "
         "--i-table {input.table} "
         "--m-metadata-file temp_repseqs3.qza "
         "--o-filtered-table temp_table.qza; "
+        # FILTER TABLE BY SAMPLE IDS
+        "qiime feature-table filter-samples "
+        "--i-table temp_table.qza "
+        "--m-metadata-file {input.samplestofilter} "
+        "--p-exclude-ids "
+        "--o-filtered-table temp_table2.qza; "
+        # FILTER TABLE BY SAMPLE METADATA
+        "if [ {params.metadatafilt} != none ]; then "
+        "    qiime feature-table filter-samples "
+        "    --i-table temp_table2.qza "
+        "    --m-metadata-file {input.metadata} "
+        "    --p-where \"{params.metadatafilt}\" "
+        "    --o-filtered-table temp_table3.qza; "
+        "else "
+        "    cp temp_table2.qza temp_table3.qza; "
+        "fi; "
         # FILTER TABLE BY ABUNDANCE & PREVALENCE
         "qiime feature-table filter-features-conditionally "
-        "--i-table temp_table.qza "
+        "--i-table temp_table3.qza "
         "--p-abundance {params.minabund} "
         "--p-prevalence {params.minprev} "
         "--o-filtered-table {output.table}; "
@@ -1098,7 +1117,9 @@ rule filter_sequences_table:
         "/bin/rm temp_repseqs1.qza; "
         "/bin/rm temp_repseqs2.qza; "
         "/bin/rm temp_repseqs3.qza; "
-        "/bin/rm temp_table.qza"
+        "/bin/rm temp_table.qza; "
+        "/bin/rm temp_table2.qza; "
+        "/bin/rm temp_table3.qza;"
 
 rule filter_taxonomy:
     input:
@@ -1116,6 +1137,9 @@ rule filter_taxonomy:
         df_taxonomy_filtered.to_csv(output['taxonomytsv'], sep='\t')
         artifact_taxonomy_filtered = Artifact.import_data('FeatureData[Taxonomy]', df_taxonomy_filtered)
         artifact_taxonomy_filtered.save(output['taxonomyqza'])
+
+
+
 
 # RULES: DIVERSITY -------------------------------------------------------------
 
