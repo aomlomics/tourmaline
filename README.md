@@ -36,15 +36,15 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
 * Robust Aitchison PCA and biplot ordination using [DEICODE](https://doi.org/10.1128/mSystems.00016-19)
 
-### Where can I learn more about Tourmaline?
+### How do I cite Tourmaline?
 
-The Tourmaline paper is published in *GigaScience*:
+Please cite our paper in *GigaScience*:
 
-* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Lim, S. J., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066, https://doi.org/10.1093/gigascience/giac066
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Lim, S. J., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066, https://doi.org/10.1093/gigascience/giac066.
 
 ### How do I get started? 
 
-If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).  
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).
 
 ### Contact us 
 
