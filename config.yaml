@@ -1,4 +1,5 @@
 # config.yaml - configuration file for the Tourmaline Snakemake workflow
+# Compatable with qiime2-2023.2
 # User MUST edit these parameters before running their own data.
 # Detailed instructions: https://github.com/aomlomics/tourmaline/wiki.
 
@@ -37,6 +38,9 @@
 # Name your your qza files as follows (or use symbolic links):
 # - reference sequences: 01-imported/refseqs.qza
 # - reference taxonomy: 01-imported/reftax.qza
+
+# Provide a descriptive name for the reference database used, no spaces (e.g., original file name, source and version)
+database_name: silva-138-99-515-806_q2-2021.2
 
 # DENOISE
 
@@ -90,17 +94,20 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
+# Table of feature counts per sample collapsed by chosen taxonomic level.
+# taxa_level - taxonomic level at which the features should be collapsed. Default 7
+# For more info run: qiime taxa collapse --help
+classify_taxalevel: 7
+
 # MULTIPLE SEQUENCE ALIGNMENT
 
 # Multiple sequence alignment of the representative sequences.
-# - method: choose from: muscle, clustalo, mafft
-# - muscle_maxiters: maximum number of iterations (integer, default 16)
-# - muscle_diags: choose from: -diags (find diagonals - faster for similar sequences) or leave blank
+# - method: choose from: muscle v5, clustalo, mafft
+# - muscle_iters: number of refinement iterations (integer, default 100)
 # For more info run: muscle, clustalo --help, qiime alignment [mafft|mask] --help
 
 alignment_method: muscle
-alignment_muscle_maxiters: 2
-alignment_muscle_diags: -diags
+alignment_muscle_iters: 50
 
 # OUTLIER DETECTION
 
@@ -163,6 +170,19 @@ report_theme: github
 # Filtering is implemented by filtering commands only, eg "snakemake dada2_pe_report_filtered", and is applied to each of
 # representative sequences, taxonomy, and feature table.
 
+# FILTER SAMPLES BY ID
+# The file of sample IDs to be removed must have the sample IDs in the 1st column with a header line. Any number of additional columns can be added.
+# The file must be named 00-data/samples_to_filter_{method}.tsv, where method is dada2-pe, dada2-se, or deblur-se.
+# For more info run: qiime feature-table filter-samples --help
+# TO SKIP FILTERING BY SAMPLE ID: provide a file with only headers (default) or don't run filtering commands.
+
+# FILTER SAMPLES BY METADATA
+# Samples can be removed or retained based on their metadata, using SQLite WHERE-clause syntax inside double quotes.
+# For more info run: qiime feature-table filter-samples --help
+# TO SKIP FILTERING BY SAMPLE METADATA: provide "none" (default) or don't run filtering commands.
+# EXAMPLE: "[region]='Open Water'"
+metadata_filter: none
+
 # FILTER BY FEATURE ID
 # The file of feature IDs to be filtered must have a header line with two columns: 1. "featureid", 2. anything.
 # The file must be named 00-data/repseqs_to_filter_{method}.tsv, where method is dada2-pe, dada2-se, or deblur-se.
@@ -191,12 +211,13 @@ repseq_max_length: 260
 
 # FILTER BY ABUNDANCE & PREVALENCE
 # Set minimum abundance/prevalence limits for filtering.
-# Limit is inclusive, ie, greater than or equal to minimum.
+# Values are floats range(0,1)
+# Limit is inclusive, ie, greater than or equal to minimum. Samples with frequency of 0 after filtering will also be removed.
 # For more info run: qiime feature-table filter-features-conditionally --help
 # TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands.
 
-repseq_min_abundance: 0
-repseq_min_prevalence: 0
+repseq_min_abundance: 0.01
+repseq_min_prevalence: 0.1
 
 # THREADS
 

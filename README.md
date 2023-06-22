@@ -28,7 +28,7 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
 * Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
 * Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
-* De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
+* De novo multiple sequence alignment with [MUSCLE5](https://drive5.com/muscle5/), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
 * Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
 * Interactive taxonomy barplot
 * Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
@@ -36,15 +36,15 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
 * Robust Aitchison PCA and biplot ordination using [DEICODE](https://doi.org/10.1128/mSystems.00016-19)
 
-### Where can I learn more about Tourmaline?
+### How do I cite Tourmaline?
 
-The Tourmaline paper is published in *GigaScience*:
+Please cite our paper in *GigaScience*:
 
-* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Lim, S. J., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066, https://doi.org/10.1093/gigascience/giac066
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Lim, S. J., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066, https://doi.org/10.1093/gigascience/giac066.
 
 ### How do I get started? 
 
-If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).  
+If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).
 
 ### Contact us 
 
@@ -64,37 +64,42 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have a Mac with an Apple M1 chip, we recommend using Docker to install, following the M1 chip instructions. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details.
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have an Apple Silicon chip (M1, M2 Macs), the instructions to install QIIME 2 vary slightly. 
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
+To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
 
 ```bash
-wget https://data.qiime2.org/distro/core/qiime2-2021.2-py36-osx-conda.yml
-conda env create -n qiime2-2021.2 --file qiime2-2021.2-py36-osx-conda.yml
+wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
+conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
 ```
 
 Activate the environment and install the other Conda- or PIP-installable dependencies:
 
 ```
-conda activate qiime2-2021.2
-conda install -c bioconda snakemake biopython muscle clustalo tabulate pandoc tabview
+conda activate qiime2-2023.2
+conda install -c conda-forge -c bioconda snakemake biopython muscle clustalo tabulate
 conda install -c conda-forge deicode
 pip install git+https://github.com/biocore/empress.git
 qiime dev refresh-cache
+conda install -c bioconda bioconductor-msa bioconductor-odseq
 ```
 
-Finally, open R by entering `R` and install the R dependencies (if prompted, enter "n" to update none of the packages):
+##### Apple Silicon Macs
 
-```R
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install("msa")
-BiocManager::install("odseq")
+Follow these instructions for Macs with M1/M2 chips.
+
+```bash
+wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
+CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
+conda activate qiime2-2023.2
+conda config --env --set subdir osx-64
 ```
 
-#### Option 2: Docker container
+Then continue to install the other Conda- or PIP-installable dependencies.
+
+#### Option 2: Docker container (not updated yet)
 
 To run Tourmaline inside a Docker container:
 
@@ -145,8 +150,8 @@ Download reference database sequence and taxonomy files, named `refseqs.qza` and
 
 ```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2021.2/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2021.2/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
@@ -186,10 +191,10 @@ Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github
 
 Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page.
 
-From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
+From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target, changing the number of cores to match your machine:
 
 ```bash
-snakemake dada2_pe_denoise
+snakemake dada2_pe_denoise --cores 4
 ```
 
 Pausing after the *denoise* step allows you to make changes before proceeding:
@@ -203,19 +208,19 @@ Pausing after the *denoise* step allows you to make changes before proceeding:
 Continue the workflow without filtering (for now). If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_taxonomy_unfiltered
+snakemake dada2_pe_taxonomy_unfiltered --cores 4
 ```
 
 Next, run the *diversity* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_diversity_unfiltered
+snakemake dada2_pe_diversity_unfiltered --cores 4
 ```
 
 Finally, run the *report* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_report_unfiltered
+snakemake dada2_pe_report_unfiltered --cores 4
 ```
 
 #### Filtered mode
@@ -230,19 +235,19 @@ After viewing the *unfiltered* results—the taxonomy summary and taxa barplot, 
 Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_taxonomy_filtered
+snakemake dada2_pe_taxonomy_filtered --cores 4
 ```
 
 Next, run the *diversity* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_diversity_filtered
+snakemake dada2_pe_diversity_filtered --cores 4
 ```
 
 Finally, run the *report* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_report_filtered
+snakemake dada2_pe_report_filtered --cores 1
 ```
 
 ### View output

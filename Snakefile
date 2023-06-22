@@ -36,7 +36,8 @@ rule dada2_pe_taxonomy_unfiltered:
         "01-imported/check_inputs_params_pe.done",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_pe_diversity_unfiltered:
     input:
@@ -77,7 +78,8 @@ rule dada2_pe_taxonomy_filtered:
         "02-output-dada2-pe-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-pe-filtered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_pe_diversity_filtered:
     input:
@@ -126,7 +128,8 @@ rule dada2_se_taxonomy_unfiltered:
         "01-imported/check_inputs_params_se.done",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_se_diversity_unfiltered:
     input:
@@ -167,7 +170,8 @@ rule dada2_se_taxonomy_filtered:
         "02-output-dada2-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.qzv",
-        "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-dada2-se-filtered/01-taxonomy/taxa_sample_table.tsv"
 
 rule dada2_se_diversity_filtered:
     input:
@@ -216,7 +220,8 @@ rule deblur_se_taxonomy_unfiltered:
         "01-imported/check_inputs_params_se.done",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.qzv",
-        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_sample_table.tsv"
 
 rule deblur_se_diversity_unfiltered:
     input:
@@ -257,7 +262,8 @@ rule deblur_se_taxonomy_filtered:
         "02-output-deblur-se-filtered/00-table-repseqs/repseqs_lengths_describe.md",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.qzv",
-        "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv"
+        "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv",
+        "02-output-deblur-se-filtered/01-taxonomy/taxa_sample_table.tsv"
 
 rule deblur_se_diversity_filtered:
     input:
@@ -742,7 +748,8 @@ rule feature_classifier:
         "02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza"
     params:
         classifymethod=config["classify_method"],
-        classifyparams=config["classify_parameters"]
+        classifyparams=config["classify_parameters"],
+        searchout="02-output-{method}-unfiltered/01-taxonomy/search_results.qza"
     threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
@@ -765,6 +772,7 @@ rule feature_classifier:
         "    --i-reference-taxonomy {input.reftax} "
         "    --i-query {input.repseqs} "
         "    --o-classification {output} "
+        "    --o-search-results {params.searchout} "
         "    {params.classifyparams}; "
         "elif [ {params.classifymethod} = consensus-vsearch ]; then "
         "    qiime feature-classifier classify-consensus-vsearch "
@@ -772,6 +780,7 @@ rule feature_classifier:
         "    --i-reference-taxonomy {input.reftax} "
         "    --i-query {input.repseqs} "
         "    --o-classification {output} "
+        "    --o-search-results {params.searchout} "
         "    --p-threads {threads} "
         "    {params.classifyparams}; "
         "fi"
@@ -801,6 +810,30 @@ rule taxa_barplot:
         "--i-taxonomy {input.taxonomy} "
         "--m-metadata-file {input.metadata} "
         "--o-visualization {output}"
+
+rule export_taxa_biom:
+    input:
+        table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
+        taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
+    output:
+        "02-output-{method}-{filter}/01-taxonomy/taxa_sample_table.tsv"
+    params:
+        taxalevel=config["classify_taxalevel"]
+    threads: config["other_threads"]
+    shell:
+        "qiime taxa collapse "
+        "--i-table {input.table} "
+        "--i-taxonomy {input.taxonomy} "
+        "--p-level {params.taxalevel} "
+        "--o-collapsed-table tempfile_collapsed.qza;"
+        "qiime tools export "
+        "--input-path tempfile_collapsed.qza "
+        "--output-path temp_export;"
+        "biom convert "
+        "-i temp_export/feature-table.biom "
+        "-o {output} "
+        "--to-tsv;"
+        "/bin/rm -r tempfile_collapsed.qza temp_export/"
 
 rule export_taxonomy_to_tsv:
     input:
@@ -838,17 +871,16 @@ rule align_repseqs:
         alnqza="02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     params:
         method=config["alignment_method"],
-        muscle_maxiters=config["alignment_muscle_maxiters"],
-        muscle_diags=config["alignment_muscle_diags"]
+        muscle_iters=config["alignment_muscle_iters"]
     threads: config["alignment_threads"],
     shell:
         "if [ {params.method} = muscle ]; then "
         "    echo 'Multiple sequence alignment method: MUSCLE ...'; "
         "    muscle "
-        "    -maxiters {params.muscle_maxiters} "
-        "    {params.muscle_diags} "
-        "    -in {input.repseqsfasta} "
-        "    -out temp_aligned_repseqs.fasta; "
+        "    -super5 {input.repseqsfasta} "
+        "    -threads {threads} "
+        "    -refineiters {params.muscle_iters} "
+        "    -output temp_aligned_repseqs.fasta; "
         "    perl scripts/cleanupMultiFastaNoBreaks.pl temp_aligned_repseqs.fasta > {output.alnfasta}; "
         "    echo 'Line breaks removed to generate {output.alnfasta}'; "
         "    /bin/rm temp_aligned_repseqs.fasta; "
@@ -1045,13 +1077,16 @@ rule filter_sequences_table:
         table="02-output-{method}-unfiltered/00-table-repseqs/table.qza",
         taxonomy="02-output-{method}-unfiltered/01-taxonomy/taxonomy.qza",
         repseqs="02-output-{method}-unfiltered/00-table-repseqs/repseqs.qza",
-        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv"
+        repseqstofilter="00-data/repseqs_to_filter_{method}.tsv",
+        samplestofilter="00-data/samples_to_filter_{method}.tsv",
+        metadata="00-data/metadata.tsv"
     params:
         excludeterms=config["exclude_terms"],
         minlength=config["repseq_min_length"],
         maxlength=config["repseq_max_length"],
         minabund=config["repseq_min_abundance"],
         minprev=config["repseq_min_prevalence"],
+        metadatafilt=config["metadata_filter"]
     output:
         repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
@@ -1075,14 +1110,30 @@ rule filter_sequences_table:
         "--m-metadata-file {input.repseqstofilter} "
         "--p-exclude-ids "
         "--o-filtered-data temp_repseqs3.qza; "
-        # FILTER TABLE BY IDS
+        # FILTER TABLE BY FEATURE IDS
         "qiime feature-table filter-features "
         "--i-table {input.table} "
         "--m-metadata-file temp_repseqs3.qza "
         "--o-filtered-table temp_table.qza; "
+        # FILTER TABLE BY SAMPLE IDS
+        "qiime feature-table filter-samples "
+        "--i-table temp_table.qza "
+        "--m-metadata-file {input.samplestofilter} "
+        "--p-exclude-ids "
+        "--o-filtered-table temp_table2.qza; "
+        # FILTER TABLE BY SAMPLE METADATA
+        "if [ {params.metadatafilt} != none ]; then "
+        "    qiime feature-table filter-samples "
+        "    --i-table temp_table2.qza "
+        "    --m-metadata-file {input.metadata} "
+        "    --p-where \"{params.metadatafilt}\" "
+        "    --o-filtered-table temp_table3.qza; "
+        "else "
+        "    cp temp_table2.qza temp_table3.qza; "
+        "fi; "
         # FILTER TABLE BY ABUNDANCE & PREVALENCE
         "qiime feature-table filter-features-conditionally "
-        "--i-table temp_table.qza "
+        "--i-table temp_table3.qza "
         "--p-abundance {params.minabund} "
         "--p-prevalence {params.minprev} "
         "--o-filtered-table {output.table}; "
@@ -1096,7 +1147,9 @@ rule filter_sequences_table:
         "/bin/rm temp_repseqs1.qza; "
         "/bin/rm temp_repseqs2.qza; "
         "/bin/rm temp_repseqs3.qza; "
-        "/bin/rm temp_table.qza"
+        "/bin/rm temp_table.qza; "
+        "/bin/rm temp_table2.qza; "
+        "/bin/rm temp_table3.qza;"
 
 rule filter_taxonomy:
     input:
@@ -1114,6 +1167,9 @@ rule filter_taxonomy:
         df_taxonomy_filtered.to_csv(output['taxonomytsv'], sep='\t')
         artifact_taxonomy_filtered = Artifact.import_data('FeatureData[Taxonomy]', df_taxonomy_filtered)
         artifact_taxonomy_filtered.save(output['taxonomyqza'])
+
+
+
 
 # RULES: DIVERSITY -------------------------------------------------------------
 
@@ -1297,6 +1353,8 @@ rule generate_report_md:
         visuwuemp="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_emperor.qzv",
         visuwugs="02-output-{method}-{filter}/04-beta-diversity/unweighted_unifrac_group_significance.qzv",
         visbiplotemp="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
+    params:
+        refdatabase=config["database_name"]
     output:
         "03-reports/report_{method}_{filter}.md"
     threads: config["other_threads"]
@@ -1400,6 +1458,10 @@ rule generate_report_md:
         "echo '### Visualization of Taxonomy' >> {output};"
         "echo '' >> {output};"
         "echo QZV: \[{input.vistaxonomy}\]\(../{input.vistaxonomy}\){{target=\"_blank\"}} >> {output};"
+        "echo '' >> {output};"
+        "echo '### Taxonomy Reference Database' >> {output};"
+        "echo '' >> {output};"
+        "echo '{params.refdatabase}' >> {output};"
         "echo '' >> {output};"
         "echo '### Predicted Amplicon Type' >> {output};"
         "echo '' >> {output};"
