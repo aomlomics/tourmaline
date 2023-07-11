@@ -81,7 +81,7 @@ Activate the environment and install the other Conda- or PIP-installable depende
 conda activate qiime2-2023.2
 conda install -c conda-forge -c bioconda snakemake biopython muscle clustalo tabulate
 conda install -c conda-forge deicode
-pip install git+https://github.com/biocore/empress.git
+pip install empress
 qiime dev refresh-cache
 conda install -c bioconda bioconductor-msa bioconductor-odseq
 ```
