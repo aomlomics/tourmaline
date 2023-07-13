@@ -88,7 +88,9 @@ conda install -c bioconda bioconductor-msa bioconductor-odseq
 
 ##### Apple Silicon Macs
 
-Follow these instructions for Macs with M1/M2 chips.
+Follow these instructions for Macs with M1/M2 chips.  
+
+**First, set your Terminal application to run in [Rosetta mode](https://academy.bigbinary.com/learn-rubyonrails/setting-up-macos).**
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
@@ -99,7 +101,7 @@ conda config --env --set subdir osx-64
 
 Then continue to install the other Conda- or PIP-installable dependencies.
 
-#### Option 2: Docker container (not updated yet)
+#### Option 2: Docker container (NOT UPDATED TO NEW VERSION YET)
 
 To run Tourmaline inside a Docker container:
 
