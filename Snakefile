@@ -643,6 +643,18 @@ rule summarize_feature_table:
         "--m-sample-metadata-file {input.metadata} "
         "--o-visualization {output}"
 
+rule summarize_repseqs:
+    input:
+        stats="02-output-{method}-{filter}/00-table-repseqs/dada2_stats.qza"
+    output:
+        "02-output-{method}-{filter}/00-table-repseqs/dada2_stats.qzv"
+    threads: config["other_threads"]
+    shell:
+        "qiime metadata tabulate "
+        "--m-input-file {input.stats} "
+        "--o-visualization {output}"
+
+
 rule export_table_to_biom:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/table.qza"
