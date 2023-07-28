@@ -72,6 +72,8 @@ To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda 
 
 ```bash
 wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
+# make sure you are using the most updated conda
+conda update conda
 conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
 ```
 
