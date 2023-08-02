@@ -8,7 +8,6 @@
 # GLOBALS ----------------------------------------------------------------------
 
 configfile: "config.yaml"
-conda: "qiime2-2023.5"
 
 # RULEORDER DIRECTIVES ---------------------------------------------------------
 
@@ -1077,7 +1076,7 @@ rule tabulate_plot_repseq_properties:
         "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
-        "python plot_repseq_properties.py {input.lengths} {input.gaps} {input.outliers} {input.taxonomy} "
+        "python scripts/plot_repseq_properties.py {input.lengths} {input.gaps} {input.outliers} {input.taxonomy} "
         "{input.table} {output.proptsv} {output.propdescribe} {output.proppdf} {output.outliersforqza}"
 
 rule import_outliers_to_qza:
