@@ -25,7 +25,7 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
 * Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
 * Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
-* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
+* Feature filtering by taxonomy, sequence length, feature ID, sample metadata, and abundance/prevalence
 * De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
 * Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
 * Interactive taxonomy barplot
@@ -38,7 +38,7 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 
 A citable preprint of our manuscript is available on *bioRxiv*:
 
-* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: a workflow for rapid and reproducible amplicon sequence analysis using QIIME 2 and Snakemake. *bioRxiv* 2021.09.15.460495 (2021). doi:[10.1101/2021.09.15.460495](https://doi.org/10.1101/2021.09.15.460495)
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake, GigaScience, Volume 11, 2022, giac066. doi:[10.1093/gigascience/giac066Tourmaline](https://doi.org/10.1093/gigascience/giac066)
 
 ### How do I get started? 
 
@@ -61,18 +61,24 @@ Before you download the Tourmaline commands and directory structure from GitHub,
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of QIIME 2 (**for Linux, change "osx" to "linux"**):
+To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of Snakemake v7.30.1. We recommend using ]Miniconda with a python >= 3.8](https://docs.conda.io/en/latest/miniconda.html):
 
 ```bash
-wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
-conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
+conda install -c conda-forge -c bioconda snakemake=7.30.1
+```
+
+Then install QIIME 2 with conda (**for Linux, change "osx" to "linux"**):
+
+```bash
+wget https://data.qiime2.org/distro/core/qiime2-2023.5-py38-osx-conda.yml
+conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
 ```
 
 Activate the environment and install the other Conda- or PIP-installable dependencies:
 
 ```
-conda activate qiime2-2023.2
-conda install -c conda-forge -c bioconda snakemake biopython muscle clustalo tabulate
+conda activate qiime2-2023.5
+conda install -c conda-forge -c bioconda biopython muscle clustalo tabulate
 conda install -c conda-forge deicode
 pip install empress
 qiime dev refresh-cache
@@ -86,9 +92,9 @@ Follow these instructions for Macs with M1/M2 chips.
 **First, set your Terminal application to run in [Rosetta mode](https://academy.bigbinary.com/learn-rubyonrails/setting-up-macos).**
 
 ```bash
-wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
-CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
-conda activate qiime2-2023.2
+wget https://data.qiime2.org/distro/core/qiime2-2023.5-py38-osx-conda.yml
+CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
+conda activate qiime2-2023.5
 conda config --env --set subdir osx-64
 ```
 
@@ -184,12 +190,12 @@ Now edit, replace, or store the required input files as described here:
 
 Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
-Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page.
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page. **Always include the --use-conda option.**
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
 ```bash
-snakemake dada2_pe_denoise
+snakemake --use-conda dada2_pe_denoise --cores 4
 ```
 
 Pausing after the *denoise* step allows you to make changes before proceeding:
@@ -203,19 +209,19 @@ Pausing after the *denoise* step allows you to make changes before proceeding:
 Continue the workflow without filtering (for now). If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_taxonomy_unfiltered
+snakemake --use-conda dada2_pe_taxonomy_unfiltered --cores 4
 ```
 
 Next, run the *diversity* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_diversity_unfiltered
+snakemake --use-conda dada2_pe_diversity_unfiltered --cores 4
 ```
 
 Finally, run the *report* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_report_unfiltered
+snakemake --use-conda dada2_pe_report_unfiltered --cores
 ```
 
 #### Filtered mode
@@ -230,19 +236,19 @@ After viewing the *unfiltered* results—the taxonomy summary and taxa barplot, 
 Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_taxonomy_filtered
+snakemake --use-conda dada2_pe_taxonomy_filtered --cores 4 
 ```
 
 Next, run the *diversity* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_diversity_filtered
+snakemake --use-conda dada2_pe_diversity_filtered --cores 4
 ```
 
 Finally, run the *report* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_report_filtered
+snakemake --use-conda dada2_pe_report_filtered -cores 4
 ```
 
 ### View output
@@ -267,7 +273,7 @@ Downloaded files can be deleted after viewing because they are already stored in
 
 #### Power tips
 
-* The whole workflow can be run with just the command `snakemake dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
+* The whole workflow can be run with just the command `snakemake --use-conda dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake --use-conda dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
 * If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run.
 * You can always delete any file you want to regenerate. Then there are several ways to regenerate it: run `snakemake FILE` and Snakemake will determine which rules (commands) need to be run to generate that file; or, run `snakemake RULE` where the rule generates the desired file as output.
 * If you've run Tourmaline on your dataset before, you can speed up the setup process and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the some of the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
