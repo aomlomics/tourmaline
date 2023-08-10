@@ -1,5 +1,5 @@
 # config.yaml - configuration file for the Tourmaline Snakemake workflow
-# Compatable with qiime2-2023.5
+# Compatable with qiime2-2023.2
 # User MUST edit these parameters before running their own data.
 # Detailed instructions: https://github.com/aomlomics/tourmaline/wiki.
 
