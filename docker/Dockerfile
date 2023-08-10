@@ -29,7 +29,6 @@ RUN apt-get update -y && \
 RUN pip install empress 
 
 # Add conda installation dir to $PATH (instead of doing 'conda activate')
-#ENV PATH="/opt/conda/envs/snakemake/bin:$PATH"
 ENV PATH /opt/conda/bin:${PATH}
 
 # Install snakemake environment
@@ -38,11 +37,7 @@ RUN /bin/bash -c "conda create -y -c conda-forge -c bioconda -n snakemake snakem
 RUN echo "source activate snakemake" > ~/.bashrc
 ENV PATH /opt/conda/envs/snakemake/bin:${PATH}
 
-# This is necessary to install snakemake using conda
-#SHELL ["conda", "run", "-n", "qiime2-2023.2", "/bin/bash", "-c"]
- 
 # Install tourmaline dependencies using conda
 RUN conda install -n qiime2-2023.5 -c conda-forge -c bioconda biopython muscle clustalo tabulate
 RUN conda install -n qiime2-2023.5 -c conda-forge deicode
-#RUN qiime dev refresh-cache
 RUN conda install -n qiime2-2023.5 -c bioconda bioconductor-msa bioconductor-odseq
