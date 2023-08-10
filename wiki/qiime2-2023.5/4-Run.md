@@ -6,22 +6,32 @@ Note that any of the commands below can be run with various options, including `
 
 Tourmaline will automatically check if the required input files and parameters are provided properly before running, and will generate an error with feedback if they are not.
 
+### Activate snakemake environment
+
+All of the commands below will be run with your 'snakemake' environment activated. The snakemake commands will then activate the 'qiime2-2023.5' environment automatically as they are run.  
+
+```
+conda activate snakemake
+```
+
 #### Number of compute cores
 
-If you want Snakemake to run with more than 1 computational thread, you must provide the maximum number of threads you want with the `snakemake --cores` parameter. If the `config.yaml` file specifies more threads than the number specified by `--cores`, it will scale down to match the `--cores` value.
+You must provide the maximum number of threads you want with the `snakemake --cores` parameter. If the `config.yaml` file specifies more threads than the number specified by `--cores`, it will scale down to match the `--cores` value.
 
 Example, running with 5 cores:
 
 ```
-snakemake dada2_pe_denoise --cores 5
+snakemake --use-conda dada2_pe_denoise --cores 5
 ```
+
+Every snakemake command below must be run with the '--use-conda' option. 
 
 ### Unfiltered mode
 
 The first command is `snakemake dada2_pe_denoise`, which imports the FASTQ files and the reference database (if not already present in directory `01-imported`), summarizes the FASTQ data, runs denoising using DADA2, and summarizes and visualizes the output feature table and representative sequences (for DADA2, the representative sequences are amplicon sequence variants or ASVs). 
 
 ```
-snakemake dada2_pe_denoise
+snakemake --use-conda dada2_pe_denoise --cores 5
 # or dada2_se_denoise or deblur_se_denoise
 ```
 
@@ -30,21 +40,21 @@ At this point, the user should determine if the DADA2 parameters need to be modi
 The second command is `snakemake dada2_pe_taxonomy_unfiltered`, which assigns taxonomy to the representative sequences using a Naive Bayes classifier or consensus BLAST method, visualizes the taxonomy, and generates an interactive taxa barplot. 
 
 ```
-snakemake dada2_pe_taxonomy_unfiltered
+snakemake --use-conda dada2_pe_taxonomy_unfiltered --cores 5
 # or dada2_se_taxonomy_unfiltered or deblur_se_taxonomy_unfiltered
 ```
 
 The third command is `snakemake dada2_pe_diversity_unfiltered`, which will align and build a phylogenetic tree of the representative sequences, identify representative sequences that have unassigned taxonomy or are potential outliers, summarize and plot the representative sequence properties, perform alpha-rarefaction, and run alpha-diversity and beta-diversity analyses and group significance tests using a full suite of metrics. 
 
 ```
-snakemake dada2_pe_diversity_unfiltered
+snakemake --use-conda dada2_pe_diversity_unfiltered --cores 5
 # or dada2_se_diversity_unfiltered or deblur_se_diversity_unfiltered
 ```
 
 The fourth and final command is `snakemake dada2_pe_report_unfiltered`, which will create a comprehensive HTML report of parameters, metadata, inputs, outputs, and visualizations in a single file. The report includes hyperlinks to QIIME 2 visualization files, which can be downloaded and drag-and-dropped into [view.qiime2.org](https://view.qiime2.org) for viewing. Filtering of representative sequences is provided by the *filtered* mode.
 
 ```
-snakemake dada2_pe_report_unfiltered
+snakemake --use-conda dada2_pe_report_unfiltered --cores 5
 # or dada2_se_report_unfiltered or deblur_se_report_unfiltered
 ```
 
@@ -60,16 +70,16 @@ After viewing the *unfiltered* results—the taxonomy summary and taxa barplot, 
 The user can then run the *filtered* mode of the workflow.
 
 ```
-snakemake dada2_pe_denoise
+snakemake --use-conda dada2_pe_denoise --cores 5
 # or dada2_se_denoise or deblur_se_denoise
 
-snakemake dada2_pe_taxonomy_filtered
+snakemake --use-conda dada2_pe_taxonomy_filtered --cores 5
 # or dada2_se_taxonomy_filtered or deblur_se_taxonomy_filtered
 
-snakemake dada2_pe_diversity_filtered
+snakemake --use-conda dada2_pe_diversity_filtered --cores 5
 # or dada2_se_diversity_filtered or deblur_se_diversity_filtered
 
-snakemake dada2_pe_report_filtered
+snakemake --use-conda dada2_pe_report_filtered --cores 5
 # or dada2_se_report_filtered or deblur_se_report_filtered
 ```
 
@@ -119,7 +129,7 @@ When a Snakemake command is run, only those rules that need to be executed to pr
 To see which jobs (rules) and commands will be run by the workflow, use the options `--dryrun` and `--printshellcmds`, respectively. `--dryrun` will prevent the workflow from being executed. `--printshellcmds` can be used with our without `--dryrun`:
 
 ```
-snakemake dada2_pe_denoise --dryrun --printshellcmds
+snakemake --use-conda dada2_pe_denoise --dryrun --printshellcmds
 ```
 
 #### Regenerate specific files
@@ -139,7 +149,7 @@ snakemake --cleanup-metadata <filenames>
 
 #### Directed Acyclic Graph (DAG)
 
-Snakemake provides the command option `--dag` to generate a directed acyclic graph (DAG) of the jobs (rules) that will be run. The DAG is basically a graph that shows the flow and order of rules to reach your desired target, and it can be rendered as a PDF (or other image format) using the program Graphviz on your computer. If you do not have Graphviz installed or are running Tourmaline through Docker, you can install it within the `qiime2-2021.2` conda environment like this:  
+Snakemake provides the command option `--dag` to generate a directed acyclic graph (DAG) of the jobs (rules) that will be run. The DAG is basically a graph that shows the flow and order of rules to reach your desired target, and it can be rendered as a PDF (or other image format) using the program Graphviz on your computer. If you do not have Graphviz installed or are running Tourmaline through Docker, you can install it within the `qiime2-2023.5` conda environment like this:  
 
 ```
 conda install -c conda-forge graphviz
