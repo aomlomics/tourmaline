@@ -70,7 +70,7 @@ Below are the full contents of `config.yaml` with the default settings:
 
 ```
 # config.yaml - configuration file for the Tourmaline Snakemake workflow
-# Compatable with qiime2-2023.2
+# Compatable with qiime2-2023.5
 # User MUST edit these parameters before running their own data.
 # Detailed instructions: https://github.com/aomlomics/tourmaline/wiki.
 
@@ -313,21 +313,21 @@ Edit the configuration file `config.yaml` to change DADA2/Deblur parameters, sub
 
 | Parameter                                                    | Description                                                  | Recommendation                                               | Help                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `dada2pe_trunc_len_f` `dada2pe_trunc_len_r` `dada2se_trunc_len` | Truncate bases (integer) from the 3' (right) ends of reads in DADA2. | Choose values that maximize length but remove low-quality ends. Note that DADA2 paired-end mode requires a minimum overlap of 12 bp to merge Read 1 and Read 2. See the section below "Sequence quality control and choice of truncation length" for instructions on using the included script *fastqc_per_base_sequence_quality_dropoff.py*. | [dada2 denoise-paired](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-single/) |
-| `dada2pe_trim_left_f` `dada2pe_trim_left_f` `dada2se_trim_left` | Trim bases (integer) from the 5' (left) ends of reads in DADA2. | Depending on your amplicon sequencing method, and if trimming was not done prior to running Tourmaline, you may have primer sequences, indexes, and/or adapters on the 5' ends of your reads. If so, set this parameter to remove those bases. If not, set this parameter to zero. Note that 5' trimming (this parameter) is done *after* 3' truncation (above parameter). | [dada2 denoise-paired](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-single/) |
-| `deblur_trim_length`                                         | Truncate bases (integer) from the 3' (right) ends of reads in Deblur. | Choose values that maximize length but remove low-quality ends. See the section below "Sequence quality control and choice of truncation length" for instructions on using the included script *fastqc_per_base_sequence_quality_dropoff.py*. | [deblur denoise-other](https://docs.qiime2.org/2023.2/plugins/available/deblur/denoise-other/) |
-| `dada2pe_pooling_method` `dada2se_pooling_method`            | DADA2 pooling method.                                        | Choose `pseudo` for pseudo-pooling or `independent` for no pooling. | [dada2 denoise-paired](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-single/) |
-| `dada2pe_chimera_method` `dada2se_chimera_method`            | DADA2 chimera method.                                        | Choose `pooled` if pseudo-pooling otherwise `consensus` or `none`. | [dada2 denoise-paired](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.2/plugins/available/dada2/denoise-single/) |
-| `alignment_method`                                           | Multiple sequence alignment method.                          | Choose `muscle` or `clustalo` for best accuracy or `mafft` for faster results. | [muscle](https://www.drive5.com/muscle/); [clustalo](http://www.clustal.org/omega/); [mafft](https://docs.qiime2.org/2023.2/plugins/available/alignment/) |
-| `classify_method`                                            | Taxonomic classification method.                             | Choose `naive-bayes` for best accuracy or `consensus-blast` for faster results. | [feature-classifier](https://docs.qiime2.org/2023.2/plugins/available/feature-classifier/) |
-| `exclude_terms`                                              | Filter terms (taxa) from taxonomy.                           | Specify terms (comma-separated, no spaces) to find in taxonomy and filter out (case-insensitive), or provide a nonsense term to skip this step when filtering. | [taxa filter-seqs](https://docs.qiime2.org/2023.2/plugins/available/taxa/filter-seqs/) |
+| `dada2pe_trunc_len_f` `dada2pe_trunc_len_r` `dada2se_trunc_len` | Truncate bases (integer) from the 3' (right) ends of reads in DADA2. | Choose values that maximize length but remove low-quality ends. Note that DADA2 paired-end mode requires a minimum overlap of 12 bp to merge Read 1 and Read 2. See the section below "Sequence quality control and choice of truncation length" for instructions on using the included script *fastqc_per_base_sequence_quality_dropoff.py*. | [dada2 denoise-paired](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-single/) |
+| `dada2pe_trim_left_f` `dada2pe_trim_left_f` `dada2se_trim_left` | Trim bases (integer) from the 5' (left) ends of reads in DADA2. | Depending on your amplicon sequencing method, and if trimming was not done prior to running Tourmaline, you may have primer sequences, indexes, and/or adapters on the 5' ends of your reads. If so, set this parameter to remove those bases. If not, set this parameter to zero. Note that 5' trimming (this parameter) is done *after* 3' truncation (above parameter). | [dada2 denoise-paired](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-single/) |
+| `deblur_trim_length`                                         | Truncate bases (integer) from the 3' (right) ends of reads in Deblur. | Choose values that maximize length but remove low-quality ends. See the section below "Sequence quality control and choice of truncation length" for instructions on using the included script *fastqc_per_base_sequence_quality_dropoff.py*. | [deblur denoise-other](https://docs.qiime2.org/2023.5/plugins/available/deblur/denoise-other/) |
+| `dada2pe_pooling_method` `dada2se_pooling_method`            | DADA2 pooling method.                                        | Choose `pseudo` for pseudo-pooling or `independent` for no pooling. | [dada2 denoise-paired](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-single/) |
+| `dada2pe_chimera_method` `dada2se_chimera_method`            | DADA2 chimera method.                                        | Choose `pooled` if pseudo-pooling otherwise `consensus` or `none`. | [dada2 denoise-paired](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-paired/); [dada2 denoise-single](https://docs.qiime2.org/2023.5/plugins/available/dada2/denoise-single/) |
+| `alignment_method`                                           | Multiple sequence alignment method.                          | Choose `muscle` or `clustalo` for best accuracy or `mafft` for faster results. | [muscle](https://www.drive5.com/muscle/); [clustalo](http://www.clustal.org/omega/); [mafft](https://docs.qiime2.org/2023.5/plugins/available/alignment/) |
+| `classify_method`                                            | Taxonomic classification method.                             | Choose `naive-bayes` for best accuracy or `consensus-blast` for faster results. | [feature-classifier](https://docs.qiime2.org/2023.5/plugins/available/feature-classifier/) |
+| `exclude_terms`                                              | Filter terms (taxa) from taxonomy.                           | Specify terms (comma-separated, no spaces) to find in taxonomy and filter out (case-insensitive), or provide a nonsense term to skip this step when filtering. | [taxa filter-seqs](https://docs.qiime2.org/2023.5/plugins/available/taxa/filter-seqs/) |
 | `repseq_min_length` `repseq_max_length`                      | Set minimum and maximum sequence lengths to filter representative sequences by. | Limits are inclusive, i.e., sequences will be retained if greater than or equal to minimum, less than or equal to maximum. Leave defaults (0, 10000) to do no filtering. | link                                                         |
 | `repseq_min_abundance` `repseq_min_prevalence`               | set minimum abundance and prevalence limits to filter representative sequences by. | Limit is inclusive, i.e., sequences will be retained if greater than or equal to minimum. Leave default (0) to do no filtering. |                                                              |
 | `odseq_distance_metric`                                      | Distance metric for odseq.                                   | Choose metric from: `linear`, `affine`.                      | [odseq](https://www.bioconductor.org/packages/release/bioc/html/odseq.html) |
 | `odseq_bootstrap_replicates`                                 | Number (integer) of bootstrap replicates for odseq.          | Choose more replicates for more robust detection of outliers, fewer replicates for faster processing. | [odseq](https://www.bioconductor.org/packages/release/bioc/html/odseq.html) |
 | `odseq_threshold`                                            | Threshold (float) for bootstrap probability distribution for odseq. | Probability to be at the right of the bootstrap scores distribution when computing outliers. Tune this parameter depending on the diversity and occurrence of outliers in the MSA. | [odseq](https://www.bioconductor.org/packages/release/bioc/html/odseq.html) |
-| `core_sampling_depth`                                        | Rarefaction depth (integer) for core diversity metrics.      | Choose a value that balances sequencing depth (more is better) with number of samples retained (more is better). | [diversity core-metrics-phylogenetic](https://docs.qiime2.org/2023.2/plugins/available/diversity/core-metrics-phylogenetic/) |
-| `alpha_max_depth`                                            | Rarefaction depth (integer) for alpha rarefaction.           | Choose a value that balances sequencing depth (more is better) with number of samples retained (more is better). | [diversity alpha-rarefaction](https://docs.qiime2.org/2023.2/plugins/available/diversity/alpha-rarefaction/) |
+| `core_sampling_depth`                                        | Rarefaction depth (integer) for core diversity metrics.      | Choose a value that balances sequencing depth (more is better) with number of samples retained (more is better). | [diversity core-metrics-phylogenetic](https://docs.qiime2.org/2023.5/plugins/available/diversity/core-metrics-phylogenetic/) |
+| `alpha_max_depth`                                            | Rarefaction depth (integer) for alpha rarefaction.           | Choose a value that balances sequencing depth (more is better) with number of samples retained (more is better). | [diversity alpha-rarefaction](https://docs.qiime2.org/2023.5/plugins/available/diversity/alpha-rarefaction/) |
 | `beta_group_column`                                          | Column (text) in your metadata to test beta-diversity group significance. | Choose a category that may differentiate your samples. This analysis can be rerun with different columns by renaming the output file and changing the value in *config.yaml* before running again. | [diversity beta-group-significance](https://docs.qiime2.org/2021.2/plugins/available/diversity/beta-group-significance/) |
 | `report_theme`                                               | HTML report theme.                                           | Choose from: `github`, `gothic`, `newsprint`, `night`, `pixyll`, `whitey`. | [Typora theme gallery](https://theme.typora.io/)             |
 
@@ -357,9 +357,11 @@ The reference sequence (.fasta) and taxonomy (.tsv) files, and their derived QII
 
 When you run Snakemake, if you get an error like, "Missing input files for rule import_ref_seqs: 00-data/refseqs.fna", you can fix this either by placing the reference sequence (.fasta) and taxonomy (.tsv) files in `00-data` or by placing their derived QIIME 2 archives (.qza) in `01-imported`. You will do the latter below.
 
+If using the 'naive-bayes' taxonomy classifier, you can optionally provide only a pre-trained classifier in QIIME 2 format (.qza). 
+
 #### Test data: download reference database and create symbolic links
 
-The small test dataset included with Tourmaline is a 16S rRNA amplicon dataset sequenced using the 515F-806R primers, so we will download a 16S+18S reference database trimmed to this region (Silva 138 SSURef NR99 515F/806R region sequences and taxonomy). Please note the citations and license for this dataset [here](https://docs.qiime2.org/2023.2/data-resources/#silva-16s-18s-rrna).
+The small test dataset included with Tourmaline is a 16S rRNA amplicon dataset sequenced using the 515F-806R primers, so we will download a 16S+18S reference database trimmed to this region (Silva 138 SSURef NR99 515F/806R region sequences and taxonomy). Please note the citations and license for this dataset [here](https://docs.qiime2.org/2023.5/data-resources/#silva-16s-18s-rrna).
 
 ```
 cd ~/databases/qiime2
@@ -457,7 +459,7 @@ Tourmaline requires that your amplicon sequence data is already demultiplexed. W
 
 There are two options to provide your sequence data:
 
-Option 1 is to keep your data as per-sample fastq.gz files with a FASTQ manifest file and let Tourmaline create the FASTQ archive (.qza) file(s). The FASTQ manifest files—by default named `manifest_se.csv` and `manifest_pe.csv` and found in `00-data`—tell QIIME 2 where to find your FASTQ files and what samples they correspond to. See [QIIME 2 Docs](https://docs.qiime2.org/2023.2/tutorials/importing/#fastq-manifest-formats) for more information on FASTQ manifest files. Hint: Gzipped files like fastq.gz files can be viewed using `zcat` (or `gzcat` on Mac) and `zless`.
+Option 1 is to keep your data as per-sample fastq.gz files with a FASTQ manifest file and let Tourmaline create the FASTQ archive (.qza) file(s). The FASTQ manifest files—by default named `manifest_se.csv` and `manifest_pe.csv` and found in `00-data`—tell QIIME 2 where to find your FASTQ files and what samples they correspond to. See [QIIME 2 Docs](https://docs.qiime2.org/2023.5/tutorials/importing/#fastq-manifest-formats) for more information on FASTQ manifest files. Hint: Gzipped files like fastq.gz files can be viewed using `zcat` (or `gzcat` on Mac) and `zless`.
 
 Option 2 is to use a pre-imported .qza file (QIIME 2 archive), which already contains your demultiplexed sequences and a manifest file. 
 
@@ -480,7 +482,7 @@ First, delete the test fastq.gz files that came in directory `00-data`.
 
 ##### Demultiplex (if necessary)
 
-If your sequences are not already demultiplexed, demultiplex them, then gzip the resulting per-sample FASTQ files. See the [QIIME 2 Docs](https://docs.qiime2.org/2023.2/tutorials/importing/) for more information on importing and demultiplexing FASTQ files. If your sequences are in multiplexed EMP format, you can use the commands `qiime tools import` to import them as type `EMPPairedEndSequences`, then `qiime demux emp-paired` to demuliplex them.
+If your sequences are not already demultiplexed, demultiplex them, then gzip the resulting per-sample FASTQ files. See the [QIIME 2 Docs](https://docs.qiime2.org/2023.5/tutorials/importing/) for more information on importing and demultiplexing FASTQ files. If your sequences are in multiplexed EMP format, you can use the commands `qiime tools import` to import them as type `EMPPairedEndSequences`, then `qiime demux emp-paired` to demuliplex them.
 
 ##### Remove primers (if necessary)
 
@@ -525,7 +527,7 @@ If your amplicon length is shorter than your sequencing read length, you may nee
     --o-trimmed-sequences trimmed_remove_primers_wild.qza
     ```
 
-3. Run cutadapt again on your trimmed reads, this time trimming primers off the front and only keeping trimmed sequences containing primers.
+3. Run cutadapt again on your trimmed reads, this time trimming primers off the front and **only keeping trimmed sequences containing primers**. If this removes too many reads, you can try it withought the '--p-discard-untrimmed' option.
 
     ```
     qiime cutadapt trim-paired \
@@ -636,7 +638,7 @@ multiqc --export .
 
 ##### Choose sequence truncation lengths
 
-Finally, reactivate your `qiime2-2023.2` environment and run ***fastqc_per_base_sequence_quality_dropoff.py***, which will determine the position where median per-base sequence quality drops below some fraction (default: 0.90, here: 0.85) of its maximum value. The output of this script can be used as your parameter setting for DADA2 truncation or Deblur trim values (use output from Read 1 for `dada2pe_trunc_len_f`, `dada2se_trunc_len`, and `deblur_trim_length`; use output from Read 2 for `dada2pe_trunc_len_r`):
+Finally, reactivate your `qiime2-2023.5` environment and run ***fastqc_per_base_sequence_quality_dropoff.py***, which will determine the position where median per-base sequence quality drops below some fraction (default: 0.90, here: 0.85) of its maximum value. The output of this script can be used as your parameter setting for DADA2 truncation or Deblur trim values (use output from Read 1 for `dada2pe_trunc_len_f`, `dada2se_trunc_len`, and `deblur_trim_length`; use output from Read 2 for `dada2pe_trunc_len_r`):
 
 ```
 cd /path/to/tourmaline
@@ -676,7 +678,7 @@ The following are some suggested columns to include in your metadata for each pr
 * `run_center`
 * `run_date`
 
-The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help formatting your metadata see [Metadata in QIIME 2](https://docs.qiime2.org/2023.2/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp), and NMDC's [Introduction to Metadata and Ontologies](https://microbiomedata.org/introduction-to-metadata-and-ontologies/).
+The above columns follow the standards set by [Qiita](https://qiita.ucsd.edu/static/doc/html/gettingstartedguide/index.html). For additional help formatting your metadata see [Metadata in QIIME 2](https://docs.qiime2.org/2023.5/tutorials/metadata/), the [EMP Metadata Guide](http://www.earthmicrobiome.org/protocols-and-standards/metadata-guide/), [QIIMP](https://qiita.ucsd.edu/iframe/?iframe=qiimp), and NMDC's [Introduction to Metadata and Ontologies](https://microbiomedata.org/introduction-to-metadata-and-ontologies/).
 
 ##### Symlinks to metadata and FASTQ manifest files
 
