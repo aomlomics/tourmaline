@@ -326,6 +326,7 @@ rule check_inputs_params_pe:
         check="01-imported/check_metadata.done"
     params:
         column=config["beta_group_column"],
+        classifymethod=config["classify_method"],
     output:
         touch("01-imported/check_inputs_params_pe.done")
     conda:
@@ -338,17 +339,28 @@ rule check_inputs_params_pe:
         "    echo 'OK: FASTQ manifest file 00-data/manifest_pe.csv found; it will be used to create FASTQ archive 01-imported/fastq_pe.qza.'; "
         "else echo 'Error: FASTQ sequence data not found; either 00-data/manifest_pe.csv or 01-imported/fastq_pe.qza is required.' && exit 1; "
         "fi; "
-        "if [ -r '01-imported/refseqs.qza' ]; then "
+        "if [ {params.classifymethod} = naive-bayes ]; then "
+        "    if [ -r '01-imported/classifier.qza' ]; then "
+        "        echo 'OK: Reference sequences classifier 01-imported/classifier.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
+        "    elif [ -r '01-imported/refseqs.qza' ]; then "
+        "        echo 'OK: Reference sequences archive 01-imported/refseqs.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
+        "    elif [ -r '00-data/refseqs.fna' ]; then "
+        "        echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found; it will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
+        "    else echo 'Error: Reference sequences not found; either 01-imported/classifier.qza or 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
+        "    fi; "
+        "elif [ -r '01-imported/refseqs.qza' ]; then "
         "    echo 'OK: Reference sequences archive 01-imported/refseqs.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
         "elif [ -r '00-data/refseqs.fna' ]; then "
         "    echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found; it will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
         "else echo 'Error: Reference sequences not found; either 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
         "fi; "
-        "if [ -r '01-imported/reftax.qza' ]; then "
-        "    echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found; reference taxonomy file 00-data/reftax.tsv not required.'; "
-        "elif [ -r '00-data/reftax.tsv' ]; then "
-        "    echo 'OK: Reference taxonomy file 00-data/reftax.tsv found; it will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
-        "else echo 'Error: Reference taxonomy not found; either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
+        "if [ {params.classifymethod} != naive-bayes ]; then "
+        "    if [ -r '01-imported/reftax.qza' ]; then "
+        "        echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found; reference taxonomy file 00-data/reftax.tsv not required.'; "
+        "    elif [ -r '00-data/reftax.tsv' ]; then "
+        "        echo 'OK: Reference taxonomy file 00-data/reftax.tsv found; it will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
+        "    else echo 'Error: Reference taxonomy not found; either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
+        "    fi; "
         "fi; "
         "if grep -q ^{params.column}$ {input}; then "
         "    echo 'OK: Metadata contains the column \"{params.column}\" that is specified as beta_group_column in config.yaml.'; "
