@@ -3,9 +3,9 @@
 Tourmaline requires the following software:
 
 * Conda
-* QIIME 2 version 2023.2
+* QIIME 2 version 2023.5
 * QIIME 2 plugins: deicode, empress
-* Snakemake
+* Snakemake version 7.30.1
 * Python packages: biopython, tabulate
 * R packages: msa, odseq
 * Multiple sequence alignment tools: clustalo, muscle v5
@@ -21,22 +21,30 @@ The native installation builds on the Conda installation of QIIME 2.
 
 First, if you don't have Conda installed on your machine, install [Miniconda](https://conda.io/miniconda.html) for your operating system (Python 3.8+ version).
 
-#### QIIME 2
+#### Snakemake
 
-Second, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2023.2/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2023.2` (for Linux, change "osx" to "linux"):
+Second, install snakemake into its own environment. Ensure it is version < 7.30.1, as v7.30.2 only works with Python 3.9+.
 
 ```
-wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
-conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
+conda install -c conda-forge -c bioconda snakemake=7.30.1
+```
+
+#### QIIME 2
+
+Third, install QIIME 2 in a Conda environment, if you haven't already. See the instructions at [qiime2.org](https://docs.qiime2.org/2023.5/install/native/). For example, on macOS these commands will install QIIME 2 inside a Conda environment called `qiime2-2023.5` (for Linux, change "osx" to "linux"):
+
+```
+wget https://data.qiime2.org/distro/core/qiime2-2023.5-py38-osx-conda.yml
+conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
 ```
 
 #### Snakemake and other dependencies
 
-Third, activate your QIIME 2 environment and install Snakemake and other dependencies:
+Third, activate your QIIME 2 environment and install dependencies:
 
 ```
-conda activate qiime2-2023.2
-conda install -c conda-forge -c bioconda snakemake biopython muscle clustalo tabulate
+conda activate qiime2-2023.5
+conda install -c conda-forge -c bioconda biopython muscle clustalo tabulate
 conda install -c conda-forge deicode
 pip install empress
 qiime dev refresh-cache
