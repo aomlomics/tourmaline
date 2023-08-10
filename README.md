@@ -68,18 +68,24 @@ Before you download the Tourmaline commands and directory structure from GitHub,
 
 #### Option 1: Native installation
 
-To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of QIIME 2 (for Linux, change "osx" to "linux"):
+To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of Snakemake v7.30.1. We recommend using [Miniconda with a python >= 3.8](https://docs.conda.io/en/latest/miniconda.html):
 
 ```bash
-wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
-conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
+conda install -c conda-forge -c bioconda snakemake=7.30.1
+```
+
+Then install QIIME 2 with conda (**for Linux, change "osx" to "linux"**):
+
+```bash
+wget https://data.qiime2.org/distro/core/qiime2-2023.5-py38-osx-conda.yml
+conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
 ```
 
 Activate the environment and install the other Conda- or PIP-installable dependencies:
 
 ```
-conda activate qiime2-2023.2
-conda install -c conda-forge -c bioconda snakemake biopython muscle clustalo tabulate
+conda activate qiime2-2023.5
+conda install -c conda-forge -c bioconda biopython muscle clustalo tabulate
 conda install -c conda-forge deicode
 pip install empress
 qiime dev refresh-cache
@@ -93,9 +99,9 @@ Follow these instructions for Macs with M1/M2 chips.
 **First, set your Terminal application to run in [Rosetta mode](https://academy.bigbinary.com/learn-rubyonrails/setting-up-macos).**
 
 ```bash
-wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
-CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
-conda activate qiime2-2023.2
+wget https://data.qiime2.org/distro/core/qiime2-2023.5-py38-osx-conda.yml
+CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
+conda activate qiime2-2023.5
 conda config --env --set subdir osx-64
 ```
 
@@ -152,8 +158,8 @@ Download reference database sequence and taxonomy files, named `refseqs.qza` and
 
 ```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2023.2/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2023.2/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2023.5/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2023.5/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
@@ -191,12 +197,12 @@ Now edit, replace, or store the required input files as described here:
 
 Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
-Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page.
+Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page. **Always include the --use-conda option.**
 
 From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target, changing the number of cores to match your machine:
 
 ```bash
-snakemake dada2_pe_denoise --cores 4
+snakemake --use-conda dada2_pe_denoise --cores 4
 ```
 
 Pausing after the *denoise* step allows you to make changes before proceeding:
@@ -210,19 +216,19 @@ Pausing after the *denoise* step allows you to make changes before proceeding:
 Continue the workflow without filtering (for now). If you are satisfied with your parameters and files, run the *taxonomy* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_taxonomy_unfiltered --cores 4
+snakemake --use-conda dada2_pe_taxonomy_unfiltered --cores 4
 ```
 
 Next, run the *diversity* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_diversity_unfiltered --cores 4
+snakemake --use-conda dada2_pe_diversity_unfiltered --cores 4
 ```
 
 Finally, run the *report* rule (for unfiltered data):
 
 ```bash
-snakemake dada2_pe_report_unfiltered --cores 4
+snakemake --use-conda dada2_pe_report_unfiltered --cores 4
 ```
 
 #### Filtered mode
@@ -237,19 +243,19 @@ After viewing the *unfiltered* results—the taxonomy summary and taxa barplot, 
 Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_taxonomy_filtered --cores 4
+snakemake --use-conda dada2_pe_taxonomy_filtered --cores 4
 ```
 
 Next, run the *diversity* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_diversity_filtered --cores 4
+snakemake --use-conda dada2_pe_diversity_filtered --cores 4
 ```
 
 Finally, run the *report* rule (for filtered data):
 
 ```bash
-snakemake dada2_pe_report_filtered --cores 1
+snakemake --use-conda dada2_pe_report_filtered --cores 1
 ```
 
 ### View output
