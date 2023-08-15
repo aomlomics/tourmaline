@@ -103,7 +103,7 @@ conda config --env --set subdir osx-64
 
 Then continue to install the other Conda- or PIP-installable dependencies.
 
-#### Option 2: Docker container (NOT UPDATED TO NEW VERSION YET)
+#### Option 2: Docker container
 
 To run Tourmaline inside a Docker container:
 
