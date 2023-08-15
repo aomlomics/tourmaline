@@ -1,8 +1,6 @@
-<img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
+## Tourmaline Wiki
 
-<img src="png/figure1.png" alt="png/figure1" width="70%"/>
-
-## Tourmaline
+This wiki describes in detail how to use Tourmaline. Navigate using the sidebar on the right. 
 
 Tourmaline is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
@@ -27,8 +25,8 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * FASTQ sequence import using a manifest file, or use your pre-imported FASTQ .qza file
 * Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
 * Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), and consensus [VSEARCH](https://doi.org/10.7717/peerj.2584)
-* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
-* De novo multiple sequence alignment with [MUSCLE5](https://drive5.com/muscle5/), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
+* Feature filtering by taxonomy, sequence length, feature ID, sample metadata, and abundance/prevalence
+* De novo multiple sequence alignment with [MUSCLE](https://doi.org/10.1093/nar/gkh340), [Clustal Omega](https://doi.org/10.1007/978-1-62703-646-7_6), or [MAFFT](https://doi.org/10.1093/molbev/mst010) (with masking) and tree building with [FastTree](https://doi.org/10.1093/molbev/msp077)
 * Outlier detection with [odseq](https://doi.org/10.1186/s12859-015-0702-1)
 * Interactive taxonomy barplot
 * Tree visualization using [Empress](https://doi.org/10.1128/mSystems.01216-20)
@@ -36,20 +34,15 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * Beta diversity distances, principal coordinates, [Emperor](https://doi.org/10.1186/2047-217x-2-16) plots, and beta group significance (one metadata column) with four metrics: unweighted and weighted [UniFrac](https://doi.org/10.1038/ismej.2010.133), Jaccard distance, and Bray–Curtis distance
 * Robust Aitchison PCA and biplot ordination using [DEICODE](https://doi.org/10.1128/mSystems.00016-19)
 
-### How do I cite Tourmaline?
+### Where can I learn more about Tourmaline?
 
-Please cite our paper in *GigaScience*:
+A citable preprint of our manuscript is available on *bioRxiv*:
 
-* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Lim, S. J., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066, https://doi.org/10.1093/gigascience/giac066.
+* Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake, GigaScience, Volume 11, 2022, giac066. doi:[10.1093/gigascience/giac066Tourmaline](https://doi.org/10.1093/gigascience/giac066)
 
 ### How do I get started? 
 
 If this is your first time using Tourmaline or Snakemake, you may want to browse through the [Wiki](https://github.com/aomlomics/tourmaline/wiki) for a detailed walkthrough. If you want to get started right away, check out the Quick Start below and follow along with the video tutorial on [YouTube](https://youtu.be/xKfOxrXBXYQ).
-
-### Contact us 
-
-* Questions? Join the conversation on [gitter](https://gitter.im/aomlomics/tourmaline).
-* Have a feature request? Raise an issue on [GitHub](https://github.com/aomlomics/tourmaline/issues).
 
 ## Quick Start
 
@@ -64,7 +57,7 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
-Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have an Apple Silicon chip (M1, M2 Macs), the instructions to install QIIME 2 vary slightly. 
+Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have an Apple Silicon chip (M1, M2 Macs), the instructions to install QIIME 2 vary slightly. See the [Install](https://github.com/aomlomics/tourmaline/wiki/2-Install) page for more details. 
 
 #### Option 1: Native installation
 
@@ -94,7 +87,7 @@ conda install -c bioconda bioconductor-msa bioconductor-odseq
 
 ##### Apple Silicon Macs
 
-Follow these instructions for Macs with M1/M2 chips.  
+Follow these instructions for Macs with M1/M2 chips. 
 
 **First, set your Terminal application to run in [Rosetta mode](https://academy.bigbinary.com/learn-rubyonrails/setting-up-macos).**
 
@@ -158,8 +151,8 @@ Download reference database sequence and taxonomy files, named `refseqs.qza` and
 
 ```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2023.5/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2023.5/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2023.2/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
@@ -199,7 +192,7 @@ Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github
 
 Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page. **Always include the --use-conda option.**
 
-From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target, changing the number of cores to match your machine:
+From the `tourmaline` directory (which you may rename), run Snakemake with the *denoise* rule as the target:
 
 ```bash
 snakemake --use-conda dada2_pe_denoise --cores 4
@@ -228,7 +221,7 @@ snakemake --use-conda dada2_pe_diversity_unfiltered --cores 4
 Finally, run the *report* rule (for unfiltered data):
 
 ```bash
-snakemake --use-conda dada2_pe_report_unfiltered --cores 4
+snakemake --use-conda dada2_pe_report_unfiltered --cores
 ```
 
 #### Filtered mode
@@ -243,7 +236,7 @@ After viewing the *unfiltered* results—the taxonomy summary and taxa barplot, 
 Now we are ready to filter the representative sequences and feature table, generate new summaries, and generate a new taxonomy bar plot, by running the *taxonomy* rule (for filtered data):
 
 ```bash
-snakemake --use-conda dada2_pe_taxonomy_filtered --cores 4
+snakemake --use-conda dada2_pe_taxonomy_filtered --cores 4 
 ```
 
 Next, run the *diversity* rule (for filtered data):
@@ -255,7 +248,7 @@ snakemake --use-conda dada2_pe_diversity_filtered --cores 4
 Finally, run the *report* rule (for filtered data):
 
 ```bash
-snakemake --use-conda dada2_pe_report_filtered --cores 1
+snakemake --use-conda dada2_pe_report_filtered -cores 4
 ```
 
 ### View output
@@ -280,8 +273,8 @@ Downloaded files can be deleted after viewing because they are already stored in
 
 #### Power tips
 
-* The whole workflow can be run with just the command `snakemake dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
-* If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run. If you want to save these outputs and rerun with different parameters, you can change the name of the output directories and report files to something informative and leave them in the Tourmaline directory.
+* The whole workflow can be run with just the command `snakemake --use-conda dada2_pe_report_unfiltered`  (without filtering representative sequences) or  `snakemake --use-conda dada2_pe_report_filtered`  (after filtering representative sequences). Warning: If your parameters are not optimized, the results will be suboptimal (garbage in, garbage out).
+* If you want to make a fresh run and not save the previous output, simply delete the output directories (e.g., `02-output-{method}-{filter}` and `03-report`) generated in the previous run.
 * You can always delete any file you want to regenerate. Then there are several ways to regenerate it: run `snakemake FILE` and Snakemake will determine which rules (commands) need to be run to generate that file; or, run `snakemake RULE` where the rule generates the desired file as output.
 * If you've run Tourmaline on your dataset before, you can speed up the setup process and initialize a new Tourmaline directory (e.g., `tourmaline-new`) with the some of the files and symlinks of the existing one (e.g., `tourmaline-existing`) using the command below:
 
@@ -305,11 +298,7 @@ Downloaded files can be deleted after viewing because they are already stored in
   01-imported/classifier.qza
   ```
 
-  Ensure you make any changes to your configuration file and (if necessary) delete any files you want to be regenerated before you run Snakemake. If you copy over output files from a previous Tourmaline run manually that you do not want to be regenerated (eg, `02-output-{method}-unfiltered`), you should use the `cp -p` flag to preserve timestamps. 
-  
-  ```
-  cp -rp tourmaline-old/02-output-dada2-pe-unfiltered/ tourmaline-new/
-  ```
+  Ensure you make any changes to your configuration file and (if necessary) delete any files you want to be regenerated before you run Snakemake.
 
 #### Alternatives
 
