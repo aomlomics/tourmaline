@@ -1,9 +1,4 @@
-import pandas as pd
-import numpy as np
-from qiime2 import Artifact
-import matplotlib.pyplot as plt
-import seaborn as sns
-from tabulate import tabulate
+# Requires qiime2-2023.5 conda environment 
 
 # GLOBALS ----------------------------------------------------------------------
 
@@ -298,6 +293,8 @@ rule deblur_se_report_filtered:
 rule check_metadata:
     output:
         touch("01-imported/check_metadata.done")
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "if [ -r '00-data/metadata.tsv' ]; then "
@@ -312,31 +309,11 @@ rule summarize_metadata:
     output:
         "01-imported/metadata_summary.md",
         "01-imported/metadata_columns.txt"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
-    run:
-        df = pd.read_csv(input.metadata, sep='\t')
-        cols = df.columns
-        df2 = pd.DataFrame(columns =[0,1], index=cols)
-        for col in cols:
-            if col in df.columns:
-                vc = df[col].value_counts()
-                if vc.index.shape == (0,):
-                    df2.loc[col, 0] = '(no values in column)'
-                    df2.loc[col, 1] = '--'
-                else:
-                    df2.loc[col, 0] = vc.index[0]
-                    df2.loc[col, 1] = vc.values[0]
-            else:
-                df2.loc[col, 0] = '(column not provided)'
-                df2.loc[col, 1] = '--'
-        df2.columns = ['Most common value', 'Count']
-        df2.index.name = 'Column name'
-        outstr = tabulate(df2, tablefmt="pipe", headers="keys")
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
-        with open(output[1], 'w') as target:
-            [target.write('%s\n' % i) for i in cols]
+    shell:
+        "python scripts/summarize_metadata.py {input.metadata} {output[0]} {output[1]}"
 
 rule check_inputs_params_pe:
     input:
@@ -344,8 +321,11 @@ rule check_inputs_params_pe:
         check="01-imported/check_metadata.done"
     params:
         column=config["beta_group_column"],
+        classifymethod=config["classify_method"],
     output:
         touch("01-imported/check_inputs_params_pe.done")
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "if [ -r '01-imported/fastq_pe.qza' ]; then "
@@ -354,17 +334,28 @@ rule check_inputs_params_pe:
         "    echo 'OK: FASTQ manifest file 00-data/manifest_pe.csv found; it will be used to create FASTQ archive 01-imported/fastq_pe.qza.'; "
         "else echo 'Error: FASTQ sequence data not found; either 00-data/manifest_pe.csv or 01-imported/fastq_pe.qza is required.' && exit 1; "
         "fi; "
-        "if [ -r '01-imported/refseqs.qza' ]; then "
+        "if [ {params.classifymethod} = naive-bayes ]; then "
+        "    if [ -r '01-imported/classifier.qza' ]; then "
+        "        echo 'OK: Reference sequences classifier 01-imported/classifier.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
+        "    elif [ -r '01-imported/refseqs.qza' ]; then "
+        "        echo 'OK: Reference sequences archive 01-imported/refseqs.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
+        "    elif [ -r '00-data/refseqs.fna' ]; then "
+        "        echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found; it will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
+        "    else echo 'Error: Reference sequences not found; either 01-imported/classifier.qza or 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
+        "    fi; "
+        "elif [ -r '01-imported/refseqs.qza' ]; then "
         "    echo 'OK: Reference sequences archive 01-imported/refseqs.qza found; reference sequences FASTA file 00-data/refseqs.fna not required.'; "
         "elif [ -r '00-data/refseqs.fna' ]; then "
         "    echo 'OK: Reference sequences FASTA file 00-data/refseqs.fna found; it will be used to create reference sequences archive 01-imported/refseqs.qza.'; "
         "else echo 'Error: Reference sequences not found; either 00-data/refseqs.fna or 01-imported/refseqs.qza is required.' && exit 1; "
         "fi; "
-        "if [ -r '01-imported/reftax.qza' ]; then "
-        "    echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found; reference taxonomy file 00-data/reftax.tsv not required.'; "
-        "elif [ -r '00-data/reftax.tsv' ]; then "
-        "    echo 'OK: Reference taxonomy file 00-data/reftax.tsv found; it will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
-        "else echo 'Error: Reference taxonomy not found; either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
+        "if [ {params.classifymethod} != naive-bayes ]; then "
+        "    if [ -r '01-imported/reftax.qza' ]; then "
+        "        echo 'OK: Reference taxonomy archive 01-imported/reftax.qza found; reference taxonomy file 00-data/reftax.tsv not required.'; "
+        "    elif [ -r '00-data/reftax.tsv' ]; then "
+        "        echo 'OK: Reference taxonomy file 00-data/reftax.tsv found; it will be used to create reference taxonomy archive 01-imported/reftax.qza.'; "
+        "    else echo 'Error: Reference taxonomy not found; either 00-data/reftax.tsv or 01-imported/reftax.qza is required.' && exit 1; "
+        "    fi; "
         "fi; "
         "if grep -q ^{params.column}$ {input}; then "
         "    echo 'OK: Metadata contains the column \"{params.column}\" that is specified as beta_group_column in config.yaml.'; "
@@ -378,6 +369,8 @@ rule check_inputs_params_se:
         column=config["beta_group_column"],
     output:
         touch("01-imported/check_inputs_params_se.done")
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "if [ -r '01-imported/fastq_se.qza' ]; then "
@@ -410,6 +403,8 @@ rule import_ref_seqs:
         "00-data/refseqs.fna"
     output:
         "01-imported/refseqs.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools import "
@@ -422,6 +417,8 @@ rule import_ref_tax:
         "00-data/reftax.tsv"
     output:
         "01-imported/reftax.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools import "
@@ -436,6 +433,8 @@ rule import_fastq_demux_pe:
         "01-imported/check_inputs_params_pe.done"
     output:
         "01-imported/fastq_pe.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools import "
@@ -450,6 +449,8 @@ rule import_fastq_demux_se:
         "01-imported/check_inputs_params_se.done"
     output:
         "01-imported/fastq_se.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools import "
@@ -466,6 +467,8 @@ rule summarize_fastq_demux_pe:
         "01-imported/check_inputs_params_pe.done"
     output:
         "01-imported/fastq_summary.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime demux summarize "
@@ -478,6 +481,8 @@ rule summarize_fastq_demux_se:
         "01-imported/check_inputs_params_se.done"
     output:
         "01-imported/fastq_summary.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime demux summarize "
@@ -489,6 +494,8 @@ rule export_fastq_summary_to_counts:
         "01-imported/fastq_summary.qzv"
     output:
         "01-imported/fastq_counts.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "unzip -qq -o {input} -d temp0; "
@@ -500,14 +507,11 @@ rule describe_fastq_counts:
         "01-imported/fastq_counts.tsv"
     output:
         "01-imported/fastq_counts_describe.md"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
-    run:
-        s = pd.read_csv(input[0], index_col=0, sep='\t')
-        t = s.describe()
-        outstr = tabulate(pd.DataFrame(t.iloc[1:,0]), tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0,0].astype(int), 'Fastq sequences per sample'])
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
+    shell:
+        "python scripts/describe_fastq_counts.py {input} {output}"
 
 # RULES: DENOISE ---------------------------------------------------------------
 
@@ -532,6 +536,8 @@ rule denoise_dada2_pe:
         table="02-output-dada2-pe-unfiltered/00-table-repseqs/table.qza",
         repseqs="02-output-dada2-pe-unfiltered/00-table-repseqs/repseqs.qza",
         stats="02-output-dada2-pe-unfiltered/00-table-repseqs/dada2_stats.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["dada2pe_threads"]
     shell:
         "qiime dada2 denoise-paired "
@@ -572,6 +578,10 @@ rule denoise_dada2_se:
         table="02-output-dada2-se-unfiltered/00-table-repseqs/table.qza",
         repseqs="02-output-dada2-se-unfiltered/00-table-repseqs/repseqs.qza",
         stats="02-output-dada2-se-unfiltered/00-table-repseqs/dada2_stats.qza"
+    conda:
+        "qiime2-2023.5"
+    conda:
+        "qiime2-2023.5"
     threads: config["dada2se_threads"]
     shell:
         "qiime dada2 denoise-single "
@@ -609,6 +619,10 @@ rule denoise_deblur_se:
         table="02-output-deblur-se-unfiltered/00-table-repseqs/table.qza",
         repseqs="02-output-deblur-se-unfiltered/00-table-repseqs/repseqs.qza",
         stats="02-output-deblur-se-unfiltered/00-table-repseqs/deblur_stats.qza"
+    conda:
+        "qiime2-2023.5"
+    conda:
+        "qiime2-2023.5"
     threads: config["deblur_threads"]
     shell:
         "qiime deblur denoise-other "
@@ -636,6 +650,10 @@ rule summarize_feature_table:
         metadata="00-data/metadata.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary.qzv"
+    conda:
+        "qiime2-2023.5"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime feature-table summarize "
@@ -643,11 +661,29 @@ rule summarize_feature_table:
         "--m-sample-metadata-file {input.metadata} "
         "--o-visualization {output}"
 
+rule summarize_repseqs:
+    input:
+        stats="02-output-{method}-{filter}/00-table-repseqs/dada2_stats.qza"
+    output:
+        "02-output-{method}-{filter}/00-table-repseqs/dada2_stats.qzv"
+    conda:
+        "qiime2-2023.5"
+    conda:
+        "qiime2-2023.5"
+    threads: config["other_threads"]
+    shell:
+        "qiime metadata tabulate "
+        "--m-input-file {input.stats} "
+        "--o-visualization {output}"
+
+
 rule export_table_to_biom:
     input:
         "02-output-{method}-{filter}/00-table-repseqs/table.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools export "
@@ -660,6 +696,8 @@ rule summarize_biom_samples:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary_samples.txt"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "biom summarize-table "
@@ -673,6 +711,8 @@ rule summarize_biom_features:
         "02-output-{method}-{filter}/00-table-repseqs/table.biom"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/table_summary_features.txt"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "biom summarize-table "
@@ -687,6 +727,8 @@ rule visualize_repseqs:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime feature-table tabulate-seqs "
@@ -698,6 +740,8 @@ rule export_repseqs_to_fasta:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools export "
@@ -710,6 +754,8 @@ rule repseqs_detect_amplicon_locus:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_amplicon_type.txt"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "python scripts/detect_amplicon_locus.py -i {input} > {output}"
@@ -719,6 +765,8 @@ rule repseqs_lengths:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs.fasta"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
@@ -728,14 +776,11 @@ rule repseqs_lengths_describe:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths.tsv"
     output:
         "02-output-{method}-{filter}/00-table-repseqs/repseqs_lengths_describe.md"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
-    run:
-        s = pd.read_csv(input[0], header=None, index_col=0, sep='\t')
-        t = s.describe()
-        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=['Statistic (n=%s)' % t.iloc[0].values[0].astype(int), 'Sequence length'])
-        with open(output[0], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
+    shell:
+        "python scripts/repseqs_lengths_describe.py {input} {output}"
 
 # RULES: TAXONOMY --------------------------------------------------------------
 
@@ -750,6 +795,8 @@ rule feature_classifier:
         classifymethod=config["classify_method"],
         classifyparams=config["classify_parameters"],
         searchout="02-output-{method}-unfiltered/01-taxonomy/search_results.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["feature_classifier_threads"]
     shell:
         "echo classify_method: {params.classifymethod}; "
@@ -790,6 +837,8 @@ rule visualize_taxonomy:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime metadata tabulate "
@@ -803,6 +852,8 @@ rule taxa_barplot:
         metadata="00-data/metadata.tsv"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime taxa barplot "
@@ -819,6 +870,8 @@ rule export_taxa_biom:
         "02-output-{method}-{filter}/01-taxonomy/taxa_sample_table.tsv"
     params:
         taxalevel=config["classify_taxalevel"]
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime taxa collapse "
@@ -840,6 +893,8 @@ rule export_taxonomy_to_tsv:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools export "
@@ -852,6 +907,8 @@ rule import_taxonomy_to_qza:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.tsv"
     output:
         "02-output-{method}-{filter}/01-taxonomy/taxonomy.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools import "
@@ -872,6 +929,8 @@ rule align_repseqs:
     params:
         method=config["alignment_method"],
         muscle_iters=config["alignment_muscle_iters"]
+    conda:
+        "qiime2-2023.5"
     threads: config["alignment_threads"],
     shell:
         "if [ {params.method} = muscle ]; then "
@@ -924,6 +983,8 @@ rule phylogeny_fasttree:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/unrooted_tree.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["phylogeny_fasttree_threads"]
     shell:
         "qiime phylogeny fasttree "
@@ -936,6 +997,8 @@ rule phylogeny_midpoint_root:
         "02-output-{method}-{filter}/02-alignment-tree/unrooted_tree.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime phylogeny midpoint-root "
@@ -951,6 +1014,8 @@ rule visualize_tree:
         outliers="02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/rooted_tree.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime empress community-plot "
@@ -966,6 +1031,8 @@ rule alignment_count_gaps:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs.fasta"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_gaps.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "bash scripts/alignment_count_gaps.sh < {input} > {output}"
@@ -992,6 +1059,8 @@ rule alignment_detect_outliers:
         threshold = config["odseq_threshold"]
     output:
         "02-output-{method}-{filter}/02-alignment-tree/aligned_repseqs_outliers.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "Rscript --vanilla scripts/run_odseq.R {input} {params.metric} {params.replicates} {params.threshold} temp_odseq; "
@@ -1010,46 +1079,20 @@ rule tabulate_plot_repseq_properties:
         propdescribe="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties_describe.md",
         proppdf="02-output-{method}-{filter}/02-alignment-tree/repseqs_properties.pdf",
         outliersforqza="02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
-    run:
-        lengths = pd.read_csv(input['lengths'], names=['length'], index_col=0, sep='\t')
-        gaps = pd.read_csv(input['gaps'], names=['gaps'], index_col=0, sep='\t')
-        outliers = pd.read_csv(input['outliers'], names=['outlier'], index_col=0, sep='\t')
-        taxonomy = Artifact.load(input['taxonomy'])
-        taxonomydf = taxonomy.view(view_type=pd.DataFrame)
-        taxonomydf['level_1'] = [x.split(';')[0] for x in taxonomydf['Taxon']]
-        table = Artifact.load(input['table'])
-        tabledf = table.view(view_type=pd.DataFrame)
-        merged = pd.merge(lengths, gaps, left_index=True, right_index=True, how='outer')
-        merged = pd.merge(merged, outliers, left_index=True, right_index=True, how='outer')
-        merged = pd.merge(merged, taxonomydf['Taxon'], left_index=True, right_index=True, how='outer')
-        merged = pd.merge(merged, taxonomydf['level_1'], left_index=True, right_index=True, how='outer')
-        merged = pd.merge(merged, tabledf.sum().rename('observations'), left_index=True, right_index=True, how='outer')
-        merged.columns = ['length', 'gaps', 'outlier', 'taxonomy', 'taxonomy_level_1', 'observations']
-        merged.index.name = 'featureid'
-        merged['log10(observations)'] = [np.log10(x) for x in merged['observations']]
-        merged.sort_values('log10(observations)', ascending=False, inplace=True)
-        merged.to_csv(output['proptsv'], index=True, sep='\t')
-        t = merged.describe()
-        tcolumns = t.columns
-        tcolumns = tcolumns.insert(0, 'Statistic (n=%s)' % t.iloc[0].values[0].astype(int))
-        outstr = tabulate(t.iloc[1:], tablefmt="pipe", headers=tcolumns)
-        with open(output['propdescribe'], 'w') as target:
-            target.write(outstr)
-            target.write('\n')
-        g = sns.relplot(data=merged, x='length', y='gaps', col='outlier', hue='taxonomy_level_1', size='log10(observations)', sizes=(1,500), edgecolor = 'none', alpha=0.7)
-        g.set_axis_labels('length (bp) not including gaps', 'gaps (bp) in multiple sequence alignment')
-        plt.savefig(output['proppdf'], bbox_inches='tight')
-        outliers.columns = ['Outlier']
-        outliers.index.name = 'Feature ID'
-        outliers = outliers*1
-        outliers.to_csv(output['outliersforqza'], index=True, sep='\t')
+    shell:
+        "python scripts/plot_repseq_properties.py {input.lengths} {input.gaps} {input.outliers} {input.taxonomy} "
+        "{input.table} {output.proptsv} {output.propdescribe} {output.proppdf} {output.outliersforqza}"
 
 rule import_outliers_to_qza:
     input:
         "02-output-{method}-{filter}/02-alignment-tree/outliers.tsv"
     output:
         "02-output-{method}-{filter}/02-alignment-tree/outliers.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime tools import "
@@ -1063,6 +1106,8 @@ rule tabulate_repseqs_to_filter:
     output:
         outliers="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_outliers.tsv",
         unassigned="02-output-{method}-{filter}/02-alignment-tree/repseqs_to_filter_unassigned.tsv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "cat {input.proptsv} | grep -i 'outlier\|true' | cut -f1,4 > {output.outliers}; "
@@ -1090,6 +1135,8 @@ rule filter_sequences_table:
     output:
         repseqs="02-output-{method}-filtered/00-table-repseqs/repseqs.qza",
         table="02-output-{method}-filtered/00-table-repseqs/table.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         # FILTER SEQUENCES BY TAXONOMY
@@ -1158,17 +1205,11 @@ rule filter_taxonomy:
     output:
         taxonomytsv="02-output-{method}-filtered/01-taxonomy/taxonomy.tsv",
         taxonomyqza="02-output-{method}-filtered/01-taxonomy/taxonomy.qza"        
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
-    run:
-        df_taxonomy = pd.read_csv(input['taxonomy'], index_col=0, sep='\t')
-        df_repseqs = pd.read_csv(input['repseqs'], header=None, index_col=0, sep='\t')
-        keep_ids = df_repseqs.index
-        df_taxonomy_filtered = df_taxonomy.loc[list(keep_ids)]
-        df_taxonomy_filtered.to_csv(output['taxonomytsv'], sep='\t')
-        artifact_taxonomy_filtered = Artifact.import_data('FeatureData[Taxonomy]', df_taxonomy_filtered)
-        artifact_taxonomy_filtered.save(output['taxonomyqza'])
-
-
+    shell:
+        "python scripts/filter_taxonomy.py {input.taxonomy} {input.repseqs} {output.taxonomytsv} {output.taxonomyqza}"
 
 
 # RULES: DIVERSITY -------------------------------------------------------------
@@ -1182,6 +1223,8 @@ rule diversity_alpha_rarefaction:
         maxdepth=config["alpha_max_depth"]
     output:
         "02-output-{method}-{filter}/03-alpha-diversity/alpha_rarefaction.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime diversity alpha-rarefaction "
@@ -1220,6 +1263,8 @@ rule diversity_core_metrics_phylogenetic:
         weightedunifracemperor="02-output-{method}-{filter}/04-beta-diversity/weighted_unifrac_emperor.qzv",
         jaccardemperor="02-output-{method}-{filter}/04-beta-diversity/jaccard_emperor.qzv",
         braycurtisemperor="02-output-{method}-{filter}/04-beta-diversity/bray_curtis_emperor.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["diversity_core_metrics_phylogenetic_threads"]
     shell:
         "qiime diversity core-metrics-phylogenetic "
@@ -1252,6 +1297,8 @@ rule diversity_alpha_group_significance:
         metadata="00-data/metadata.tsv"
     output:
         "02-output-{method}-{filter}/03-alpha-diversity/{metric}_group_significance.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime diversity alpha-group-significance "
@@ -1269,6 +1316,8 @@ rule diversity_beta_group_significance:
         pairwise=config["beta_group_pairwise"]
     output:
         "02-output-{method}-{filter}/04-beta-diversity/{metric}_group_significance.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime diversity beta-group-significance "
@@ -1290,6 +1339,8 @@ rule deicode_auto_rpca:
     output:
         biplot="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot.qza",
         distancematrix="02-output-{method}-{filter}/04-beta-diversity/deicode_distance_matrix.qza"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime deicode auto-rpca "
@@ -1309,6 +1360,8 @@ rule emperor_biplot:
         numfeatures=config["deicode_num_features"]
     output:
         emperor="02-output-{method}-{filter}/04-beta-diversity/deicode_biplot_emperor.qzv"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "qiime emperor biplot "
@@ -1357,6 +1410,8 @@ rule generate_report_md:
         refdatabase=config["database_name"]
     output:
         "03-reports/report_{method}_{filter}.md"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "echo '# Tourmaline Report' > {output};"
@@ -1564,6 +1619,8 @@ rule generate_report_html:
         theme=config["report_theme"]
     output:
         "03-reports/report_{method}_{filter}.html"
+    conda:
+        "qiime2-2023.5"
     threads: config["other_threads"]
     shell:
         "pandoc -i {input} -o {output};"
