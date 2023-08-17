@@ -70,7 +70,7 @@ Make sure Docker has enough memory. On Docker for Mac, the default memory is 2 G
 Download the [Tourmaline Docker image](https://hub.docker.com/repository/docker/aomlomics/tourmaline) from DockerHub:
 
 ```
-docker pull aomlomics/tourmaline
+docker pull lukenoaa/tourmaline
 ```
 
 List your Docker images again to make sure the `tourmaline` image is there:
@@ -84,13 +84,13 @@ docker images
 Now create and run a container:
 
 ```
-docker run -v $HOME:/data -it aomlomics/tourmaline
+docker run -v $HOME:/data -it lukenoaa/tourmaline
 ```
 
 If installing on a Mac with an Apple M1 chip, run the Docker image with the `--platform linux/amd64` command. It will take a few minutes for the image to load the first time it is run.
 
 ```
-docker run --platform linux/amd64 -v $HOME:/data -it aomlomics/tourmaline
+docker run --platform linux/amd64 -v $HOME:/data -it lukenoaa/tourmaline
 ```
 
 #### External files
