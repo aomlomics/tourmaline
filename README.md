@@ -116,18 +116,18 @@ To run Tourmaline inside a Docker container:
 1. Install Docker Desktop (Mac, Windows, or Linux) from [Docker.com](https://docs.docker.com/get-docker/).
 2. Open Docker app.
 3. Increase the memory to 8 GB or more (Preferences -> Resources -> Advanced -> Memory).
-4. Download the Docker image from [DockerHub](https://hub.docker.com/repository/docker/aomlomics/tourmaline) (command below).
+4. Download the Docker image from [DockerHub](https://hub.docker.com/r/lukenoaa/tourmaline) (command below).
 5. Run the Docker image (command below).
 
 ```bash
-docker pull aomlomics/tourmaline
-docker run -v $HOME:/data -it aomlomics/tourmaline
+docker pull lukenoaa/tourmaline
+docker run -v $HOME:/data -it lukenoaa/tourmaline
 ```
 
 If installing on a Mac with an Apple M1 chip, run the Docker image with the `--platform linux/amd64` command. It will take a few minutes for the image to load the first time it is run.
 
 ```bash
-docker run --platform linux/amd64 -v $HOME:/data -it aomlomics/tourmaline
+docker run --platform linux/amd64 -v $HOME:/data -it lukenoaa/tourmaline
 ```
 
 The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Note that symbolic links in a mounted volume will not work.
