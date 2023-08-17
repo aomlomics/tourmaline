@@ -120,14 +120,14 @@ To run Tourmaline inside a Docker container:
 5. Run the Docker image (command below).
 
 ```bash
-docker pull lukenoaa/tourmaline
-docker run -v $HOME:/data -it lukenoaa/tourmaline
+docker pull aomlomics/tourmaline
+docker run -v $HOME:/data -it aomlomics/tourmaline
 ```
 
 If installing on a Mac with an Apple M1 chip, run the Docker image with the `--platform linux/amd64` command. It will take a few minutes for the image to load the first time it is run.
 
 ```bash
-docker run --platform linux/amd64 -v $HOME:/data -it lukenoaa/tourmaline
+docker run --platform linux/amd64 -v $HOME:/data -it aomlomics/tourmaline
 ```
 
 The `-v` (volume) flag above allows you to mount a local file system volume (in this case your home directory) to read/write from your container. Note that symbolic links in a mounted volume will not work.
