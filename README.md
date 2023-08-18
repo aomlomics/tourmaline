@@ -71,9 +71,7 @@ Before you download the Tourmaline commands and directory structure from GitHub,
 To run Tourmaline natively on a Mac (Intel) or Linux system, start with a Conda installation of Snakemake v7.30.1. We recommend using [Miniconda with a python >= 3.8](https://docs.conda.io/en/latest/miniconda.html):
 
 ```bash
-# make sure you are using the most updated conda
-conda update conda
-conda install -c conda-forge -c bioconda snakemake=7.30.1
+conda install -c conda-forge -c bioconda -n snakemake snakemake-minimal
 ```
 
 Then install QIIME 2 with conda (**for Linux, change "osx" to "linux"**):
