@@ -5,7 +5,7 @@ Tourmaline requires the following software:
 * Conda
 * QIIME 2 version 2023.5
 * QIIME 2 plugins: deicode, empress
-* Snakemake version 7.30.1
+* Snakemake 
 * Python packages: biopython, tabulate
 * R packages: msa, odseq
 * Multiple sequence alignment tools: clustalo, muscle v5
@@ -23,10 +23,9 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 #### Snakemake
 
-Second, install snakemake into its own environment. Ensure it is version < 7.30.1, as v7.30.2 only works with Python 3.9+.
-
+Second, install snakemake into its own environment.
 ```
-conda install -c conda-forge -c bioconda snakemake=7.30.1
+conda install -c conda-forge -c bioconda -n snakemake snakemake-minimal
 ```
 
 #### QIIME 2
