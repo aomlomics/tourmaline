@@ -25,7 +25,7 @@ First, if you don't have Conda installed on your machine, install [Miniconda](ht
 
 Second, install snakemake into its own environment.
 ```
-conda install -c conda-forge -c bioconda -n snakemake snakemake-minimal
+conda create -c conda-forge -c bioconda -n snakemake snakemake-minimal
 ```
 
 #### QIIME 2
