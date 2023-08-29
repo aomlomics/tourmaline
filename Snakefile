@@ -905,7 +905,7 @@ rule export_taxa_biom:
         "--to-tsv;"
         "/bin/rm -r tempfile_collapsed.qza temp_export/"
 
-rule export_asv_taxa_obis:
+rule export_asv_seq_taxa_obis:
     input:
         table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
         taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
