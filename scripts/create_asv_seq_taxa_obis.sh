@@ -1,7 +1,7 @@
 #!/bin/bash
 ##
-# @Description: Steps to pass multiple parameters in shell script
-# Take single argument
+# @Description: Takes Qiime2 generated feature table, representative sequences, and taxonomy Artifact files to generate a file formatted for OBIS conversion.
+
 ##
 
 function show_usage (){
@@ -38,6 +38,7 @@ while [ ! -z "$1" ]; do
          ;;
      *)
         show_usage
+        exit 1
         ;;
   esac
 shift
@@ -59,6 +60,6 @@ qiime tools export \
 
 mv $OUT/metadata.tsv temp 
 rm -r $OUT
-sed -e '2d' temp > $OUT
+sed -e '2d' temp | sed "1 s|id\t|featureid\t|" | sed "1 s|Taxon|taxonomy|" | sed "1 s|Sequence|sequence|" > $OUT
 
 rm temp transposed-table.qza merged-data.qzv
