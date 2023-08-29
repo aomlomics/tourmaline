@@ -32,7 +32,8 @@ rule dada2_pe_taxonomy_unfiltered:
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_barplot.qzv",
-        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_sample_table.tsv"
+        "02-output-dada2-pe-unfiltered/01-taxonomy/taxa_sample_table.tsv",
+        "02-output-dada2-pe-unfiltered/01-taxonomy/asv_taxa_sample_table.tsv"
 
 rule dada2_pe_diversity_unfiltered:
     input:
@@ -74,7 +75,8 @@ rule dada2_pe_taxonomy_filtered:
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-pe-filtered/01-taxonomy/taxa_barplot.qzv",
-        "02-output-dada2-pe-filtered/01-taxonomy/taxa_sample_table.tsv"
+        "02-output-dada2-pe-filtered/01-taxonomy/taxa_sample_table.tsv",
+        "02-output-dada2-pe-filtered/01-taxonomy/asv_taxa_sample_table.tsv"
 
 rule dada2_pe_diversity_filtered:
     input:
@@ -124,7 +126,8 @@ rule dada2_se_taxonomy_unfiltered:
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-unfiltered/01-taxonomy/taxa_barplot.qzv",
-        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_sample_table.tsv"
+        "02-output-dada2-se-unfiltered/01-taxonomy/taxa_sample_table.tsv",
+        "02-output-dada2-se-unfiltered/01-taxonomy/asv_taxa_sample_table.tsv"
 
 rule dada2_se_diversity_unfiltered:
     input:
@@ -166,7 +169,8 @@ rule dada2_se_taxonomy_filtered:
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-dada2-se-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-dada2-se-filtered/01-taxonomy/taxa_barplot.qzv",
-        "02-output-dada2-se-filtered/01-taxonomy/taxa_sample_table.tsv"
+        "02-output-dada2-se-filtered/01-taxonomy/taxa_sample_table.tsv",
+        "02-output-dada2-se-filtered/01-taxonomy/asv_taxa_sample_table.tsv"
 
 rule dada2_se_diversity_filtered:
     input:
@@ -216,7 +220,8 @@ rule deblur_se_taxonomy_unfiltered:
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-unfiltered/01-taxonomy/taxa_barplot.qzv",
-        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_sample_table.tsv"
+        "02-output-deblur-se-unfiltered/01-taxonomy/taxa_sample_table.tsv",
+        "02-output-deblur-se-unfiltered/01-taxonomy/asv_taxa_sample_table.tsv"
 
 rule deblur_se_diversity_unfiltered:
     input:
@@ -258,7 +263,8 @@ rule deblur_se_taxonomy_filtered:
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.tsv",
         "02-output-deblur-se-filtered/01-taxonomy/taxonomy.qzv",
         "02-output-deblur-se-filtered/01-taxonomy/taxa_barplot.qzv",
-        "02-output-deblur-se-filtered/01-taxonomy/taxa_sample_table.tsv"
+        "02-output-deblur-se-filtered/01-taxonomy/taxa_sample_table.tsv",
+        "02-output-deblur-se-filtered/01-taxonomy/asv_taxa_sample_table.tsv"
 
 rule deblur_se_diversity_filtered:
     input:
@@ -898,6 +904,33 @@ rule export_taxa_biom:
         "-o {output} "
         "--to-tsv;"
         "/bin/rm -r tempfile_collapsed.qza temp_export/"
+
+rule export_asv_taxa_obis:
+    input:
+        table="02-output-{method}-{filter}/00-table-repseqs/table.qza",
+        taxonomy="02-output-{method}-{filter}/01-taxonomy/taxonomy.qza",
+        repseqs="02-output-{method}-{filter}/00-table-repseqs/repseqs.qza"
+    output:
+        "02-output-{method}-{filter}/01-taxonomy/asv_taxa_sample_table.tsv"
+    conda:
+        "qiime2-2023.5"
+    threads: config["other_threads"]
+    shell:
+        "qiime feature-table transpose "
+        "--i-table {input.table} "
+        "--o-transposed-feature-table transposed-table.qza; "
+        "qiime metadata tabulate "
+        "--m-input-file {input.repseqs} "
+        "--m-input-file {input.taxonomy} "
+        "--m-input-file transposed-table.qza "
+        "--o-visualization merged-data.qzv; "
+        "qiime tools export "
+        "--input-path merged-data.qzv "
+        "--output-path {output}; "
+        "mv {output}/metadata.tsv temp; "
+        "rm -r {output}; "
+        "sed -e '2d' temp > {output}; "
+        "/bin/rm -r temp transposed-table.qza merged-data.qzv"
 
 rule export_taxonomy_to_tsv:
     input:
