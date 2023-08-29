@@ -66,6 +66,8 @@ Steps 2–4 have *unfiltered* and *filtered* modes, the difference being that in
 
 ### Install
 
+**The current version of Tourmaline supports [qiime2-2023.5](https://docs.qiime2.org/2023.5/).** To use previous versions of Qiime2, check out previous Tourmaline versions under [Releases](https://github.com/aomlomics/tourmaline/releases). 
+
 Before you download the Tourmaline commands and directory structure from GitHub, you first need to install QIIME 2, Snakemake, and the other dependencies of Tourmaline. Two options are provided: a native installation on a Mac or Linux system and a Docker image/container. If you have an Apple Silicon chip (M1, M2 Macs), the instructions to install QIIME 2 vary slightly. 
 
 #### Option 1: Native installation
