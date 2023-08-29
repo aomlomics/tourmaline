@@ -929,7 +929,7 @@ rule export_asv_taxa_obis:
         "--output-path {output}; "
         "mv {output}/metadata.tsv temp; "
         "rm -r {output}; "
-        "sed -e '2d' temp > {output}; "
+        "sed -e '2d' temp | sed '1 s|id\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|sequence|' > {output}; "
         "/bin/rm -r temp transposed-table.qza merged-data.qzv"
 
 rule export_taxonomy_to_tsv:
