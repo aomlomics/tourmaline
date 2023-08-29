@@ -199,6 +199,12 @@ Now edit, replace, or store the required input files as described here:
 
 ### Run Snakemake
 
+Tourmaline is now run within the **snakemake** conda environment, not the qiime2-2023.5 environment. 
+
+```bash
+conda activate snakemake
+```
+
 Shown here is the DADA2 paired-end workflow. See the Wiki's [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page for complete instructions on all steps, denoising methods, and filtering modes.
 
 Note that any of the commands below can be run with various options, including `--printshellcmds` to see the shell commands being executed and `--dryrun` to display which rules would be run but not execute them. To generate a graph of the rules that will be run from any Snakemake command, see the section "Directed acyclic graph (DAG)" on the [Run](https://github.com/aomlomics/tourmaline/wiki/4-Run) page. **Always include the --use-conda option.**
