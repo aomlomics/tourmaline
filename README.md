@@ -103,9 +103,9 @@ Follow these instructions for Macs with M1/M2 chips.
 **First, set your Terminal application to run in [Rosetta mode](https://academy.bigbinary.com/learn-rubyonrails/setting-up-macos).**
 
 ```bash
-wget https://data.qiime2.org/distro/core/qiime2-2023.2-py38-osx-conda.yml
-CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.2 --file qiime2-2023.2-py38-osx-conda.yml
-conda activate qiime2-2023.2
+wget https://data.qiime2.org/distro/core/qiime2-2023.5-py38-osx-conda.yml
+CONDA_SUBDIR=osx-64 conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
+conda activate qiime2-2023.5
 conda config --env --set subdir osx-64
 ```
 
@@ -162,8 +162,8 @@ Download reference database sequence and taxonomy files, named `refseqs.qza` and
 
 ```bash
 cd tourmaline/01-imported
-wget https://data.qiime2.org/2023.2/common/silva-138-99-seqs-515-806.qza
-wget https://data.qiime2.org/2023.2/common/silva-138-99-tax-515-806.qza
+wget https://data.qiime2.org/2023.5/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2023.5/common/silva-138-99-tax-515-806.qza
 ln -s silva-138-99-seqs-515-806.qza refseqs.qza
 ln -s silva-138-99-tax-515-806.qza reftax.qza
 ```
