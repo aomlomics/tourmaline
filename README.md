@@ -88,7 +88,7 @@ conda env create -n qiime2-2023.5 --file qiime2-2023.5-py38-osx-conda.yml
 Activate the qiime2-2023.5 environment and install the other Conda- or PIP-installable dependencies:
 
 ```
-conda activate qiime2-2023.2
+conda activate qiime2-2023.5
 conda install -c conda-forge -c bioconda biopython muscle clustalo tabulate
 conda install -c conda-forge deicode
 pip install empress
