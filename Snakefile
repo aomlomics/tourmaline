@@ -373,6 +373,7 @@ rule check_inputs_params_se:
         "01-imported/metadata_columns.txt"
     params:
         column=config["beta_group_column"],
+        classifymethod=config["classify_method"],
     output:
         touch("01-imported/check_inputs_params_se.done")
     conda:
