@@ -18,34 +18,43 @@
 # FASTQ DATA (choose one option)
 
 # Option 1 - if you want to start from manifest files and import per-sample fastq sequences,
-# Name your manifest file(s) as follows (or use symbolic links):
+# name your manifest file(s) as follows (or use symbolic links):
 # - paired-end sequences: 00-data/manifest_pe.csv
 # - single-end sequences: 00-data/manifest_se.csv
 
 # Option 2 - if your fastq sequences are already archived in qza format,
-# Name your qza file(s) as follows (or use symbolic links):
+# name your qza file(s) as follows (or use symbolic links):
 # - paired-end sequences: 01-imported/fastq_pe.qza
 # - single-end sequences: 01-imported/fastq_se.qza
 
 # REFERENCE DATABASE (choose one option)
 
 # Option 1 - if your reference database is not yet imported, 
-# Name your reference fna and tsv files as follows (or use symbolic links):
+# name your reference fna and tsv files as follows (or use symbolic links):
 # - reference sequences: 00-data/refseqs.fna
 # - reference taxonomy: 00-data/reftax.tsv
 
 # Option 2 - if your reference database is already archived in qza format,
-# Name your your qza files as follows (or use symbolic links):
+# name your your qza files as follows (or use symbolic links):
 # - reference sequences: 01-imported/refseqs.qza
 # - reference taxonomy: 01-imported/reftax.qza
 
-# Provide a descriptive name for the reference database used, no spaces (e.g., original file name, source and version)
+# Option 3 - if you will use a pre-build taxonomic classifer in qza format,
+# no refseqs or reftax files are required in 00-data or 01-imported.
+# Rather, put the classifier in the following location:
+# - classifier: 01-imported/classifier.qza
+
+# Provide a descriptive name for the reference database used, no spaces (e.g., original file name, source and version).
+# Note that changing database name here is just for documentation purposes and has no effect on which file is used, 
+# which is determined by the file symbolically liked according to Option 1, 2 or 3 above.
+
 database_name: silva-138-99-515-806_q2-2021.2
 
 # DENOISE
 
 # DADA2 PAIRED-END
 # For more info run: qiime dada2 denoise-paired --help
+# The trunc and trim values refer to absolute nucleotide positions so the order they are applied in does not matter.
 
 dada2pe_trunc_len_f: 240
 dada2pe_trunc_len_r: 190
@@ -62,6 +71,7 @@ dada2pe_hashed_feature_ids: --p-hashed-feature-ids
 
 # DADA2 SINGLE-END
 # For more info run: qiime dada2 denoise-single --help
+# The trunc and trim values refer to absolute nucleotide positions so the order they are applied in does not matter.
 
 dada2se_trunc_len: 240
 dada2se_trim_left: 0
@@ -91,12 +101,14 @@ deblur_hashed_feature_ids: --p-hashed-feature-ids
 # - method: choose from: naive-bayes, consensus-blast, consensus-vsearch
 # - parameters: add arbitrary parameters or at least one parameter; see "qiime feature-classifier COMMAND --help"
 # For more info run: qiime feature-classifier [fit-classifier-naive-bayes|classify-sklearn|classify-consensus-blast|classify-consensus-vsearch] --help
+
 classify_method: consensus-vsearch
 classify_parameters: --verbose
 
 # Table of feature counts per sample collapsed by chosen taxonomic level.
 # taxa_level - taxonomic level at which the features should be collapsed. Default 7
 # For more info run: qiime taxa collapse --help
+
 classify_taxalevel: 7
 
 # MULTIPLE SEQUENCE ALIGNMENT
