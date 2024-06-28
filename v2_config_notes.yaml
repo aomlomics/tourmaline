@@ -1,0 +1,165 @@
+# install
+# conda install -c conda-forge yq
+# Have command to autogenerate params?
+# tourmaline -n run_name
+# param file can be any name
+#tourmaline -p config.yaml -samples
+run_name: test_mifish_lane1
+#marker_info:  # marker_info.yaml
+sample_metadata_file: # optional if no summary plotting 
+# Demultiplexing by amplicon or sample
+fastq_path: "raw_fastqs"
+sample_manifest_file: manifest_pe.csv
+sample_metadata_file: metadata.csv # optional if no summary plotting 
+to_trim: True #Boolean
+amplicon_name: 12S-MiFish
+fwd_primer: GCCGGTAAAACTCGTGCCAGC
+rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
+discard_untrimmed: False
+trim_params: ""
+# maybe use branch function to select input?
+#run_name-samples/
+#└── markerA
+#   ├──manifest.csv
+#   ├──run_name-markerA-stats.txt
+#   ├──run_name-markerA-multiqc.qza
+#   └──fastqs/ # can be sym-links to other fastqs
+#├── markerB
+#├── all_stats.txt #include samples filtered, rec
+
+# tourmaline -p config.yaml -asv [-sample_run sample_folder1,sample_folder2 -markers markerA,markerB,... -skip_figs]
+# want to iterate through all sequencing runs
+# ASV generation, denoise-paired, denoise-single, deblur
+# run_name-samples default, or make this a shell command param
+asv_method: # dada2pe, dada2se, deblur
+# saves folder run_name-repseqs
+#run_name-repseqs/
+#└── markerA
+#   ├──run_name-markerA-repseqs_stats.txt
+#   ├──run_name-markerA-repseqs.fasta
+#   ├──repseqs.qza
+#   ├──run_name-markerA-table.biom
+#   ├──run_name-markerA-table.tsv
+#├── markerB
+#├── figures/
+#   ├── map
+#   ├── read_counts_barplot
+#   ├── ASV ordination
+#   ├── rarefaction_curves
+#├── stats
+
+# tourmaline -p config.yaml -taxa [-asv_run asv_folder -markers markerA,markerB,... -skip_figs]
+# Taxonomy assignment
+# run_name-repseqs default, or make this a shell command param
+database_path:
+database_name: # change if not same as file name
+taxonomy_ranks:
+assignment_method:
+# saves folder run_name-taxonomy
+#run_name-taxonomy/
+#└── markerA
+#   ├──run_name-markerA-taxa_stats.txt
+#   ├──run_name-markerA-repseqs.fasta
+#   ├──repseqs.qza
+#   ├──run_name-markerA-table.biom
+#   ├──figures/
+#       ├──taxa_barplot.qzv
+#       ├──taxa_krona.qzv
+#       ├──taxa_heatmap.qzv
+#       ├──taxa_ordination
+#├── markerB
+#├── stats.txt
+# tourmaline -p config.yaml -cleanup
+# Filtering
+# FILTER SAMPLES BY Sequence depth
+min_read_depth: 1000
+# FILTER SAMPLES BY ID
+samples_to_filter:
+
+# FILTER SAMPLES BY METADATA
+# EXAMPLE: "[region]='Open Water'"
+metadata_filter: none
+
+# FILTER BY FEATURE ID
+repseqs_to_filter:
+
+# FILTER BY TAXONOMY
+# TO SKIP FILTERING BY TAXONOMY: provide a nonsense term or don't run filtering commands.
+exclude_terms: eukaryota,archaea,mitochondria,chloroplast,unassigned
+
+# FILTER BY LENGTH
+# Set minimum and maximum sequence lengths to filter representative sequences by.
+# Limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum.
+# For more info run: qiime feature-table filter-seqs --help
+# TO SKIP FILTERING BY LENGTH: set values to extreme values, eg (0, 10000) or don't run filtering commands.
+
+repseq_min_length: 0
+repseq_max_length: 260
+
+# FILTER BY ABUNDANCE & PREVALENCE
+# Set minimum abundance/prevalence limits for filtering.
+# Values are floats range(0,1)
+# Limit is inclusive, ie, greater than or equal to minimum. Samples with frequency of 0 after filtering will also be removed.
+# For more info run: qiime feature-table filter-features-conditionally --help
+# TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands.
+
+repseq_min_abundance: 0.01
+repseq_min_prevalence: 0.1
+
+# Is outlier and alignment necessary?
+
+# OPTIONAL PARAMS
+
+# Outputs
+biom: #Boolean
+qiime artifacts: #Boolean
+tsvs: #Boolean
+# ASV METHODS
+# DADA2 PAIRED-END
+# For more info run: qiime dada2 denoise-paired --help
+
+dada2pe_trunc_len_f: 240
+dada2pe_trunc_len_r: 190
+dada2pe_trim_left_f: 0
+dada2pe_trim_left_r: 0
+dada2pe_max_ee_f: 2
+dada2pe_max_ee_r: 2
+dada2pe_trunc_q: 2
+dada2pe_pooling_method: independent
+dada2pe_chimera_method: consensus
+dada2pe_min_fold_parent_over_abundance: 1
+dada2pe_n_reads_learn: 1000000
+dada2pe_hashed_feature_ids: --p-hashed-feature-ids
+
+# DADA2 SINGLE-END
+# For more info run: qiime dada2 denoise-single --help
+
+dada2se_trunc_len: 240
+dada2se_trim_left: 0
+dada2se_max_ee: 2
+dada2se_trunc_q: 2
+dada2se_pooling_method: independent
+dada2se_chimera_method: consensus
+dada2se_min_fold_parent_over_abundance: 1
+dada2se_n_reads_learn: 1000000
+dada2se_hashed_feature_ids: --p-hashed-feature-ids
+
+# DEBLUR SINGLE-END
+# For more info run: qiime deblur denoise-other --help
+
+deblur_trim_length: 240
+deblur_sample_stats: --p-sample-stats
+deblur_mean_error: 0.005
+deblur_indel_prob: 0.01
+deblur_indel_max: 3
+deblur_min_reads: 10
+deblur_min_size: 2
+deblur_hashed_feature_ids: --p-hashed-feature-ids
+
+# Assignment methods
+assignment_params
+
+# Sample filtering
+
+# 
+
