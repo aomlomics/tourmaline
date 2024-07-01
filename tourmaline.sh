@@ -55,11 +55,11 @@ fi;
 
 if [[ $STEP="repseqs" ]]; then
     if [[ "${asv_method}" = "dada2pe" ]]; then
-        snakemake --use-conda -s repseqs_step.Snakefile dada2_pe_denoise --configfile $CONFIG --cores $CORES  --latency-wait 15
+        snakemake --use-conda -s repseqs_step.Snakefile run_dada2_pe_denoise --configfile $CONFIG --cores $CORES  --latency-wait 15
     elif [[ "${asv_method}" = "dada2se" ]]; then
-        snakemake --use-conda -s srepseqs_step.Snakefile dada2_se_denoise --configfile $CONFIG --cores $CORES   --latency-wait 15
+        snakemake --use-conda -s srepseqs_step.Snakefile run_dada2_se_denoise --configfile $CONFIG --cores $CORES   --latency-wait 15
     elif [[ "${asv_method}" = "deblur" ]]; then
-        snakemake --use-conda -s repseqs_step.Snakefile deblur_denoise --configfile $CONFIG --cores $CORES  --latency-wait 15
+        snakemake --use-conda -s repseqs_step.Snakefile run_deblur_se_denoise --configfile $CONFIG --cores $CORES  --latency-wait 15
     else
         echo "ASV method not recognized"
     fi;

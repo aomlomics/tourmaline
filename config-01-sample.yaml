@@ -1,4 +1,4 @@
-run_name: test_mifish_pe_man
+run_name: test_mifish_pe
 # marker_info:  marker_info.yaml
 # Demultiplexing by amplicon or sample
 raw_fastq_path: /Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/test-fastqs

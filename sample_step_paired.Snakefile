@@ -38,7 +38,6 @@ rule cutadapt_pe:
         qc=config["run_name"]+"-samples/trimmed/{sample}_paired.qc.txt",
     params:
         run_name=config["run_name"],
-        paired=config["paired_end"],
         extra=config["trim_params"],
     conda:
         "qiime2-2023.5"
@@ -72,6 +71,32 @@ rule make_manifest_pe:
         done
        
         """
+
+rule import_fastq_demux_pe:
+    input:
+        config["run_name"]+"-samples/"+config["run_name"]+"_pe.manifest"
+    output:
+        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
+    conda:
+        "qiime2-2023.5"
+    shell:
+        "qiime tools import "
+        "--type 'SampleData[PairedEndSequencesWithQuality]' "
+        "--input-path {input} "
+        "--output-path {output} "
+        "--input-format PairedEndFastqManifestPhred33"
+
+rule summarize_fastq_demux_pe:
+    input:
+        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
+    output:
+        config["run_name"]+"-samples/stats/fastq_summary.qzv"
+    conda:
+        "qiime2-2023.5"
+    shell:
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
 
 
 # make stats file with multiqc
@@ -137,4 +162,5 @@ rule check_seq_qual_dropoff:
         python scripts/fastqc_per_base_sequence_quality_dropoff.py \
         --input {params.seq_qual_R2} --cutoff {params.seq_cutoff} >> {output};
         """
+
 

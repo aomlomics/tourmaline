@@ -63,7 +63,33 @@ rule make_manifest_se:
         done
         """
 
-# make stats file with multiqc
+rule import_fastq_demux_se:
+    input:
+        config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
+    output:
+        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza"
+    conda:
+        "qiime2-2023.5"
+    threads: config["other_threads"]
+    shell:
+        "qiime tools import "
+        "--type 'SampleData[SequencesWithQuality]' "
+        "--input-path {input[0]} "
+        "--output-path {output} "
+        "--input-format SingleEndFastqManifestPhred33"
+
+rule summarize_fastq_demux_se:
+    input:
+        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza"
+    output:
+        config["run_name"]+"-samples/stats/fastq_summary.qzv"
+    conda:
+        "qiime2-2023.5"
+    threads: config["other_threads"]
+    shell:
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
 
 # make stats file with multiqc
 
