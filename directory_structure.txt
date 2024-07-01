@@ -5,8 +5,8 @@ project_name-tourmaline/
 ├── config-03-taxonomy.yaml
 ├── metadata.csv # optional, only for plotting
 ├── manifest.csv # optional, if skipping Step 1 
-├── run_name-01-samples/
-│   ├── fastqs/ # can be symlinks
+├── run_nameA-01-samples/
+│   ├── fastqs/ # can be symlinks, or outputs of trimming
 │   ├── stats/
 │   │   ├── config_used.txt
 │   │   └── seq_qual_dropoff.txt # output of fastqc_per_base_sequence_quality_dropoff.py
@@ -14,18 +14,19 @@ project_name-tourmaline/
 │   │   ├── sample_map.png
 │   │   └── metadata_summary_plot.png
 │   └── run_name.manifest  
-├── run_name-02-repseqs/
+├── run_nameA-02-repseqs/
 │   ├── run_name-repseqs.fasta
 │   ├── run_name-repseqs.qza
 │   ├── run_name-table.[biom,tsv]
 │   ├── stats/
+|   |   ├── config_used.txt
 │   │   ├── reads_passing_filter_each step.[qzv,tsv]
 │   │   └── asv_stats.tsv # length, number, summary
 │   └── figures/
 │       ├── asv_ordination.[qzv,png]
 │       ├── rarefaction_curves.[qzv,pdf]
 │       └── read_counts_per_sample_barplot.png
-├── run_name-03-taxonomy/
+├── run_nameA-03-taxonomy/
 │   ├── asv_taxa_sample_table.tsv
 │   ├── taxa_sample_table_lvl7.tsv # ASVs collapsed by taxonomy
 │   ├── taxonomy.[qza,qzv,tsv]
@@ -35,6 +36,31 @@ project_name-tourmaline/
 │   │   ├── taxa_krona.pdf
 │   │   └── taxa_ordination.pdf
 │   └── stats/
+|   |   ├── config_used.txt
+│       └── taxa-summary.stats
+├── run_nameB-02-repseqs/
+│   ├── run_name-repseqs.fasta
+│   ├── run_name-repseqs.qza
+│   ├── run_name-table.[biom,tsv]
+│   ├── stats/
+|   |   ├── config_used.txt
+│   │   ├── reads_passing_filter_each step.[qzv,tsv]
+│   │   └── asv_stats.tsv # length, number, summary
+│   └── figures/
+│       ├── asv_ordination.[qzv,png]
+│       ├── rarefaction_curves.[qzv,pdf]
+│       └── read_counts_per_sample_barplot.png
+├── run_nameB-03-taxonomy/
+│   ├── asv_taxa_sample_table.tsv
+│   ├── taxa_sample_table_lvl7.tsv # ASVs collapsed by taxonomy
+│   ├── taxonomy.[qza,qzv,tsv]
+│   ├── fiqures/
+│   │   ├── taxa_barplot.[qzv, pdf]
+│   │   ├── taxa_heatmap.pdf
+│   │   ├── taxa_krona.pdf
+│   │   └── taxa_ordination.pdf
+│   └── stats/
+|   |   ├── config_used.txt
 │       └── taxa-summary.stats
 ├── scripts/
 ├── sample_step.Snakefile
