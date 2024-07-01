@@ -1,7 +1,7 @@
 #!/bin/bash
 ##
-# @Description: Takes Qiime2 generated feature table, representative sequences, and taxonomy Artifact files to generate a file formatted for OBIS conversion.
-#command: snakemake --use-conda -s sample_test.Snakefile --configfile samp_config_test.yaml --cores 4
+# @Description: Runs the snakemake pipeline Tourmaline 2.0, either all at once or modularly.
+#command: ./tourmaline.sh -s sample --configfile config-01-sample.yaml --cores 4
 ##
 
 function show_usage (){
