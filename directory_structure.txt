@@ -1,9 +1,9 @@
 project_name-tourmaline/
 ├── tourmaline.sh # bash script to run Tourmaline in steps
-├── config-01-sample.yaml
-├── config-02-repseqs.yaml
-├── config-03-taxonomy.yaml
-├── metadata.csv # optional, only for plotting
+├── config-01-sample.yaml # can have custom name if you want
+├── config-02-repseqs.yaml # can have custom name if you want
+├── config-03-taxonomy.yaml # can have custom name if you want
+├── metadata.csv # optional, only for plotting based on metadata
 ├── manifest.csv # optional, if skipping Step 1 
 ├── run_nameA-01-samples/
 │   ├── fastqs/ # can be symlinks, or outputs of trimming
