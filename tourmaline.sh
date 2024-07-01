@@ -8,8 +8,8 @@ function show_usage (){
     printf "Usage: $0 [options [parameters]]\n"
     printf "\n"
     printf "Options:\n"
-    printf " -s|--step, samples\n"
-    printf " -c|--configfile, taxonomy.qza\n"
+    printf " -s|--step, sample\n"
+    printf " -c|--configfile, config-01-sample.yaml\n"
     printf " -n|--cores, numeric\n"
     printf " -h|--help, Print help\n"
 
@@ -42,13 +42,26 @@ done
     #running
     #snakemake --use-conda -s sample_test.Snakefile --configfile samp_config_test.yaml --cores 4
     
-if [[ $STEP="samples" ]]; then
-    run_name=$(yq '.run_name' $CONFIG);
+# change if statement to "if any", and/or number based
+
+if [[ $STEP="sample" ]]; then
     paired=$(yq '.paired_end' $CONFIG);
     if [[ "${paired}" = "true" ]]; then
-        snakemake --use-conda -s sample_test_paired.Snakefile --configfile $CONFIG --cores $CORES  --latency-wait 15
+        snakemake --use-conda -s sample_step_paired.Snakefile --configfile $CONFIG --cores $CORES  --latency-wait 15
     else
-        snakemake --use-conda -s sample_test_single.Snakefile --configfile $CONFIG --cores $CORES --conda-frontend conda
+        snakemake --use-conda -s sample_step_single.Snakefile --configfile $CONFIG --cores $CORES --latency-wait 15
+    fi;
+fi;
+
+if [[ $STEP="repseqs" ]]; then
+    if [[ "${asv_method}" = "dada2pe" ]]; then
+        snakemake --use-conda -s repseqs_step.Snakefile dada2_pe_denoise --configfile $CONFIG --cores $CORES  --latency-wait 15
+    elif [[ "${asv_method}" = "dada2se" ]]; then
+        snakemake --use-conda -s srepseqs_step.Snakefile dada2_se_denoise --configfile $CONFIG --cores $CORES   --latency-wait 15
+    elif [[ "${asv_method}" = "deblur" ]]; then
+        snakemake --use-conda -s repseqs_step.Snakefile deblur_denoise --configfile $CONFIG --cores $CORES  --latency-wait 15
+    else
+        echo "ASV method not recognized"
     fi;
 fi;
 
