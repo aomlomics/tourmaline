@@ -47,7 +47,6 @@ rule dada2_pe_diversity_unfiltered:
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/faith_pd_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-dada2-pe-unfiltered/03-alpha-diversity/evenness_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/bray_curtis_emperor.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/bray_curtis_group_significance.qzv",
         "02-output-dada2-pe-unfiltered/04-beta-diversity/jaccard_emperor.qzv",
@@ -90,7 +89,6 @@ rule dada2_pe_diversity_filtered:
         "02-output-dada2-pe-filtered/03-alpha-diversity/faith_pd_group_significance.qzv",
         "02-output-dada2-pe-filtered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-pe-filtered/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-dada2-pe-filtered/03-alpha-diversity/evenness_group_significance.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/bray_curtis_emperor.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/bray_curtis_group_significance.qzv",
         "02-output-dada2-pe-filtered/04-beta-diversity/jaccard_emperor.qzv",
@@ -141,7 +139,6 @@ rule dada2_se_diversity_unfiltered:
         "02-output-dada2-se-unfiltered/03-alpha-diversity/faith_pd_group_significance.qzv",
         "02-output-dada2-se-unfiltered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-se-unfiltered/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-dada2-se-unfiltered/03-alpha-diversity/evenness_group_significance.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/bray_curtis_emperor.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/bray_curtis_group_significance.qzv",
         "02-output-dada2-se-unfiltered/04-beta-diversity/jaccard_emperor.qzv",
@@ -184,7 +181,6 @@ rule dada2_se_diversity_filtered:
         "02-output-dada2-se-filtered/03-alpha-diversity/faith_pd_group_significance.qzv",
         "02-output-dada2-se-filtered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-dada2-se-filtered/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-dada2-se-filtered/03-alpha-diversity/evenness_group_significance.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/bray_curtis_emperor.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/bray_curtis_group_significance.qzv",
         "02-output-dada2-se-filtered/04-beta-diversity/jaccard_emperor.qzv",
@@ -235,7 +231,6 @@ rule deblur_se_diversity_unfiltered:
         "02-output-deblur-se-unfiltered/03-alpha-diversity/faith_pd_group_significance.qzv",
         "02-output-deblur-se-unfiltered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-deblur-se-unfiltered/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-deblur-se-unfiltered/03-alpha-diversity/evenness_group_significance.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/bray_curtis_emperor.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/bray_curtis_group_significance.qzv",
         "02-output-deblur-se-unfiltered/04-beta-diversity/jaccard_emperor.qzv",
@@ -278,7 +273,6 @@ rule deblur_se_diversity_filtered:
         "02-output-deblur-se-filtered/03-alpha-diversity/faith_pd_group_significance.qzv",
         "02-output-deblur-se-filtered/03-alpha-diversity/observed_features_group_significance.qzv",
         "02-output-deblur-se-filtered/03-alpha-diversity/shannon_group_significance.qzv",
-        "02-output-deblur-se-filtered/03-alpha-diversity/evenness_group_significance.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/bray_curtis_emperor.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/bray_curtis_group_significance.qzv",
         "02-output-deblur-se-filtered/04-beta-diversity/jaccard_emperor.qzv",
@@ -1438,7 +1432,6 @@ rule generate_report_md:
         vistable="02-output-{method}-{filter}/00-table-repseqs/table_summary.qzv",
         vistaxbar="02-output-{method}-{filter}/01-taxonomy/taxa_barplot.qzv",
         visalpharare="02-output-{method}-{filter}/03-alpha-diversity/alpha_rarefaction.qzv",
-        visevengs="02-output-{method}-{filter}/03-alpha-diversity/evenness_group_significance.qzv",
         visfaithgs="02-output-{method}-{filter}/03-alpha-diversity/faith_pd_group_significance.qzv",
         visobsfeaturesgs="02-output-{method}-{filter}/03-alpha-diversity/observed_features_group_significance.qzv",
         visshannongs="02-output-{method}-{filter}/03-alpha-diversity/shannon_group_significance.qzv",
@@ -1612,8 +1605,6 @@ rule generate_report_md:
         r"echo QZV: [{input.visalpharare}]\(../{input.visalpharare}\){{target=\"_blank\"}} >> {output};"
         r"echo '' >> {output};"
         r"echo '### Alpha Group Significance' >> {output};"
-        r"echo '' >> {output};"
-        r"echo Evenness QZV: [{input.visevengs}]\(../{input.visevengs}\){{target=\"_blank\"}} >> {output};"
         r"echo '' >> {output};"
         r"echo Faith PD QZV: [{input.visfaithgs}]\(../{input.visfaithgs}\){{target=\"_blank\"}} >> {output};"
         r"echo '' >> {output};"
