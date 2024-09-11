@@ -1,0 +1,2 @@
+# Ignore Snakemake log files
+logs/*.log
