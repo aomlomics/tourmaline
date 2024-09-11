@@ -1,18 +1,22 @@
-run_name: test_mifish_pe_manifest
+run_name: test_mifish_pe_disc
 # marker_info:  marker_info.yaml
 # Demultiplexing by amplicon or sample
-raw_fastq_path: /Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/test-fastqs
-trimmed_fastq_path: 
+raw_fastq_path: /Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/test-fastqs 
+trimmed_fastq_path: #trimmed files must have suffix _R[1,2].fastq.gz
 sample_manifest_file: # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
 #if provided and not trimming, just import to fastq.qza
-sample_metadata_file: metadata.csv # optional if no summary plotting
-# trimming 
+sample_metadata_file: metadata.csv # optional if no summary plotting, is this needed at all for sample step?
+
 to_trim: True #Boolean
 paired_end: True
-amplicon_name: 12S-MiFish
+
+amplicon_name: 12S-MiFish #not currently used
+# trimming parameters
 fwd_primer: GCCGGTAAAACTCGTGCCAGC
 rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
-trim_params: "--discard-untrimmed -m 50"
+discard_untrimmed: True
+minimum_length: 50
 trimming_threads: 1
+#quality parameters
 seq_quality_cutoff: 0.85
 #command: snakemake --use-conda -s sample_test.Snakefile --configfile samp_config_test.yaml --cores 4

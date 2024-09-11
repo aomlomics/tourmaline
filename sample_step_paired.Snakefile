@@ -17,20 +17,15 @@ else:
     if config["raw_fastq_path"] != None:
         print("no manifest, trimming reads\n")
         SAMPLES, = glob_wildcards(config["raw_fastq_path"]+"/{sample}_R1.fastq.gz")
-        cutadapt_pe > import_fastq_demux_pe
+        ruleorder: cutadapt_pe > import_fastq_demux_pe
     elif config["trimmed_fastq_path"] != None:
         print("no manifest, not trimming reads\n")
         SAMPLES, =glob_wildcards(config["trimmed_fastq_path"]+"/{sample}.1.fastq.gz")
-        import_fastq_demux_pe > cutadapt_pe
+        ruleorder: import_fastq_demux_pe > cutadapt_pe
 
 
 ruleorder: make_raw_manifest_pe_path > make_raw_manifest_pe_file
 ruleorder: make_manifest_pe > make_manifest_pe_file
-
-#         make manifest_pe.tsv
-#         import to config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
-#         demux summarize to stats/fastq_quality_summary.qzv
-#         extract forward-seven-number-summaries.tsv from qzv, run code on it
 
 
 primerF=config["fwd_primer"]
@@ -71,30 +66,38 @@ rule make_raw_manifest_pe_path:
 
 rule make_raw_manifest_pe_file:
     input:
-        config["sample_manifest_file"]
+        "create_manifest.txt"
     output:
         config["run_name"]+"-samples/"+config["run_name"]+"_raw_pe.manifest"
     params:
-        outdir=config["run_name"]+"-samples"
+        file=config["sample_manifest_file"]
     run:
         if config["sample_manifest_file"] != None:
             os.makedirs(config["run_name"]+"-samples", exist_ok=True)
             # copy the file
-            shutil.copy(input[0], output[0])
+            shutil.copy(params.file, output[0])
 
 rule import_raw_fastq_demux_pe:
     input:
         config["run_name"]+"-samples/"+config["run_name"]+"_raw_pe.manifest",
     output:
-        config["run_name"]+"-samples/raw_pe_fastq.qza"
+        config["run_name"]+"-samples/raw_pe_fastq.qza",
+        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
     conda:
         "qiime2-2023.5"
     shell:
-        "qiime tools import "
-        "--type 'SampleData[PairedEndSequencesWithQuality]' "
-        "--input-path {input[0]} "
-        "--output-path {output} "
-        "--input-format PairedEndFastqManifestPhred33V2"
+        """
+        qiime tools import \
+        --type 'SampleData[PairedEndSequencesWithQuality]' \
+        --input-path {input[0]} \
+        --output-path {output[0]} \
+        --input-format PairedEndFastqManifestPhred33V2 
+        
+        qiime demux summarize \
+        --i-data {output[0]} \
+        --o-visualization {output[1]}"        
+        """
+
 
 
 rule cutadapt_pe:
@@ -104,11 +107,16 @@ rule cutadapt_pe:
     output:
         config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza",
         config["run_name"]+"-samples/stats/cutadapt_summary.txt",
+    params:
+        discard=config['discard_untrimmed'],
+        min_len=config['minimum_length']
     conda:
         "qiime2-2023.5"
     threads: workflow.cores
     shell:
         """
+        # Gotta figure this out$( (( "{params.discard}" == "True" )) && printf %s '--p-discard-untrimmed' ) 
+        # https://stackoverflow.com/questions/28678505/add-command-arguments-using-inline-if-statement-in-bash
         qiime cutadapt trim-paired \
         --p-cores {threads} \
         --i-demultiplexed-sequences {input} \
@@ -116,21 +124,34 @@ rule cutadapt_pe:
         --p-adapter-r {revcomp_primerF} \
         --p-match-read-wildcards \
         --p-match-adapter-wildcards \
-        --p-minimum-length 50 \
+        --p-minimum-length {params.min_len} \
         --verbose \
         --o-trimmed-sequences trimmed_1.qza 1> {output[1]}
 
-        qiime cutadapt trim-paired \
-        --p-cores {threads} \
-        --i-demultiplexed-sequences trimmed_1.qza \
-        --p-front-f {primerF} \
-        --p-front-r {primerR} \
-        --p-match-read-wildcards \
-        --p-match-adapter-wildcards \
-        --p-discard-untrimmed \
-        --p-minimum-length 50 \
-        --verbose \
-        --o-trimmed-sequences {output[0]} 1>> {output[1]}
+        if [ {params.discard} = True ]; then
+            qiime cutadapt trim-paired \
+            --p-cores {threads} \
+            --i-demultiplexed-sequences trimmed_1.qza \
+            --p-front-f {primerF} \
+            --p-front-r {primerR} \
+            --p-match-read-wildcards \
+            --p-match-adapter-wildcards \
+            --p-discard-untrimmed \
+            --p-minimum-length {params.min_len} \
+            --verbose \
+            --o-trimmed-sequences {output[0]} 1>> {output[1]}
+        else
+            qiime cutadapt trim-paired \
+            --p-cores {threads} \
+            --i-demultiplexed-sequences trimmed_1.qza \
+            --p-front-f {primerF} \
+            --p-front-r {primerR} \
+            --p-match-read-wildcards \
+            --p-match-adapter-wildcards \
+            --p-minimum-length {params.min_len} \
+            --verbose \
+            --o-trimmed-sequences {output[0]} 1>> {output[1]}
+        fi;
 
         rm trimmed_1.qza
         """
@@ -155,14 +176,16 @@ rule make_manifest_pe:
 
 rule make_manifest_pe_file:
     input:
-        config["sample_manifest_file"]
+        "create_manifest.txt"
     output:
         config["run_name"]+"-samples/"+config["run_name"]+"_pe.manifest"
+    params:
+        file=config["sample_manifest_file"]
     run:
         if config["sample_manifest_file"] != None:
             os.makedirs(config["run_name"]+"-samples", exist_ok=True)
             # copy the file
-            shutil.copy(input[0], output[0])
+            shutil.copy(params.file, output[0])
 
 rule import_fastq_demux_pe:
     input:
@@ -192,6 +215,22 @@ rule summarize_fastq_demux_pe:
 
 
 # make stats file with script
+
+#not done
+rule trim_summary_stats:
+    input:
+        config["run_name"]+"-samples/stats/fastq_summary.qzv",
+        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
+    output:
+        config["run_name"]+"-samples/stats/
+    conda:
+        "qiime2-2023.5"
+    threads: config["other_threads"]
+    shell:
+        "unzip -qq -o {input} -d temp0; "
+        "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
+        "/bin/rm -r temp0"
+
 
 rule check_seq_qual_dropoff:
     input:

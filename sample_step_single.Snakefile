@@ -99,6 +99,9 @@ rule cutadapt_se:
     output:
         config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza",
         config["run_name"]+"-samples/stats/cutadapt_summary.txt",
+    params:
+        discard=config['discard_untrimmed'],
+        min_len=config['minimum_length']
     conda:
         "qiime2-2023.5"
     threads: workflow.cores
@@ -110,21 +113,33 @@ rule cutadapt_se:
         --p-adapter {revcomp_primerR} \
         --p-match-read-wildcards \
         --p-match-adapter-wildcards \
-        --p-minimum-length 50 \
+        --p-minimum-length {params.min_len} \
         --verbose \
         --o-trimmed-sequences trimmed_1.qza 1> {output[1]}
 
-        qiime cutadapt trim-single \
-        --p-cores {threads} \
-        --i-demultiplexed-sequences trimmed_1.qza \
-        --p-front {primerF} \
-        --p-match-read-wildcards \
-        --p-match-adapter-wildcards \
-        --p-discard-untrimmed \
-        --p-minimum-length 50 \
-        --verbose \
-        --o-trimmed-sequences {output[0]} 1>> {output[1]}
+        if [ {params.discard} = True ]; then
+            qiime cutadapt trim-single \
+            --p-cores {threads} \
+            --i-demultiplexed-sequences trimmed_1.qza \
+            --p-front {primerF} \
+            --p-match-read-wildcards \
+            --p-match-adapter-wildcards \
+            --p-discard-untrimmed \
+            --p-minimum-length {params.min_len} \
+            --verbose \
+            --o-trimmed-sequences {output[0]} 1>> {output[1]}
 
+        else
+            qiime cutadapt trim-single \
+            --p-cores {threads} \
+            --i-demultiplexed-sequences trimmed_1.qza \
+            --p-front {primerF} \
+            --p-match-read-wildcards \
+            --p-match-adapter-wildcards \
+            --p-minimum-length {params.min_len} \
+            --verbose \
+            --o-trimmed-sequences {output[0]} 1>> {output[1]}
+        fi;        
         rm trimmed_1.qza
         """
 
@@ -196,7 +211,6 @@ rule check_seq_qual_dropoff:
     params:
         seq_cutoff = config["seq_quality_cutoff"],
         seq_qual_R1 = config["run_name"]+"-samples/trimmed/fastqc_R1/multiqc_report_R1_data/mqc_fastqc_per_base_sequence_quality_plot_1.txt",
-        seq_qual_R2 = config["run_name"]+"-samples/trimmed/fastqc_R2/multiqc_report_R2_data/mqc_fastqc_per_base_sequence_quality_plot_1.txt",
         stats_dir = config["run_name"]+"-samples/stats/",
     conda:
         "qiime2-2023.5"
@@ -207,9 +221,6 @@ rule check_seq_qual_dropoff:
         echo "R1 seq quality" > {output};
         python scripts/fastqc_per_base_sequence_quality_dropoff.py \
         --input {params.seq_qual_R1} --cutoff {params.seq_cutoff} >> {output};
-        echo "R2 seq quality" >> {output}
-        python scripts/fastqc_per_base_sequence_quality_dropoff.py \
-        --input {params.seq_qual_R2} --cutoff {params.seq_cutoff} >> {output};
         """
 
 

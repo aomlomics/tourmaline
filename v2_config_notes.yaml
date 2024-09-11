@@ -9,7 +9,7 @@ run_name: test_mifish_lane1
 sample_metadata_file: # optional if no summary plotting 
 # Demultiplexing by amplicon or sample
 fastq_path: "raw_fastqs"
-sample_manifest_file: manifest_pe.csv
+sample_manifest_file: manifest_pe.csv # if this is provided, then skip manifest generating and just make fastq.qza
 sample_metadata_file: metadata.csv # optional if no summary plotting 
 to_trim: True #Boolean
 amplicon_name: 12S-MiFish
