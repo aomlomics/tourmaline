@@ -38,6 +38,7 @@ rule trim_pe_all:
     input:
         config["run_name"]+"-samples/"+config["run_name"]+"_raw_pe.manifest",
         config["run_name"]+"-samples/raw_pe_fastq.qza",
+        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv",
         config["run_name"]+"-samples/stats/fastq_summary.qzv",
         #config["run_name"]+"-samples/stats/"+config["run_name"]+"-seq_qual_dropoff.txt",
 
@@ -82,7 +83,6 @@ rule import_raw_fastq_demux_pe:
         config["run_name"]+"-samples/"+config["run_name"]+"_raw_pe.manifest",
     output:
         config["run_name"]+"-samples/raw_pe_fastq.qza",
-        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -91,14 +91,20 @@ rule import_raw_fastq_demux_pe:
         --type 'SampleData[PairedEndSequencesWithQuality]' \
         --input-path {input[0]} \
         --output-path {output[0]} \
-        --input-format PairedEndFastqManifestPhred33V2 
-        
-        qiime demux summarize \
-        --i-data {output[0]} \
-        --o-visualization {output[1]}"        
+        --input-format PairedEndFastqManifestPhred33V2      
         """
 
-
+rule raw_fastq_summary:
+    input:
+        config["run_name"]+"-samples/raw_pe_fastq.qza"
+    output:
+        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
+    conda:
+        "qiime2-2023.5"
+    shell:
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
 
 rule cutadapt_pe:
     input:
@@ -217,19 +223,19 @@ rule summarize_fastq_demux_pe:
 # make stats file with script
 
 #not done
-rule trim_summary_stats:
-    input:
-        config["run_name"]+"-samples/stats/fastq_summary.qzv",
-        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
-    output:
-        config["run_name"]+"-samples/stats/
-    conda:
-        "qiime2-2023.5"
-    threads: config["other_threads"]
-    shell:
-        "unzip -qq -o {input} -d temp0; "
-        "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
-        "/bin/rm -r temp0"
+#rule trim_summary_stats:
+    # input:
+    #     config["run_name"]+"-samples/stats/fastq_summary.qzv",
+    #     config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
+    # output:
+    #     config["run_name"]+"-samples/stats/"
+    # conda:
+    #     "qiime2-2023.5"
+    # threads: config["other_threads"]
+    # shell:
+    #     "unzip -qq -o {input} -d temp0; "
+    #     "mv temp0/*/data/per-sample-fastq-counts.tsv {output}; "
+    #     "/bin/rm -r temp0"
 
 
 rule check_seq_qual_dropoff:

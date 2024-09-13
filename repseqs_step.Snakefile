@@ -1,7 +1,7 @@
 if config["sample_metadata_file"] != None:
-    use_manifest="yes"
+    use_metadata="yes"
 else:
-    use_manifest="no"
+    use_metadata="no"
 
 if config["sample_run_name"] != None:
     sample_run_name=config["sample_run_name"]
@@ -94,7 +94,7 @@ rule summarize_feature_table:
     threads: config["asv_threads"]
     shell:
         """
-        if [ {use_manifest} = yes ]; then
+        if [ {use_metadata} = yes ]; then
             qiime feature-table summarize \
             --i-table {input.table} \
             --m-sample-metadata-file {params.metadata} \

@@ -1,11 +1,11 @@
-run_name: test_mifish_pe_disc
+run_name: pe_trim_man_full_nb
 # marker_info:  marker_info.yaml
 # Demultiplexing by amplicon or sample
 raw_fastq_path: /Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/test-fastqs 
 trimmed_fastq_path: #trimmed files must have suffix _R[1,2].fastq.gz
-sample_manifest_file: # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
+sample_manifest_file: test_mifish_pe_manifest_provided.manifest # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
 #if provided and not trimming, just import to fastq.qza
-sample_metadata_file: metadata.csv # optional if no summary plotting, is this needed at all for sample step?
+sample_metadata_file: #metadata.csv # optional if no summary plotting, is this needed at all for sample step?
 
 to_trim: True #Boolean
 paired_end: True

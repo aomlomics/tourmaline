@@ -39,6 +39,7 @@ rule trim_se_all:
         config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest",
         config["run_name"]+"-samples/raw_se_fastq.qza",
         config["run_name"]+"-samples/stats/fastq_summary.qzv",
+        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv",
         #config["run_name"]+"-samples/stats/"+config["run_name"]+"-seq_qual_dropoff.txt",
 
 rule no_trim_se_all:
@@ -91,6 +92,17 @@ rule import_raw_fastq_demux_se:
         "--output-path {output} "
         "--input-format SingleEndFastqManifestPhred33V2"
 
+rule raw_fastq_summary:
+    input:
+        config["run_name"]+"-samples/raw_se_fastq.qza"
+    output:
+        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
+    conda:
+        "qiime2-2023.5"
+    shell:
+        "qiime demux summarize "
+        "--i-data {input} "
+        "--o-visualization {output}"
 
 rule cutadapt_se:
     input:

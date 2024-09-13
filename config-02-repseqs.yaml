@@ -1,4 +1,4 @@
-run_name: test_mifish_pe_man_trim
+run_name: pe_trim_man_full_nb
 sample_run_name:  # if empty, will use run_name-samples/
 fastq_qza_file: # if empty, will use run_name-samples/ 
 sample_metadata_file: # optional if no summary plotting
