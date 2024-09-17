@@ -1,3 +1,5 @@
+output_dir = config["output_dir"]+"/"
+
 if config["sample_metadata_file"] != None:
     use_metadata="yes"
 else:
@@ -5,24 +7,24 @@ else:
 
 if config["sample_run_name"] != None:
     sample_run_name=config["sample_run_name"]
-    input_fastq=sample_run_name+"-samples/"+sample_run_name+"_fastq_pe.qza"
+    input_fastq=output_dir+sample_run_name+"-samples/"+sample_run_name+"_fastq_pe.qza"
 elif config["fastq_qza_file"] != None:
     input_fastq=config["fastq_qza_file"]
 else:
-    input_fastq=config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
+    input_fastq=output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
 
 
 
 rule run_dada2_pe_denoise:
     """Run paired end dada2"""
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
-        config["run_name"]+"-repseqs/stats/table_summary.qzv",
-        config["run_name"]+"-repseqs/stats/dada2_stats.tsv",
-        config["run_name"]+"-repseqs/stats/table_summary_samples.txt",
-        config["run_name"]+"-repseqs/stats/table_summary_features.txt",
-        config["run_name"]+"-repseqs/stats/repseqs.qzv",
-        config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+        output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv",
+        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv",
+        output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt",
+        output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt",
+        output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv",
+        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md"
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs-stats.tsv",
@@ -49,9 +51,9 @@ rule denoise_dada2_pe:
         nreadslearn=config["dada2pe_n_reads_learn"],
         hashedfeatureids=config["dada2pe_hashed_feature_ids"]
     output:
-        table=config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
-        repseqs=config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza",
-        stats=config["run_name"]+"-repseqs/stats/dada2_stats.qza",
+        table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+        repseqs=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza",
+        stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza",
     conda:
         "qiime2-2023.5"
     threads: config["asv_threads"]
@@ -84,9 +86,9 @@ rule denoise_dada2_pe:
 
 rule summarize_feature_table:
     input:
-        table=config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+        table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
     output:
-        config["run_name"]+"-repseqs/stats/table_summary.qzv"
+        output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv"
     params:
         metadata=config["sample_metadata_file"]
     conda:
@@ -108,9 +110,9 @@ rule summarize_feature_table:
 
 rule summarize_repseqs:
     input:
-        stats=config["run_name"]+"-repseqs/stats/dada2_stats.qza"
+        stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza"
     output:
-        config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
+        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -120,9 +122,9 @@ rule summarize_repseqs:
 
 rule export_repseqs_summary_to_tsv:
     input:
-        config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
+        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
     output:
-        config["run_name"]+"-repseqs/stats/dada2_stats.tsv"
+        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -133,9 +135,9 @@ rule export_repseqs_summary_to_tsv:
 
 rule export_table_to_biom:
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
     output:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
     conda:
         "qiime2-2023.5"
     shell:
@@ -146,9 +148,9 @@ rule export_table_to_biom:
 
 rule summarize_biom_samples:
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
     output:
-        config["run_name"]+"-repseqs/stats/table_summary_samples.txt"
+        output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt"
     conda:
         "qiime2-2023.5"
     shell:
@@ -160,9 +162,9 @@ rule summarize_biom_samples:
 
 rule summarize_biom_features:
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
     output:
-        config["run_name"]+"-repseqs/stats/table_summary_features.txt"
+        output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt"
     conda:
         "qiime2-2023.5"
     threads: config["asv_threads"]
@@ -176,9 +178,9 @@ rule summarize_biom_features:
 
 rule visualize_repseqs:
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
     output:
-       config["run_name"]+"-repseqs/stats/repseqs.qzv"
+       output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv"
     conda:
         "qiime2-2023.5"
     threads: config["asv_threads"]
@@ -189,9 +191,9 @@ rule visualize_repseqs:
 
 rule export_repseqs_to_fasta:
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
     output:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta"
     conda:
         "qiime2-2023.5"
     threads: config["asv_threads"]
@@ -203,9 +205,9 @@ rule export_repseqs_to_fasta:
 
 rule repseqs_lengths:
     input:
-        config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta"
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta"
     output:
-        config["run_name"]+"-repseqs/stats/repseqs_lengths.tsv"
+        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths.tsv"
     conda:
         "qiime2-2023.5"
     threads: config["asv_threads"]
@@ -214,9 +216,9 @@ rule repseqs_lengths:
 
 rule repseqs_lengths_describe:
     input:
-        config["run_name"]+"-repseqs/stats/repseqs_lengths.tsv"
+        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths.tsv"
     output:
-        config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md"
+        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md"
     conda:
         "qiime2-2023.5"
     threads: config["asv_threads"]

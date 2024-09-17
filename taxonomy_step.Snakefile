@@ -1,5 +1,7 @@
 import os
 
+output_dir = config["output_dir"]+"/"
+
 if config["sample_metadata_file"] != None:
     print("yes metadata")
     use_metadata="yes"
@@ -8,17 +10,17 @@ else:
     use_metadata="no"
 
 # set input repseqs file
-input_table=config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
+input_table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
 if config["repseqs_run_name"] != None:
     repseqs_run_name=config["repseqs_run_name"]
-    input_repseqs=repseqs_run_name+"-repseqs/"+repseqs_run_name+"-repseqs.qza"
-    input_table=repseqs_run_name+"-repseqs/"+repseqs_run_name+"-table.qza"
+    input_repseqs=output_dir+repseqs_run_name+"-repseqs/"+repseqs_run_name+"-repseqs.qza"
+    input_table=output_dir+repseqs_run_name+"-repseqs/"+repseqs_run_name+"-table.qza"
 elif config["repseqs_qza_file"] != None:
     input_repseqs=config["repseqs_qza_file"]
     input_table=config["table_qza_file"]
 else:
-    input_repseqs=config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
-    input_table=config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
+    input_repseqs=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
+    input_table=output_dir+onfig["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
 
 # set classifier files
 # Check the suffix of config["refseqs_file"]
@@ -49,18 +51,18 @@ else:
 rule run_taxonomy:
     """Run taxonomy"""
     input:
-        config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv",
-        config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qzv",
-        config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxa_sample_table_"+"l"+str(config["classify_taxalevel"])+".tsv",
-        config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_sample_table.tsv"
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv",
+        output_dir+config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qzv",
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxa_sample_table_"+"l"+str(config["classify_taxalevel"])+".tsv",
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_sample_table.tsv"
 
         # add figures here
 
 if config["refseqs_file"] == None or config["taxa_file"] == None:
     print("refseqs_file and taxa_file must be provided if pretrained_classifier is not used")
 elif has_fa_suffix(config["refseqs_file"], fasta_suffixes):
-    output_seq = config["run_name"]+"-taxonomy/"+change_suffix(config["refseqs_file"], ".qza")
-    output_tax = config["run_name"]+"-taxonomy/"+change_suffix(config["taxa_file"], ".qza")
+    output_seq = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["refseqs_file"], ".qza")
+    output_tax = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["taxa_file"], ".qza")
     rule import_ref_seqs:
         input:
             config["refseqs_file"]
@@ -102,7 +104,7 @@ if config["classify_method"] == "naive-bayes":
                 refseq=output_seq,
                 reftax=output_tax
             output:
-                config["run_name"]+"-taxonomy/classifier.qza"
+                output_dir+config["run_name"]+"-taxonomy/classifier.qza"
             conda:
                 "qiime2-2023.5"
             threads: config["classify_threads"]
@@ -116,7 +118,7 @@ if config["classify_method"] == "naive-bayes":
             input:
                 config["pretrained_classifier"]
             output:
-                config["run_name"]+"-taxonomy/classifier.qza"
+                output_dir+config["run_name"]+"-taxonomy/classifier.qza"
             conda:
                 "qiime2-2023.5"
             shell:
@@ -124,9 +126,9 @@ if config["classify_method"] == "naive-bayes":
     rule feature_classifier_nb:
         input:
             repseqs=input_repseqs,
-            classifier=config["run_name"]+"-taxonomy/classifier.qza"
+            classifier=output_dir+config["run_name"]+"-taxonomy/classifier.qza"
         output:
-            config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+            output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
             classifyparams=config["classify_params"],
         conda:
@@ -149,10 +151,10 @@ elif config["classify_method"] == "consensus-blast":
             refseq=output_seq,
             reftax=output_tax
         output:
-            config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+            output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
             classifyparams=config["classify_params"],
-            searchout=config["run_name"]+"-taxonomy/search_results.qza"
+            searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza"
         conda:
             "qiime2-2023.5"
         threads: config["classify_threads"]
@@ -173,10 +175,10 @@ elif config["classify_method"] == "consensus-vsearch":
             refseq=output_seq,
             reftax=output_tax,
         output:
-            config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+            output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
             classifyparams=config["classify_params"],
-            searchout=config["run_name"]+"-taxonomy/search_results.qza"
+            searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza"
         conda:
             "qiime2-2023.5"
         threads: config["classify_threads"]
@@ -198,10 +200,10 @@ else:
 # rule taxa_barplot:
 #     input:
 #         table=input_table,
-#         taxonomy=config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+#         taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
 #         metadata=config["sample_metadata_file"]
 #     output:
-#         config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qza"
+#         output_dir+config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qza"
 #     conda:
 #         "qiime2-2023.5"
 #     shell:
@@ -223,9 +225,9 @@ else:
 rule export_taxa_biom:
     input:
         table=input_table,
-        taxonomy=config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+        taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
     output:
-        taxa_table=config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxa_sample_table_"+"l"+str(config["classify_taxalevel"])+".tsv",
+        taxa_table=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxa_sample_table_"+"l"+str(config["classify_taxalevel"])+".tsv",
     params:
         taxalevel=config["classify_taxalevel"]
     conda:
@@ -248,10 +250,10 @@ rule export_taxa_biom:
 rule export_asv_seq_taxa_obis:
     input:
         table=input_table,
-        taxonomy=config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+        taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         repseqs=input_repseqs
     output:
-        config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_sample_table.tsv"
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_sample_table.tsv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -273,9 +275,9 @@ rule export_asv_seq_taxa_obis:
 
 rule export_taxonomy_to_tsv:
     input:
-        config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza"
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza"
     output:
-        config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv"
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -287,9 +289,9 @@ rule export_taxonomy_to_tsv:
 rule taxa_barplot:
     input:
         table=input_table,
-        taxonomy=config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
+        taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
     output:
-        config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qzv"
+        output_dir+config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qzv"
     params:
         metadata=config["sample_metadata_file"]
     conda:

@@ -2,6 +2,8 @@ from Bio.Seq import Seq
 import os
 import shutil
 
+output_dir = config["output_dir"]+"/"
+
 if config["sample_manifest_file"] != None:
     if config["to_trim"] == True:
         print("Manifest provided, trimming reads\n")
@@ -12,7 +14,7 @@ if config["sample_manifest_file"] != None:
         ruleorder: import_fastq_demux_se > cutadapt_se
         SAMPLES=['nothing']
 else:
-    with open("create_manifest.txt", 'w') as file:
+    with open(output_dir+"create_manifest.txt", 'w') as file:
         pass
     if config["raw_fastq_path"] != None:
         print("no manifest, trimming reads\n")
@@ -36,24 +38,24 @@ revcomp_primerR=Seq(config["rev_primer"]).reverse_complement()
 rule trim_se_all:
     """Trim all reads with all supplied trimming parameters"""
     input:
-        config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest",
-        config["run_name"]+"-samples/raw_se_fastq.qza",
-        config["run_name"]+"-samples/stats/fastq_summary.qzv",
-        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv",
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest",
+        output_dir+config["run_name"]+"-samples/raw_se_fastq.qza",
+        output_dir+config["run_name"]+"-samples/stats/fastq_summary.qzv",
+        output_dir+config["run_name"]+"-samples/stats/raw_fastq_summary.qzv",
         #config["run_name"]+"-samples/stats/"+config["run_name"]+"-seq_qual_dropoff.txt",
 
 rule no_trim_se_all:
     """Trim all reads with all supplied trimming parameters"""
     input:
-        config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest",
-        config["run_name"]+"-samples/stats/fastq_summary.qzv",
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest",
+        output_dir+config["run_name"]+"-samples/stats/fastq_summary.qzv",
         #config["run_name"]+"-samples/stats/"+config["run_name"]+"-seq_qual_dropoff.txt",
 
 rule make_raw_manifest_se_path:
     input:
         fwdreads=expand(config["raw_fastq_path"]+"/{sample}_R1.fastq.gz",sample=SAMPLES),
     output:
-        config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest"
     shell:
         """
         echo -e "sample-id\tabsolute-filepath" > {output}
@@ -66,23 +68,23 @@ rule make_raw_manifest_se_path:
 
 rule make_raw_manifest_se_file:
     input:
-        "create_manifest.txt"
+        output_dir+"create_manifest.txt"
     output:
-        config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest"
     params:
         file=config["sample_manifest_file"]
     run:
         if config["sample_manifest_file"] != None:
-            os.makedirs(config["run_name"]+"-samples", exist_ok=True)
+            os.makedirs(output_dir+config["run_name"]+"-samples", exist_ok=True)
             # copy the file
             shutil.copy(params.file, output[0])
-        os.remove("create_manifest.txt")
+        os.remove(output_dir+"create_manifest.txt")
 
 rule import_raw_fastq_demux_se:
     input:
-        config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest",
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest",
     output:
-        config["run_name"]+"-samples/raw_se_fastq.qza"
+        output_dir+config["run_name"]+"-samples/raw_se_fastq.qza"
     conda:
         "qiime2-2023.5"
     shell:
@@ -94,9 +96,9 @@ rule import_raw_fastq_demux_se:
 
 rule raw_fastq_summary:
     input:
-        config["run_name"]+"-samples/raw_se_fastq.qza"
+        output_dir+config["run_name"]+"-samples/raw_se_fastq.qza"
     output:
-        config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
+        output_dir+config["run_name"]+"-samples/stats/raw_fastq_summary.qzv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -107,10 +109,10 @@ rule raw_fastq_summary:
 rule cutadapt_se:
     input:
         #rules.import_raw_fastq_demux_se.output
-        config["run_name"]+"-samples/raw_se_fastq.qza"
+        output_dir+config["run_name"]+"-samples/raw_se_fastq.qza"
     output:
-        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza",
-        config["run_name"]+"-samples/stats/cutadapt_summary.txt",
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza",
+        output_dir+config["run_name"]+"-samples/stats/cutadapt_summary.txt",
     params:
         discard=config['discard_untrimmed'],
         min_len=config['minimum_length']
@@ -159,9 +161,9 @@ rule cutadapt_se:
 
 rule make_manifest_se:
     input:
-        fwdreads=expand(config["run_name"]+"-samples/trimmed/{sample}.1.fastq",sample=SAMPLES),
+        fwdreads=expand(output_dir+config["run_name"]+"-samples/trimmed/{sample}.1.fastq",sample=SAMPLES),
     output:
-        config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
     shell:
         """
         echo -e "sample-id\tabsolute-filepath" > {output}
@@ -174,9 +176,9 @@ rule make_manifest_se:
 
 rule make_manifest_se_file:
     input:
-        "create_manifest.txt"
+        output_dir+"create_manifest.txt"
     output:
-        config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
     params:
         file=config["sample_manifest_file"]
     run:
@@ -184,13 +186,13 @@ rule make_manifest_se_file:
             os.makedirs(config["run_name"]+"-samples", exist_ok=True)
             # copy the file
             shutil.copy(params.file, output[0])
-        os.remove("create_manifest.txt")
+        os.remove(output_dir+"create_manifest.txt")
 
 rule import_fastq_demux_se:
     input:
-        config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_se.manifest"
     output:
-        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza"
     conda:
         "qiime2-2023.5"
     shell:
@@ -202,9 +204,9 @@ rule import_fastq_demux_se:
 
 rule summarize_fastq_demux_se:
     input:
-        config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza"
+        output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_fastq_se.qza"
     output:
-        config["run_name"]+"-samples/stats/fastq_summary.qzv"
+        output_dir+config["run_name"]+"-samples/stats/fastq_summary.qzv"
     conda:
         "qiime2-2023.5"
     shell:
@@ -217,13 +219,13 @@ rule summarize_fastq_demux_se:
 
 rule check_seq_qual_dropoff:
     input:
-        R1=config["run_name"]+"-samples/trimmed/fastqc_R1/multiqc_report_R1.html",
+        R1=output_dir+config["run_name"]+"-samples/trimmed/fastqc_R1/multiqc_report_R1.html",
     output:
-        config["run_name"]+"-samples/stats/"+config["run_name"]+"-seq_qual_dropoff.txt",
+        output_dir+config["run_name"]+"-samples/stats/"+config["run_name"]+"-seq_qual_dropoff.txt",
     params:
         seq_cutoff = config["seq_quality_cutoff"],
-        seq_qual_R1 = config["run_name"]+"-samples/trimmed/fastqc_R1/multiqc_report_R1_data/mqc_fastqc_per_base_sequence_quality_plot_1.txt",
-        stats_dir = config["run_name"]+"-samples/stats/",
+        seq_qual_R1 = output_dir+config["run_name"]+"-samples/trimmed/fastqc_R1/multiqc_report_R1_data/mqc_fastqc_per_base_sequence_quality_plot_1.txt",
+        stats_dir = output_dir+config["run_name"]+"-samples/stats/",
     conda:
         "qiime2-2023.5"
     threads: 1
