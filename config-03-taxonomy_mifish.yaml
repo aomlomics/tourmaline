@@ -1,0 +1,18 @@
+run_name: test_data_mifish
+output_dir: "../v2-results"
+repseqs_run_name:  # if empty, will use run_name-repseqs/
+repseqs_qza_file: # if empty, will use run_name-repseqs/ 
+table_qza_file: # if empty, will use run_name-repseqs/
+sample_metadata_file: # optional if no summary plotting
+# TAXONOMY STEP: Assign taxonomy, saves to [run_name]-taxonomy folder
+refseqs_file: "00-data/seqs-derepU.qza" #can be a fasta file (.fa, .fna, .fasta) or a .qza file
+taxa_file: "00-data/taxa-derepU.qza" #can be a .qza file or a .tsv file
+pretrained_classifier: "/Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/tourmaline/00-data/classifier.qza" # optional, if provided will ignore refseqs_file and taxa_file for naive-bayes, must be full path
+classify_method: naive-bayes # naive-bayes, consensus-blast, consensus-vsearch
+taxa_ranks: # list of ranks titles in database , e.g. ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+classify_taxalevel: 7
+classify_threads: 6
+# Assignment methods
+classify_params: --verbose #--p-perc-identity 0.8 --p-query-cov 0.6
+#command: snakemake --use-conda -s taxonomy_step.Snakefile --configfile config-03-taxonomy.yaml --cores 4
+
