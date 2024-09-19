@@ -7,7 +7,7 @@ run_name-samples/
    └──stats/
       ├──cutadapt_summary.txt
       ├──raw_fastqc_summary.qzv
-      ├──trimmed_fastqc_summary.txt
+      ├──trimmed_fastqc_summary.qzv
    ├──figures/
        ├──map.png #revamp
 
@@ -26,6 +26,8 @@ run_name-repseqs/
    ├── dada2_stats.tsv
    ├── repseqs_stats.tsv #length, count
    ├── table_summary.qzv
+   ├── table_summary_sample.txt # look for overlap with other summary files 
+
 
 run_name-taxonomy/
    ├──metadata.csv # optional

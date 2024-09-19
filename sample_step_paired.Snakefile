@@ -1,3 +1,4 @@
+## Snakefile for sample step (paired-end reads) of Tourmalne V2 pipeline
 from Bio.Seq import Seq
 import os
 import shutil

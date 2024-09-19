@@ -2,7 +2,7 @@ run_name: test_data_mifish
 output_dir: "../v2-results"
 # marker_info:  marker_info.yaml
 # Demultiplexing by amplicon or sample
-raw_fastq_path: ../test-fastqs/ #path to raw fastq files 
+raw_fastq_path: /Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/test-fastqs #absolute path to raw fastq files 
 trimmed_fastq_path: #trimmed files must have suffix _R[1,2].fastq.gz
 sample_manifest_file: # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
 #if provided and not trimming, just import to fastq.qza

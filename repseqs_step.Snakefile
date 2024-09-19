@@ -1,3 +1,4 @@
+## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
 
 if config["sample_metadata_file"] != None:

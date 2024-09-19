@@ -1,3 +1,4 @@
+## Snakefile for taxonomy step of Tourmaline V2 pipeline
 import os
 
 output_dir = config["output_dir"]+"/"
@@ -20,7 +21,7 @@ elif config["repseqs_qza_file"] != None:
     input_table=config["table_qza_file"]
 else:
     input_repseqs=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
-    input_table=output_dir+onfig["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
+    input_table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
 
 # set classifier files
 # Check the suffix of config["refseqs_file"]
