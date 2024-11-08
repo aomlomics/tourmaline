@@ -1,3 +1,5 @@
+## Snakefile for sample step (single-end reads) of Tourmalne V2 pipeline
+
 from Bio.Seq import Seq
 import os
 import shutil
@@ -18,7 +20,7 @@ else:
         pass
     if config["raw_fastq_path"] != None:
         print("no manifest, trimming reads\n")
-        SAMPLES, = glob_wildcards(config["raw_fastq_path"]+"/{sample}_R1.fastq.gz")
+        SAMPLES, SFX = glob_wildcards(config["raw_fastq_path"]+"/{sample}_R1{suffix}.fastq.gz")
         ruleorder: cutadapt_se > import_fastq_demux_se
     elif config["trimmed_fastq_path"] != None:
         print("no manifest, not trimming reads\n")
@@ -53,15 +55,17 @@ rule no_trim_se_all:
 
 rule make_raw_manifest_se_path:
     input:
-        fwdreads=expand(config["raw_fastq_path"]+"/{sample}_R1.fastq.gz",sample=SAMPLES),
+        fwdreads=expand(config["raw_fastq_path"]+"/{sample}_R1{suffix}.fastq.gz",sample=SAMPLES,suffix=SFX),
     output:
         output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_raw_se.manifest"
+    params:
+        SFX=SFX
     shell:
         """
         echo -e "sample-id\tabsolute-filepath" > {output}
         for f in {input.fwdreads}
         do
-            echo "$(basename $f | sed 's/_R1.fastq.gz//')\t$f" >> {output}
+            echo "$(basename $f | sed 's/_R1.*\.fastq.gz//')\t$f" >> {output}
         done
        
         """

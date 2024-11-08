@@ -1,3 +1,5 @@
+## STILL NEED TO ADD RULES FOR FILTERING SEQUENCES
+
 ## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
 
@@ -13,7 +15,6 @@ elif config["fastq_qza_file"] != None:
     input_fastq=config["fastq_qza_file"]
 else:
     input_fastq=output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
-
 
 
 rule run_dada2_pe_denoise:
@@ -50,7 +51,12 @@ rule denoise_dada2_pe:
         chimeramethod=config["dada2pe_chimera_method"],
         minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
         nreadslearn=config["dada2pe_n_reads_learn"],
-        hashedfeatureids=config["dada2pe_hashed_feature_ids"]
+        hashedfeatureids=config["dada2pe_hashed_feature_ids"],
+        minlength=config["repseq_min_length"],
+        maxlength=config["repseq_max_length"],
+        minabund=config["repseq_min_abundance"],
+        minprev=config["repseq_min_prevalence"],
+        to_filter=config["to_filter"]
     output:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
         repseqs=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza",
@@ -79,6 +85,38 @@ rule denoise_dada2_pe:
         --o-representative-sequences {output.repseqs} \
         --o-denoising-stats {output.stats} \
         --verbose  
+
+        if [ {params.to_filter} = "yes" ]; then
+        echo "Filtering sequences" 
+        # FILTER SEQUENCES BY LENGTH
+            qiime feature-table filter-seqs \
+            --i-data {output.repseqs} \
+            --m-metadata-file {output.repseqs} \
+            --p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' \
+            --o-filtered-data temp_repseqs1.qza; 
+            /bin/rm {output.repseqs}; 
+            # FILTER TABLE BY FEATURE IDS
+            qiime feature-table filter-features \
+            --i-table {output.table} \
+            --m-metadata-file temp_repseqs1.qza \
+            --o-filtered-table temp_table.qza; 
+            /bin/rm {output.table}; 
+            # FILTER TABLE BY ABUNDANCE & PREVALENCE
+            qiime feature-table filter-features-conditionally \
+            --i-table temp_table.qza \
+            --p-abundance {params.minabund} \
+            --p-prevalence {params.minprev} \
+            --o-filtered-table {output.table}; 
+            # FILTER SEQUENCES USING TABLE
+            qiime feature-table filter-seqs \
+            --i-data temp_repseqs1.qza \
+            --i-table {output.table} \
+            --p-no-exclude-ids \
+            --o-filtered-data {output.repseqs}; \
+            # REMOVE TEMP FILES
+            /bin/rm temp_repseqs1.qza; 
+            /bin/rm temp_table.qza; 
+        fi
 
         """
 
@@ -225,3 +263,51 @@ rule repseqs_lengths_describe:
     threads: config["asv_threads"]
     shell:
         "python scripts/repseqs_lengths_describe.py {input} {output}"
+
+# if config["to_filter"] == "yes":
+#     rule filter_sequences:
+#         input:
+#             table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+#             repseqs=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza",
+#             #repseqstofilter="00-data/repseqs_to_filter_{method}.tsv",
+#             #samplestofilter="00-data/samples_to_filter_{method}.tsv",
+#             #metadata="00-data/metadata.tsv"
+#         params:
+#             minlength=config["repseq_min_length"],
+#             maxlength=config["repseq_max_length"],
+#             minabund=config["repseq_min_abundance"],
+#             minprev=config["repseq_min_prevalence"],
+#         output:
+#             output_dir+config["run_name"]+"-repseqs/filtered.txt"
+#         conda:
+#             "qiime2-2023.5"
+#         shell:
+#             # FILTER SEQUENCES BY LENGTH
+#             "qiime feature-table filter-seqs "
+#             "--i-data {input.repseqs} "
+#             "--m-metadata-file {input.repseqs} "
+#             "--p-where 'length(sequence) >= {params.minlength} AND length(sequence) <= {params.maxlength}' "
+#             "--o-filtered-data temp_repseqs1.qza; "
+#             "/bin/rm {input.repseqs}; "
+#             # FILTER TABLE BY FEATURE IDS
+#             "qiime feature-table filter-features "
+#             "--i-table {input.table} "
+#             "--m-metadata-file temp_repseqs1.qza "
+#             "--o-filtered-table temp_table.qza; "
+#             "/bin/rm {input.table}; "
+#             # FILTER TABLE BY ABUNDANCE & PREVALENCE
+#             "qiime feature-table filter-features-conditionally "
+#             "--i-table temp_table.qza "
+#             "--p-abundance {params.minabund} "
+#             "--p-prevalence {params.minprev} "
+#             "--o-filtered-table {input.table}; "
+#             # FILTER SEQUENCES USING TABLE
+#             "qiime feature-table filter-seqs "
+#             "--i-data temp_repseqs1.qza "
+#             "--i-table {input.table} "
+#             "--p-no-exclude-ids "
+#             "--o-filtered-data {input.repseqs}; "
+#             # REMOVE TEMP FILES
+#             "/bin/rm temp_repseqs1.qza; "
+#             "/bin/rm temp_table.qza; "
+#             "touch {output}"

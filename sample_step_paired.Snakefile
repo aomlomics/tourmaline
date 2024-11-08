@@ -1,5 +1,6 @@
 ## Snakefile for sample step (paired-end reads) of Tourmalne V2 pipeline
 from Bio.Seq import Seq
+import glob
 import os
 import shutil
 
@@ -19,7 +20,8 @@ else:
         pass
     if config["raw_fastq_path"] != None:
         print("no manifest, trimming reads\n")
-        SAMPLES, = glob_wildcards(config["raw_fastq_path"]+"/{sample}_R1.fastq.gz")
+        SAMPLES, SFX = glob_wildcards(config["raw_fastq_path"]+"/{sample}_R1{suffix}.fastq.gz")
+        SFX = list(set(SFX))
         ruleorder: cutadapt_pe > import_fastq_demux_pe
     elif config["trimmed_fastq_path"] != None:
         print("no manifest, not trimming reads\n")
@@ -54,17 +56,27 @@ rule no_trim_pe_all:
 
 rule make_raw_manifest_pe_path:
     input:
-        fwdreads=expand(config["raw_fastq_path"]+"/{sample}_R1.fastq.gz",sample=SAMPLES),
-        revreads=expand(config["raw_fastq_path"]+"/{sample}_R2.fastq.gz",sample=SAMPLES),
+        fwdreads=expand(config["raw_fastq_path"]+"/{sample}_R1{suffix}.fastq.gz",sample=SAMPLES,suffix=SFX),
+        revreads=expand(config["raw_fastq_path"]+"/{sample}_R2{suffix}.fastq.gz",sample=SAMPLES,suffix=SFX),
     output:
         output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_raw_pe.manifest"
+    params:
+        SFX=SFX
     shell:
         """
         echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > {output}
-        for f in {input.fwdreads}
-        do
-            echo -e "$(basename $f | sed 's/_R1.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1.fastq.gz/_R2.fastq.gz/g')" >> {output}
-        done
+        if [ {params.SFX} == "_001" ]; then
+            for f in {input.fwdreads}
+                do
+                    echo -e "$(basename $f | sed 's/_R1.*\.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1_001.fastq.gz/_R2_001.fastq.gz/g')" >> {output}
+                done
+        else
+            for f in {input.fwdreads}
+                do
+                    echo -e "$(basename $f | sed 's/_R1.*\.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1.fastq.gz/_R2.fastq.gz/g')" >> {output}
+                done
+        fi
+        
        
         """
 

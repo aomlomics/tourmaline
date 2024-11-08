@@ -1,8 +1,9 @@
 #!/bin/bash
 ##
 # @Description: Runs the snakemake pipeline Tourmaline 2.0, either all at once or modularly.
+# Requires snakemake env activated. 
 #command: ./tourmaline.sh -s taxonomy --configfile config-03-taxonomy.yaml --cores 6
-# test fulll: ./tourmaline.sh -s sample,repseqs,taxonomy --configfile config-01-sample.yaml,config-02-repseqs.yaml,config-03-taxonomy.yaml --cores 6
+# test full: ./tourmaline.sh -s sample,repseqs,taxonomy --configfile config-01-sample.yaml,config-02-repseqs.yaml,config-03-taxonomy.yaml --cores 6
 ##
 
 

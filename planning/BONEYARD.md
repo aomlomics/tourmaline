@@ -123,3 +123,17 @@ qiime cutadapt trim-paired \
 --p-minimum-length 50 \
 --verbose \
 --o-trimmed-sequences trimmed_remove_primers_test_2.qza 1> ca_summary2
+
+
+    shell:
+        "qiime metadata tabulate "
+        "--m-input-file {input.repseqs} "
+        "--m-input-file {input.taxonomy} "
+        "--o-visualization merged-data.qzv; "
+        "qiime tools export "
+        "--input-path merged-data.qzv "
+        "--output-path {output}; "
+        "mv {output}/metadata.tsv temp; "
+        "rm -r {output}; "
+        "sed -e '2d' temp | sed '1 s|id\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|sequence|' > {output}; "
+        "/bin/rm -r temp merged-data.qzv"

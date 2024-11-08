@@ -59,6 +59,7 @@ Tourmaline provides Snakemake rules for DADA2 (single-end and paired-end). It is
       C["`Use same run_name as Step 1
       _run_name_: Run1`"]
       end
+      subgraph ide2 [Generate ASVs]
       E(Paired reads)
       F(Single end reads)
       A ----> E & F
@@ -69,10 +70,38 @@ Tourmaline provides Snakemake rules for DADA2 (single-end and paired-end). It is
       E --> I{deblur}
       F --> H
       F --> I
-
+    end
 ```
 
-**Taxonomy step.** Assigns taxonomy to representative sequences;
+**Taxonomy step.** Assigns taxonomy to representative sequences;  
+
+```mermaid
+  flowchart TD
+      subgraph ide1 [Run name]
+      A["`Choose different Step 2 folder for Step 3
+      _run_name_: Run3
+      _repseqs_run_name_: Run2`"] 
+      B["`Provide external ASV and biom files
+      _run_name_: Run1
+      _repseqs_qza_file_
+      _table_qza_file_`"]
+      C["`Use same run_name as Step 1/2
+      _run_name_: Run1`"]
+      end
+      ide1 --> ide2
+      subgraph ide2 [Assign taxonomy]
+      E("`Provide reference sequences and taxonomy
+      (.qza or .fasta/txt)`")
+      F("`Provide pretrained classifier
+      (.qza file)`")
+      E --> H{consensus-blast} 
+      E --> I{consensus-vsearch}
+      E --> J{bowtie2-blca}
+      E --> G{naive-bayes}
+      F --> G
+      end
+```
+ 
 
 ### Setup
 

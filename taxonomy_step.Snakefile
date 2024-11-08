@@ -4,10 +4,10 @@ import os
 output_dir = config["output_dir"]+"/"
 
 if config["sample_metadata_file"] != None:
-    print("yes metadata")
+    print("yes metadata\n")
     use_metadata="yes"
 else:
-    print("no metadata")
+    print("no metadata\n")
     use_metadata="no"
 
 # set input repseqs file
@@ -47,7 +47,6 @@ else:
     print("No pretrained classifier provided, using refseqs and reftax files")
 
 
-
 ## MASTER RULE
 rule run_taxonomy:
     """Run taxonomy"""
@@ -55,13 +54,13 @@ rule run_taxonomy:
         output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv",
         output_dir+config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qzv",
         output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxa_sample_table_"+"l"+str(config["classify_taxalevel"])+".tsv",
-        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_sample_table.tsv"
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_features.tsv"
 
         # add figures here
 
 if config["refseqs_file"] == None or config["taxa_file"] == None:
     print("refseqs_file and taxa_file must be provided if pretrained_classifier is not used")
-elif has_fa_suffix(config["refseqs_file"], fasta_suffixes):
+elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
     output_seq = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["refseqs_file"], ".qza")
     output_tax = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["taxa_file"], ".qza")
     rule import_ref_seqs:
@@ -91,6 +90,9 @@ elif has_fa_suffix(config["refseqs_file"], fasta_suffixes):
             "--input-path {input} "
             "--output-path {output}"
 elif has_fa_suffix(config["refseqs_file"], [".qza"]):
+    output_seq = config["refseqs_file"]
+    output_tax = config["taxa_file"]
+elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] == "bt2-blca":
     output_seq = config["refseqs_file"]
     output_tax = config["taxa_file"]
 elif use_classifier == "no":
@@ -145,6 +147,47 @@ if config["classify_method"] == "naive-bayes":
             {params.classifyparams};
             """
 
+# elif config["classify_method"] == "bt2-blca":
+#     bt2_index_path = output_dir+config["run_name"] + "-taxonomy/bowtie2_index/bowtie2_index.1.bt2"
+#     if not os.path.exists(bt2_index_path):
+#         rule bt2-index:
+#             input:
+#                 refseq=output_seq,
+#             output:
+#                 directory(output_dir+config["run_name"] + "-taxonomy/bowtie2_index/")
+#             params:
+#                 prefix={output}+"bowtie2_index"
+#             conda:
+#                 "bt2"
+#             threads: config["classify_threads"]
+#             shell:
+#                 "bowtie2-build "
+#                 "--threads {threads} "
+#                 "-f {input.refseq} "
+#                 "{params.prefix}; "
+#     rule bt2:
+#         input:
+#             repseqs=input_repseqs,
+#             index=output_dir+config["run_name"] + "-taxonomy/bowtie2_index/"
+#         output:
+#             sam=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"_bowtie2_all.sam",
+#             temp_dir=output_dir+config["run_name"]+"-taxonomy/temp/"
+#         params:
+#             prefix={input.index}+"bowtie2_index",
+#             classifyparams=config["classify_params"],
+#         conda:
+#             "qiime2-2023.5"
+#         threads: config["classify_threads"]
+#         shell:
+#             """
+#             qiime feature-classifier classify-sklearn \
+#             --i-classifier {input.classifier} \
+#             --i-reads {input.repseqs} \
+#             --o-classification {output} \
+#             --p-n-jobs {threads} \
+#             {params.classifyparams};
+#             """
+
 elif config["classify_method"] == "consensus-blast":
     rule feature_classifier_cb:
         input:
@@ -198,31 +241,6 @@ else:
     print("classify_method must be one of the following: naive-bayes, consensus-blast, consensus-vsearch")
 
 
-# rule taxa_barplot:
-#     input:
-#         table=input_table,
-#         taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
-#         metadata=config["sample_metadata_file"]
-#     output:
-#         output_dir+config["run_name"]+"-taxonomy/figures/"+config["run_name"]+"-taxa_barplot.qza"
-#     conda:
-#         "qiime2-2023.5"
-#     shell:
-#         """
-#         if [ {use_metadata} = yes ]; then 
-#             qiime taxa barplot \
-#             --i-table {input.table} \
-#             --i-taxonomy {input.taxonomy} \
-#             --m-metadata-file {input.metadata} \
-#             --o-visualization {output}
-#         else
-#             qiime taxa barplot \
-#             --i-table {input.table} \
-#             --i-taxonomy {input.taxonomy} \
-#             --o-visualization {output}
-#         fi
-#         """
-
 rule export_taxa_biom:
     input:
         table=input_table,
@@ -248,31 +266,18 @@ rule export_taxa_biom:
         "--to-tsv;"
         "/bin/rm -r tempfile_collapsed.qza temp_export/"
 
-rule export_asv_seq_taxa_obis:
+rule export_asv_taxa_features:
     input:
-        table=input_table,
         taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         repseqs=input_repseqs
     output:
-        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_sample_table.tsv"
+        output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-asv_taxa_features.tsv"
+    params:
+        taxaranks=config["taxa_ranks"]
     conda:
         "qiime2-2023.5"
     shell:
-        "qiime feature-table transpose "
-        "--i-table {input.table} "
-        "--o-transposed-feature-table transposed-table.qza; "
-        "qiime metadata tabulate "
-        "--m-input-file {input.repseqs} "
-        "--m-input-file {input.taxonomy} "
-        "--m-input-file transposed-table.qza "
-        "--o-visualization merged-data.qzv; "
-        "qiime tools export "
-        "--input-path merged-data.qzv "
-        "--output-path {output}; "
-        "mv {output}/metadata.tsv temp; "
-        "rm -r {output}; "
-        "sed -e '2d' temp | sed '1 s|id\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|sequence|' > {output}; "
-        "/bin/rm -r temp transposed-table.qza merged-data.qzv"
+        "python scripts/create_asv_seq_taxa_output.py --input_repseqs {input.repseqs} --input_taxonomy {input.taxonomy} --output {output} --taxaranks {params.taxaranks}"
 
 rule export_taxonomy_to_tsv:
     input:
