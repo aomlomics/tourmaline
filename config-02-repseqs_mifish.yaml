@@ -51,8 +51,19 @@ deblur_min_size: 2
 deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # FILTERING (OPTIONAL)
-to_filter = False
+to_filter: False
 
+# FILTER SAMPLES BEFORE DENOISING
+
+samples_to_filter: # file with samples to remove prior to denoising
+min_sample_reads: 0 # remove samples with fewer reads prior to denoising
+# FILTER SAMPLES BY METADATA
+# Samples can be removed or retained based on their metadata, using SQLite WHERE-clause syntax inside double quotes.
+# TO SKIP FILTERING BY SAMPLE METADATA: provide "none" (default) or don't run filtering commands.
+# EXAMPLE: "[region]='Open Water'"
+metadata_filter: none
+
+# FILTER FEATURES AFTER DENOISING
 # Set minimum and maximum sequence lengths to filter representative sequences by.
 # Limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum.
 # For more info run: qiime feature-table filter-seqs --help
@@ -70,6 +81,8 @@ repseq_max_length: 0
 
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
+
+repseq_min_samples: 0 # remove features that are not present in at least this many samples
 
 # Outputs (not done yet)
 biom: #Boolean
