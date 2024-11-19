@@ -1,5 +1,7 @@
 ## STILL NEED TO ADD some RULES FOR FILTERING SEQUENCES
 
+# NEED TO ADD TABLE TSV OUTPUT
+
 ## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
 
@@ -38,6 +40,7 @@ rule run_dada2_pe_denoise:
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs-stats.tsv",
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
         # add figures here
 
 #rule run_dada2_se_denoise:
@@ -48,18 +51,18 @@ rule denoise_dada2_pe:
     input:
         input_fastq
     params:
-        trunclenf=config["dada2pe_trunc_len_f"],
+        trunclenf=config["dada2_trunc_len_f"],
         trunclenr=config["dada2pe_trunc_len_r"],
-        trimleftf=config["dada2pe_trim_left_f"],
+        trimleftf=config["dada2_trim_left_f"],
         trimleftr=config["dada2pe_trim_left_r"],
-        maxeef=config["dada2pe_max_ee_f"],
+        maxeef=config["dada2_max_ee_f"],
         maxeer=config["dada2pe_max_ee_r"],
-        truncq=config["dada2pe_trunc_q"],
-        poolingmethod=config["dada2pe_pooling_method"],        
-        chimeramethod=config["dada2pe_chimera_method"],
-        minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
-        nreadslearn=config["dada2pe_n_reads_learn"],
-        hashedfeatureids=config["dada2pe_hashed_feature_ids"]
+        truncq=config["dada2_trunc_q"],
+        poolingmethod=config["dada2_pooling_method"],        
+        chimeramethod=config["dada2_chimera_method"],
+        minfoldparentoverabundance=config["dada2_min_fold_parent_over_abundance"],
+        nreadslearn=config["dada2_n_reads_learn"],
+        hashedfeatureids=config["dada2_hashed_feature_ids"]
     output:
         table=temp_table,
         repseqs=temp_repseqs,
@@ -285,3 +288,16 @@ rule repseqs_lengths_describe:
     threads: config["asv_threads"]
     shell:
         "python scripts/repseqs_lengths_describe.py {input} {output}"
+
+rule export_biom_tsv:
+    input:
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
+    output:
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
+    conda:
+        "qiime2-amplicon-2024.10"
+    shell:
+        "biom convert "
+        "-i {input} "
+        "-o {output} "
+        "--to-tsv"

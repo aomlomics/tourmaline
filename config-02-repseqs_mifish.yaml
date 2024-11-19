@@ -9,34 +9,22 @@ asv_method: dada2pe # dada2pe, dada2se, deblur
 asv_threads: 5
 
 # ASV METHODS
-# DADA2 PAIRED-END
+# DADA2 PAIRED-END or SINGLE-END
 # For more info run: qiime dada2 denoise-paired --help
 
-dada2pe_trunc_len_f: 0
+dada2_trunc_len_f: 0
 dada2pe_trunc_len_r: 0
-dada2pe_trim_left_f: 0
+dada2_trim_left_f: 0
 dada2pe_trim_left_r: 0
-dada2pe_max_ee_f: 2
+dada2_max_ee_f: 2
 dada2pe_max_ee_r: 2
-dada2pe_trunc_q: 2
-dada2pe_pooling_method: independent
-dada2pe_chimera_method: consensus
-dada2pe_min_fold_parent_over_abundance: 1
-dada2pe_n_reads_learn: 1000000
-dada2pe_hashed_feature_ids: --p-hashed-feature-ids
+dada2_trunc_q: 2
+dada2_pooling_method: independent
+dada2_chimera_method: consensus
+dada2_min_fold_parent_over_abundance: 1
+dada2_n_reads_learn: 1000000
+dada2_hashed_feature_ids: --p-hashed-feature-ids
 
-# DADA2 SINGLE-END
-# For more info run: qiime dada2 denoise-single --help
-
-dada2se_trunc_len: 0
-dada2se_trim_left: 0
-dada2se_max_ee: 2
-dada2se_trunc_q: 2
-dada2se_pooling_method: independent
-dada2se_chimera_method: consensus
-dada2se_min_fold_parent_over_abundance: 1
-dada2se_n_reads_learn: 1000000
-dada2se_hashed_feature_ids: --p-hashed-feature-ids
 
 # DEBLUR SINGLE-END
 # For more info run: qiime deblur denoise-other --help

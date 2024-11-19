@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import numpy as np
 import subprocess
 
 
@@ -37,7 +38,7 @@ def main():
     subprocess.run(f"mv {args.output}/metadata.tsv temp", shell=True, check=True)
     subprocess.run(f"rm -r {args.output}", shell=True, check=True)
     subprocess.run(
-        f"sed -e '2d' temp | sed '1 s|id\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|sequence|' > {args.output}",
+        f"sed -e '2d' temp | sed '1 s|id\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|dna_sequence|' > {args.output}",
         shell=True,
         check=True
     )
@@ -51,17 +52,36 @@ def main():
     df['verbatimIdentification'] = df['taxonomy']
     df['taxonomy'] = df['taxonomy'].str.replace(r'\b[a-zA-Z]__', '', regex=True).str.replace('; ', ';')
 
-    # Split the taxonomy column by ';' into new columns
-    taxonomy_split = df['taxonomy'].str.split(';', expand=True)
 
-    # Ensure the number of columns matches the length of params.taxaranks
-    if len(taxonomy_split.columns) == len(args.taxaranks):
-        taxonomy_split.columns = args.taxaranks
-    else:
-        raise ValueError("The number of taxonomy ranks does not match the number of columns in the taxonomy data.")
+    df[args.taxaranks] = [""] * len(args.taxaranks) 
+    #taxonomy_split = df['taxonomy'].str.split(';', expand=True)
+
+    tax_ranks = args.taxaranks
+    for index, row in df.iterrows():
+        taxa = row['taxonomy'].split(";")
+        for i in range(0,len(taxa)):
+            if i < len(tax_ranks):
+                df.loc[index,tax_ranks[i]] = taxa[i]
+    
+    # replace None with NA
+    df = df.fillna(value=np.nan)
+    
+    # replace _,- with space, remove sp. 
+    df[tax_ranks] = df[tax_ranks].replace('_',' ',regex=True)
+    df[tax_ranks] = df[tax_ranks].replace(' sp\.','',regex=True)
+    df[tax_ranks] = df[tax_ranks].replace(' spp\.','',regex=True)
+    df[tax_ranks] = df[tax_ranks].replace('-',' ',regex=True)
+    df[tax_ranks] = df[tax_ranks].replace('\/',' ',regex=True)
+    
+
+    # # Ensure the number of columns matches the length of params.taxaranks
+    # if len(taxonomy_split.columns) == len(args.taxaranks):
+    #     taxonomy_split.columns = args.taxaranks
+    # else:
+    #     raise ValueError("The number of taxonomy ranks does not match the number of columns in the taxonomy data.")
 
     # Concatenate the new columns with the original DataFrame
-    df = pd.concat([df, taxonomy_split], axis=1)
+    # df = pd.concat([df, taxonomy_split], axis=1)
 
     # Move the 4th column (confidence or consensus) to the end
     cols = df.columns.tolist()

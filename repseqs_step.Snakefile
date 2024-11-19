@@ -1,5 +1,9 @@
 ## STILL NEED TO ADD some RULES FOR FILTERING SEQUENCES
 
+# NEED TO ADD TABLE TSV OUTPUT
+
+## Changed mifish config, STILL NEED to update here
+
 ## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
 

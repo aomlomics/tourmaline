@@ -134,6 +134,7 @@ if config["classify_method"] == "naive-bayes":
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
             classifyparams=config["classify_params"],
+            conf=config["skl_confidence"]
         conda:
             "qiime2-amplicon-2024.10"
         threads: config["classify_threads"]
@@ -142,6 +143,7 @@ if config["classify_method"] == "naive-bayes":
             qiime feature-classifier classify-sklearn \
             --i-classifier {input.classifier} \
             --i-reads {input.repseqs} \
+            --p-confidence {params.conf} \
             --o-classification {output} \
             --p-n-jobs {threads} \
             {params.classifyparams};
@@ -198,7 +200,10 @@ elif config["classify_method"] == "consensus-blast":
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
             classifyparams=config["classify_params"],
-            searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza"
+            searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza",
+            percID=config["perc_identity"],
+            querycov=config["query_cov"],
+            consensus=config["min_consensus"]
         conda:
             "qiime2-amplicon-2024.10"
         threads: config["classify_threads"]
@@ -208,6 +213,9 @@ elif config["classify_method"] == "consensus-blast":
             --i-reference-reads {input.refseq} \
             --i-reference-taxonomy {input.reftax} \
             --i-query {input.repseqs} \
+            --p-perc-identity {params.percID} \
+            --p-query-cov {params.querycov} \
+            --p-min-consensus {params.consensus} \
             --o-classification {output} \
             --o-search-results {params.searchout} \
             {params.classifyparams};
@@ -222,7 +230,10 @@ elif config["classify_method"] == "consensus-vsearch":
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
             classifyparams=config["classify_params"],
-            searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza"
+            searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza",
+            percID=config["perc_identity"],
+            querycov=config["query_cov"],
+            consensus=config["min_consensus"]
         conda:
             "qiime2-amplicon-2024.10"
         threads: config["classify_threads"]
@@ -232,6 +243,9 @@ elif config["classify_method"] == "consensus-vsearch":
             --i-reference-reads {input.refseq} \
             --i-reference-taxonomy {input.reftax} \
             --i-query {input.repseqs} \
+            --p-perc-identity {params.percID} \
+            --p-query-cov {params.querycov} \
+            --p-min-consensus {params.consensus} \
             --o-classification {output} \
             --o-search-results {params.searchout} \
             --p-threads {threads} \

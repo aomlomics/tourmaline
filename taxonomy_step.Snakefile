@@ -1,4 +1,6 @@
 ## Snakefile for taxonomy step of Tourmaline V2 pipeline
+
+## still need to add new taxa params here, only done in v2024
 import os
 
 output_dir = config["output_dir"]+"/"
