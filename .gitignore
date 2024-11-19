@@ -1,2 +1,3 @@
 # Ignore Snakemake log files
 logs/*.log
+dont_upload/*

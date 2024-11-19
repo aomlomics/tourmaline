@@ -1,0 +1,16 @@
+## Tourmaline vqiime2-amplicon-2024.10 metadata
+sop_bioinformatics: https://github.com/aomlomics/tourmaline/tree/develop
+
+## ENVIRONMENT
+qiime2_version: qiime2-amplicon-2024.10
+dada2_version: 1.30.0
+deblur_version: 1.1.1
+cutadapt_version: 4.9
+vsearch_version: 2.22.1
+blast_version: 2.16.0
+scikit-learn_version: 1.4.2
+
+## FIXED PARAMETERS
+merge_min_overlap: 12
+error_rate_type: expected error rate
+otu_clust_cutoff: 100

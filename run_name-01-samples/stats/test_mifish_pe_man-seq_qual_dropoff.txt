@@ -1,4 +1,0 @@
-R1 seq quality
-152
-R2 seq quality
-157

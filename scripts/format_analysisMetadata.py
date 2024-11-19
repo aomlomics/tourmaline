@@ -3,6 +3,8 @@ import yaml
 import pandas as pd
 from Bio.Seq import Seq
 
+## ADD check for repeated run names, place to add project_id, assay_name, user provided terms
+
 def load_yaml(file_path):
     with open(file_path, 'r') as file:
         return yaml.safe_load(file)
