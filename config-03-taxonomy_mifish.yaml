@@ -21,6 +21,8 @@ skl_confidence: 0.7
 perc_identity: 0.8
 query_cov: 0.8
 min_consensus: 0.51
+# BLCA
+confidence_thres: 
 # OTHER PARAMS
 classify_params: --verbose
 #command: snakemake --use-conda -s taxonomy_step.Snakefile --configfile config-03-taxonomy.yaml --cores 4

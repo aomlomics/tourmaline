@@ -17,18 +17,27 @@ def main():
         args.taxaranks= [s.strip() for s in args.taxaranks.split(",")]
 
     # Run QIIME commands
-    subprocess.run(
-        f"qiime metadata tabulate "
-        f"--m-input-file {args.input_repseqs} "
-        f"--m-input-file {args.input_taxonomy} "
-        f"--o-visualization merged-data.qzv",
+    # subprocess.run(
+    #     f"qiime metadata tabulate "
+    #     f"--m-input-file {args.input_repseqs} "
+    #     f"--m-input-file {args.input_taxonomy} "
+    #     f"--o-visualization merged-data.qzv",
+    #     shell=True,
+    #     check=True
+    # )
+
+        subprocess.run(
+        f"qiime metadata merge "
+        f"--m-metadata1-file {args.input_repseqs} "
+        f"--m-metadata2-file {args.input_taxonomy} "
+        f"--o-merged-metadata merged-data.qza",
         shell=True,
         check=True
     )
 
     subprocess.run(
         f"qiime tools export "
-        f"--input-path merged-data.qzv "
+        f"--input-path merged-data.qza "
         f"--output-path {args.output}",
         shell=True,
         check=True
@@ -38,17 +47,18 @@ def main():
     subprocess.run(f"mv {args.output}/metadata.tsv temp", shell=True, check=True)
     subprocess.run(f"rm -r {args.output}", shell=True, check=True)
     subprocess.run(
-        f"sed -e '2d' temp | sed '1 s|id\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|dna_sequence|' > {args.output}",
+        f"sed -e '2d' temp | sed '1 s|Feature ID\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|dna_sequence|' > {args.output}",
         shell=True,
         check=True
     )
-    subprocess.run(f"/bin/rm -r temp merged-data.qzv", shell=True, check=True)
+    subprocess.run(f"/bin/rm -r temp merged-data.qza", shell=True, check=True)
 
     # Read the TSV file into pandas
     df = pd.read_csv(args.output, sep='\t')
 
     # Remove characters from the taxonomy column that match the pattern of an alpha character followed by __
     # and replace "; " with ";"
+    df['taxonomy'] = df['taxonomy'].fillna(value="Unassigned;")
     df['verbatimIdentification'] = df['taxonomy']
     df['taxonomy'] = df['taxonomy'].str.replace(r'\b[a-zA-Z]__', '', regex=True).str.replace('; ', ';')
 
