@@ -173,18 +173,18 @@ Import to a QIIME2 artifact. Change code to match your manifest file name and de
 **Paired-end data**  
 ```
 qiime tools import \
---type 'SampleData[PairedEndSequencesWithQuality]' \
---input-path my_pe.manifest \
---output-path output-file_pe_fastq.qza \
---input-format PairedEndFastqManifestPhred33V2
+   --type 'SampleData[PairedEndSequencesWithQuality]' \
+   --input-path my_pe.manifest \
+   --output-path output-file_pe_fastq.qza \
+   --input-format PairedEndFastqManifestPhred33V2
 ```
 **Single-end data**  
 ```
 qiime tools import \
---type 'SampleData[SequencesWithQuality]' \
---input-path my_se.manifest \
---output-path output-file_se_fastq.qza \
---input-format SingleEndFastqManifestPhred33V2
+   --type 'SampleData[SequencesWithQuality]' \
+   --input-path my_se.manifest \
+   --output-path output-file_se_fastq.qza \
+   --input-format SingleEndFastqManifestPhred33V2
 ``` 
 
 ### 3. Taxonomy Configuration (config-03-taxonomy.yaml)
@@ -200,7 +200,7 @@ classify_threads: [int]
 # Number of threads for classification
 ```
 
-#### Repseqs Input Files
+#### Taxonomy Input Files
 
 You have two options for providing files to the taxonomy step:  
 
@@ -209,6 +209,47 @@ You have two options for providing files to the taxonomy step:
     b) Use a different ```run_name``` for the taxonomy step, and provide the ```repseqs_run_name``` you want to use. Can be helpful if you are testing out different ASV parameters.  
 **2) Provide externally generated QIIME2 sequence archive and table (.qza)**   
     * Must provide paths for both ```repseqs_qza_file``` and ```table_qza_file```  
+
+**ASV sequences**  
+If you have a fasta file of ASV/OTU sequences, you can use the following code to generate a QIIME2 repseqs archive. 
+
+Activate ```qiime2-amplicon-2024.10``` environment.  
+```
+conda activate qiime2-amplicon-2024.10
+```
+Import to a QIIME2 artifact. Change code to match your fasta file name and desired output .qza file name and path.
+```
+qiime tools import \
+   --type 'FeatureData[Sequence]' \
+   --input-path my-asvs.fasta \
+   --output-path output-asvs.qza 
+```
+**Read count table**  
+
+If you have a biom formatted table, you can [follow the QIIME2 guidance and check the format prior to importing](https://docs.qiime2.org/2024.10/tutorials/importing/#feature-table-data). Example for a BIOM v1.0.o formatted file:  
+ 
+```
+conda activate qiime2-amplicon-2024.10
+
+qiime tools import \
+  --input-path feature-table-v100.biom \
+  --type 'FeatureTable[Frequency]' \
+  --input-format BIOMV100Format \
+  --output-path feature-table.qza
+```
+
+If you have a .tsv file with rows as unique sequences and columns as sample read counts, you can first [convert to BIOM](https://biom-format.org/documentation/biom_conversion.html) then convert to .qza. Example: 
+```
+conda activate qiime2-amplicon-2024.10
+
+biom convert -i otu_table.txt -o new_otu_table.biom --to-hdf5 --table-type="OTU table"
+
+qiime tools import \
+  --input-path new_otu_table.biom \
+  --type 'FeatureTable[Frequency]' \
+  --input-format BIOMV210Format \
+  --output-path feature-table.qza
+```
 
 Key parameters for reference database:
 ```yaml
