@@ -1,4 +1,4 @@
-run_name: test_data
+run_name: test_data_meta
 output_dir: "../v2-results"
 repseqs_run_name:  # if empty, will use run_name-repseqs/
 repseqs_qza_file: # if empty, will use run_name-repseqs/ 

@@ -404,7 +404,7 @@ rule taxa_barplot:
         "qiime2-amplicon-2024.10"
     shell:
         """
-        if [ {use_metadata} = yes ]; then 
+        if [ {use_metadata} == "yes" ]; then 
             qiime taxa barplot \
             --i-table {input.table} \
             --i-taxonomy {input.taxonomy} \

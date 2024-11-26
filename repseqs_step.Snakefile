@@ -160,7 +160,7 @@ rule summarize_feature_table:
     threads: config["asv_threads"]
     shell:
         """
-        if [ {use_metadata} = yes ]; then
+        if [ {use_metadata} == "yes" ]; then
             qiime feature-table summarize \
             --i-table {input.table} \
             --m-sample-metadata-file {params.metadata} \
