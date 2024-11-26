@@ -13,7 +13,11 @@ conda activate snakemake
 ./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
 ```
 
-You can still run individual snakemake rules as before. Each of the three steps (explained more below) has it's own Snakefile, so you must specify the correct snakefile when running an individual rule.   
+You can still run individual snakemake rules as before. Each of the three steps (explained more below) has it's own Snakefile, so you must specify the correct snakefile when running an individual rule. 
+
+#### Providing externally-generated data  
+
+Unlike Tourmaline V1, you can start any of the 3 workflow steps with data from an external program, so long as it is formatted correctly. For example, if you already have ASV sequences and just want to assign taxonomy with Tourmaline, you can format them for QIIME2 (code to help with this below) and just provide the file path in your config file. 
 
 ## Overview
 
@@ -157,6 +161,8 @@ You have two options for providing files to the repseqs step:
     a) Either use the same ```run_name``` and ```output_dir``` for both steps, or  
     b) Use a different ```run_name``` for the repseqs step, and provide the ```sample_run_name``` you want to use. Can be helpfulif you are testing out different trimming parameters.  
 **2) Provide an externally generated QIIME2 sequence archive (.qza)**    
+
+To generate a QIIME2 sequence archive, you need a manifest file linking sample names with the absolute file path of the fastq.gz files.  
 
 
 ### 3. Taxonomy Configuration (config-03-taxonomy.yaml)
