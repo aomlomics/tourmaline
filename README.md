@@ -162,8 +162,30 @@ You have two options for providing files to the repseqs step:
     b) Use a different ```run_name``` for the repseqs step, and provide the ```sample_run_name``` you want to use. Can be helpfulif you are testing out different trimming parameters.  
 **2) Provide an externally generated QIIME2 sequence archive (.qza)**    
 
-To generate a QIIME2 sequence archive, you need a manifest file linking sample names with the absolute file path of the fastq.gz files.  
 
+To generate a QIIME2 sequence archive, you need a manifest file linking sample names with the absolute file path of the fastq.gz files (see the [TSV format above](https://github.com/aomlomics/tourmaline/blob/develop/README.md#sample-manifest-format). 
+
+Activate ```qiime2-amplicon-2024.10``` environment.  
+```
+conda activate qiime2-amplicon-2024.10
+```
+Import to a QIIME2 artifact. Change code to match your manifest file name and desired output .qza file name and path.     
+**Paired-end data**  
+```
+qiime tools import \
+--type 'SampleData[PairedEndSequencesWithQuality]' \
+--input-path my_pe.manifest \
+--output-path output-file_pe_fastq.qza \
+--input-format PairedEndFastqManifestPhred33V2
+```
+**Single-end data**  
+```
+qiime tools import \
+--type 'SampleData[SequencesWithQuality]' \
+--input-path my_se.manifest \
+--output-path output-file_se_fastq.qza \
+--input-format SingleEndFastqManifestPhred33V2
+``` 
 
 ### 3. Taxonomy Configuration (config-03-taxonomy.yaml)
 
