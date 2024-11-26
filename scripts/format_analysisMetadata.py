@@ -1,7 +1,6 @@
 import argparse
 import yaml
 import pandas as pd
-from Bio.Seq import Seq
 
 ## ADD check for repeated run names, place to add project_id, assay_name, user provided terms
 
@@ -106,6 +105,7 @@ def main():
     # MAPPINGS
     mappings = {
         # FAIR eDNA TERMS
+        'project_id': "",
         "sop_bioinformatics": tour['sop_bioinformatics'],
         "trim_method": trim_paramF(samples1,repseqs2,tour)[0],
         "trim_param": trim_paramF(samples1,repseqs2,tour)[1],

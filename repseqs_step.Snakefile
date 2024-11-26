@@ -2,8 +2,6 @@
 
 # NEED TO ADD TABLE TSV OUTPUT
 
-## Changed mifish config, STILL NEED to update here
-
 ## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
 
@@ -15,11 +13,11 @@ else:
 # set run name
 if config["sample_run_name"] != None:
     sample_run_name=config["sample_run_name"]
-    input_fastq=output_dir+sample_run_name+"-samples/"+sample_run_name+"_fastq_pe.qza"
+    input_fastq=output_dir+sample_run_name+"-qaqc/"+sample_run_name+"_fastq_pe.qza"
 elif config["fastq_qza_file"] != None:
     input_fastq=config["fastq_qza_file"]
 else:
-    input_fastq=output_dir+config["run_name"]+"-samples/"+config["run_name"]+"_fastq_pe.qza"
+    input_fastq=output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq_pe.qza"
 
 # set Filtering
 if config["to_filter"] == True:
@@ -29,21 +27,20 @@ else:
     temp_table = output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
     temp_repseqs = output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
 
-
 ## Master RULES
 rule run_dada2_pe_denoise:
     """Run paired end dada2"""
     input:
-       #output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
         output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv",
         output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv",
         output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt",
         output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt",
         output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv",
-        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md"
+        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom",
         #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs-stats.tsv",
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
         # add figures here
 
 #rule run_dada2_se_denoise:
@@ -54,29 +51,24 @@ rule denoise_dada2_pe:
     input:
         input_fastq
     params:
-        trunclenf=config["dada2pe_trunc_len_f"],
+        trunclenf=config["dada2_trunc_len_f"],
         trunclenr=config["dada2pe_trunc_len_r"],
-        trimleftf=config["dada2pe_trim_left_f"],
+        trimleftf=config["dada2_trim_left_f"],
         trimleftr=config["dada2pe_trim_left_r"],
-        maxeef=config["dada2pe_max_ee_f"],
+        maxeef=config["dada2_max_ee_f"],
         maxeer=config["dada2pe_max_ee_r"],
-        truncq=config["dada2pe_trunc_q"],
-        poolingmethod=config["dada2pe_pooling_method"],        
-        chimeramethod=config["dada2pe_chimera_method"],
-        minfoldparentoverabundance=config["dada2pe_min_fold_parent_over_abundance"],
-        nreadslearn=config["dada2pe_n_reads_learn"],
-        hashedfeatureids=config["dada2pe_hashed_feature_ids"],
-        minlength=config["repseq_min_length"],
-        maxlength=config["repseq_max_length"],
-        minabund=config["repseq_min_abundance"],
-        minprev=config["repseq_min_prevalence"],
-        to_filter=config["to_filter"]
+        truncq=config["dada2_trunc_q"],
+        poolingmethod=config["dada2_pooling_method"],        
+        chimeramethod=config["dada2_chimera_method"],
+        minfoldparentoverabundance=config["dada2_min_fold_parent_over_abundance"],
+        nreadslearn=config["dada2_n_reads_learn"],
+        hashedfeatureids=config["dada2_hashed_feature_ids"]
     output:
         table=temp_table,
         repseqs=temp_repseqs,
         stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza",
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         """
@@ -101,6 +93,9 @@ rule denoise_dada2_pe:
         --verbose  
         """
 
+
+#repseq_min_samples: 0 #qiime feature-table filter-features --p-min-samples
+
 # FILTER
 if config["to_filter"] == True:
     rule filter_sequences:
@@ -119,7 +114,7 @@ if config["to_filter"] == True:
             output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
             output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza",
         conda:
-            "qiime2-2023.5"
+            "qiime2-amplicon-2024.10"
         shell:
             # FILTER SEQUENCES BY LENGTH
             "qiime feature-table filter-seqs "
@@ -150,6 +145,7 @@ if config["to_filter"] == True:
             "/bin/rm temp_repseqs1.qza; "
             "/bin/rm temp_table.qza; "
 
+
 # RULES: SUMMARIZE FEATURE TABLE -----------------------------------------------
 
 rule summarize_feature_table:
@@ -160,7 +156,7 @@ rule summarize_feature_table:
     params:
         metadata=config["sample_metadata_file"]
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         """
@@ -182,7 +178,7 @@ rule summarize_repseqs:
     output:
         output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     shell:
         "qiime metadata tabulate "
         "--m-input-file {input.stats} "
@@ -194,7 +190,7 @@ rule export_repseqs_summary_to_tsv:
     output:
         output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     shell:
         "unzip -qq -o {input} -d temp0; "
         "mv temp0/*/data/metadata.tsv {output}; "
@@ -207,7 +203,7 @@ rule export_table_to_biom:
     output:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     shell:
         "qiime tools export "
         "--input-path {input} "
@@ -220,7 +216,7 @@ rule summarize_biom_samples:
     output:
         output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     shell:
         "biom summarize-table "
         "--input-fp {input} "
@@ -234,7 +230,7 @@ rule summarize_biom_features:
     output:
         output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         "biom summarize-table "
@@ -250,7 +246,7 @@ rule visualize_repseqs:
     output:
        output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         "qiime feature-table tabulate-seqs "
@@ -263,7 +259,7 @@ rule export_repseqs_to_fasta:
     output:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         "qiime tools export "
@@ -277,7 +273,7 @@ rule repseqs_lengths:
     output:
         output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths.tsv"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
@@ -288,7 +284,20 @@ rule repseqs_lengths_describe:
     output:
         output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md"
     conda:
-        "qiime2-2023.5"
+        "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
     shell:
         "python scripts/repseqs_lengths_describe.py {input} {output}"
+
+rule export_biom_tsv:
+    input:
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
+    output:
+        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
+    conda:
+        "qiime2-amplicon-2024.10"
+    shell:
+        "biom convert "
+        "-i {input} "
+        "-o {output} "
+        "--to-tsv"

@@ -1,19 +1,4 @@
-<img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
-
-# Tourmaline V2  
-
-## Major changes in V2 vs. V1  
-
-### tourmaline.sh script  
-
-Instead of interacting with snakemake rules directly, the main way to run Tourmaline V2 is through the `tourmaline.sh` script. This script allows you to run one or more of the workflow steps at a time, specify specific config files, and set the maximum number of cores. You must be located in the tourmaline directory when running it, however you can set the output file destinations to anywhere. Useage:  
-
-```
-conda activate snakemake
-./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
-```
-
-You can still run individual snakemake rules as before. Each of the three steps (explained more below) has it's own Snakefile, so you must specify the correct snakefile when running an individual rule.   
+# Tourmaline Pipeline Documentation
 
 ## Overview
 
@@ -36,9 +21,6 @@ Tourmaline 2.0 is a modular Snakemake pipeline for processing DNA metabarcoding 
         4) [Anacapa's Bowtie2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
     - Supports multiple classification methods
     - Generates taxonomy assignments and visualization
-4. Generate bioinformatics metadata    
-  - Creates a file with metadata about the analysis using FAIR eDNA terms
-  - File can be read into NODE
 
 ## Setup Requirements
 
@@ -245,7 +227,7 @@ Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed,
 ./tourmaline.sh --step/-s [step] --configfile/-c [config_file] --cores/-n [num_cores]
 ```
 
-#### Examples
+### Examples
 
 1. Run a single step (taxonomy):
 ```bash
@@ -257,19 +239,11 @@ Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed,
 ./tourmaline.sh -s qaqc,repseqs,taxonomy -c config-01-sample.yaml,config-02-repseqs.yaml,config-03-taxonomy.yaml -n 6
 ```
 
-#### Important Notes
+### Important Notes
 
 - The number of steps must match the number of config files provided
 - Each step corresponds to its respective config file
 - Config files must be provided in the same order as the steps
-
-### Generate bioinformaticsa metadata  
-
-To generate a report file with metadata on the bioinformatics, provide your three config files to the ```scripts/format_analysisMetadata.py``` along with the tourmaline metadata file.
-
-```bash
-python scripts/format_analysisMetadata.py -s config-01-sample.yaml -r config-02-repseqs.yaml -t config-03-taxonomy.yaml -o my-tourmaline-metadata.tsv
-```
 
 ## Pipeline Steps
 
@@ -289,15 +263,12 @@ python scripts/format_analysisMetadata.py -s config-01-sample.yaml -r config-02-
 - Supports multiple classification methods
 - Generates taxonomy assignments and visualization
 
-### 4. Bioinformatics Metadata
-- Generate bioinformatics metadata 
-
 ## Directory Structure
 
 The pipeline creates the following directory structure for outputs:
 
 ```
-output_dir/
+v2-results/
 ├── [run_name]-samples/    # QA/QC outputs
 ├── [run_name]-repseqs/    # Representative sequences outputs
 └── [run_name]-taxonomy/   # Taxonomy assignment outputs

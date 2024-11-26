@@ -5,18 +5,24 @@ repseqs_qza_file: # if empty, will use run_name-repseqs/
 table_qza_file: # if empty, will use run_name-repseqs/
 sample_metadata_file: 00-data/metadata.tsv # optional if no summary plotting
 # TAXONOMY STEP: Assign taxonomy, saves to [run_name]-taxonomy folder
-refseqs_file: "00-data/seqs-derepU.qza" #can be a fasta file (.fa, .fna, .fasta) or a .qza file
-taxa_file: "00-data/taxa-derepU.qza" #can be a .qza file or a .tsv file
-pretrained_classifier: #"/Users/katherine.silliman/Projects/NOAA/tourmaline-dev/v2-tourmaline/tourmaline/00-data/classifier.qza" # optional, if provided will ignore refseqs_file and taxa_file for naive-bayes, must be full path
-bowtie_database: # folder with bowtie index database for BLCA, refseqs and taxa files will be used
-classify_method: naive-bayes # naive-bayes, consensus-blast, consensus-vsearch, bt2-blca
-taxa_ranks: # list of ranks titles in database , e.g. ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
-classify_taxalevel: 7
+database_name: "silva-138_1-99-515f_926r-uniq"
+refseqs_file: "00-data/silva-138_1-99-515f_926r-uniq-seq.qza" #can be a fasta file (.fa, .fna, .fasta) or a .qza file
+taxa_file: "00-data/silva-138_1-99-515f_926r-uniq-tax.qza" #can be a .qza file or a .tsv file
+classify_method: bt2-blca # naive-bayes, consensus-blast, consensus-vsearch, bt2-blca
+taxa_ranks: kingdom,phylum,class,order,family,genus,species # list of ranks titles in database , e.g. ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+collapse_taxalevel: 7 # level to collapse taxonomy for summary table
 classify_threads: 6
-# Assignment methods
-classify_params: --verbose #--p-perc-identity 0.8 --p-query-cov 0.6
+# Assignment method specific parameters
 
-# 
-
-#command: snakemake --use-conda -s sample_test.Snakefile --configfile samp_config_test.yaml --cores 4
-
+# naive-bayes
+pretrained_classifier: # must be full path, optional, if provided will ignore refseqs_file and taxa_file for naive-bayes
+skl_confidence: 0.7
+# SEQ SIMILARITY (consensus-blast or consensus-vsearch)
+perc_identity: 0.8
+query_cov: 0.8
+min_consensus: 0.51
+# bt2-blca
+bowtie_database: # optional, folder with bowtie index database for BLCA, refseqs and taxa files will be used
+confidence_thres: 0.8
+# OTHER PARAMS
+classify_params: #--verbose
