@@ -28,19 +28,39 @@ else:
     temp_repseqs = output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
 
 ## Master RULES
+
+# Helper function to determine required input files
+def get_required_inputs(config):
+    required = []
+    
+    # Base outputs always required
+    required.append(output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv")
+    required.append(output_dir + config["run_name"] + "-repseqs/stats/table_summary.qzv")
+    required.append(output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt")
+    required.append(output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt")
+    required.append(output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv")
+    required.append(output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md")
+    required.append(output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv")
+    
+    # Conditional outputs based on config
+    if config.get("plot_diversity", True):
+        required.append(output_dir+config["run_name"]+"-repseqs/stats/alpha_rarefaction.qzv")
+        required.append(output_dir+config["run_name"]+"-repseqs/stats/rarefied_table.qza")
+        
+    return required
+
+
 rule run_dada2_pe_denoise:
     """Run paired end dada2"""
     input:
-        output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv",
-        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv",
-        output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt",
-        output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt",
-        output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv",
-        output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md",
-        #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta",
-        #config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom",
-        #config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs-stats.tsv",
-        output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
+        get_required_inputs(config)
+        #output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv",
+        #output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv",
+        #output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt",
+        #output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt",
+        #output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv",
+        #output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md",
+        #output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
         # add figures here
 
 #rule run_dada2_se_denoise:
@@ -301,3 +321,71 @@ rule export_biom_tsv:
         "-i {input} "
         "-o {output} "
         "--to-tsv"
+
+rule diversity_alpha_rarefaction:
+    input:
+        table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+    params:
+        maxdepth=config["alpha_max_depth"],
+        metadata=config["sample_metadata_file"]
+    output:
+        output_dir+config["run_name"]+"-repseqs/stats/alpha_rarefaction.qzv"
+    conda:
+        "qiime2-amplicon-2024.10"
+    shell:
+        """
+        if [ {use_metadata} == "yes" ]; then
+            qiime diversity alpha-rarefaction \
+            --i-table {input.table} \
+            --p-max-depth {params.maxdepth} \
+            --p-metrics observed_features \
+            --p-metrics shannon \
+            --p-metrics pielou_e \
+            --m-metadata-file {params.metadata} \
+            --o-visualization {output}
+        else
+            qiime diversity alpha-rarefaction \
+            --i-table {input.table} \
+            --p-max-depth {params.maxdepth} \
+            --p-metrics observed_features \
+            --p-metrics shannon \
+            --p-metrics pielou_e \
+            --o-visualization {output}
+        fi
+        """
+rule diversity_core_metrics:
+    input:
+        table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+    params:
+        samplingdepth=config["core_sampling_depth"],
+        metadata=config["sample_metadata_file"]
+    output:
+        rarefiedtable=output_dir+config["run_name"]+"-repseqs/stats/rarefied_table.qza",
+        observedfeaturesvector=output_dir+config["run_name"]+"-repseqs/stats/observed_features_vector.qza",
+        shannonvector=output_dir+config["run_name"]+"-repseqs/stats/shannon_vector.qza",
+        evennessvector=output_dir+config["run_name"]+"-repseqs/stats/evenness_vector.qza",
+        jaccarddistancematrix=output_dir+config["run_name"]+"-repseqs/stats/jaccard_distance_matrix.qza",
+        braycurtisdistancematrix=output_dir+config["run_name"]+"-repseqs/stats/bray_curtis_distance_matrix.qza",
+        jaccardpcoaresults=output_dir+config["run_name"]+"-repseqs/stats/jaccard_pcoa_results.qza",
+        braycurtispcoaresults=output_dir+config["run_name"]+"-repseqs/stats/bray_curtis_pcoa_results.qza",
+        jaccardemperor=output_dir+config["run_name"]+"-repseqs/stats/jaccard_emperor.qzv",
+        braycurtisemperor=output_dir+config["run_name"]+"-repseqs/stats/bray_curtis_emperor.qzv"
+    conda:
+        "qiime2-amplicon-2024.10"
+    threads: config["asv_threads"]
+    shell:
+        "qiime diversity core-metrics "
+        "--i-table {input.table} "
+        "--p-sampling-depth {params.samplingdepth} "
+        "--m-metadata-file {params.metadata} "
+        "--o-rarefied-table {output.rarefiedtable} "
+        "--o-observed-features-vector {output.observedfeaturesvector} "
+        "--o-shannon-vector {output.shannonvector} "
+        "--o-evenness-vector {output.evennessvector} "
+        "--o-jaccard-distance-matrix {output.jaccarddistancematrix} "
+        "--o-bray-curtis-distance-matrix {output.braycurtisdistancematrix} "
+        "--o-jaccard-pcoa-results {output.jaccardpcoaresults} "
+        "--o-bray-curtis-pcoa-results {output.braycurtispcoaresults} "
+        "--o-jaccard-emperor {output.jaccardemperor} "
+        "--o-bray-curtis-emperor {output.braycurtisemperor} "
+        "--p-n-jobs {threads}"
