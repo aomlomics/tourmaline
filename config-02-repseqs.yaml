@@ -1,9 +1,9 @@
-run_name: test_data
+run_name: test-data
 output_dir: "../v2-results"
 sample_run_name: # if empty, will use run_name-samples/
 fastq_qza_file: # if empty, will use run_name-samples/ 
 sample_metadata_file: 00-data/metadata.tsv # optional if not wanted for summary plotting
-plot_diversity: True # plot alpha diversity plots
+plot_diversity: True # plot alpha diversity plots, must have metadata file
 alpha_max_depth: 500 # optional, max depth for alpha diversity plots 
 core_sampling_depth: 500 # optional, sampling depth for core diversity metrics
 
@@ -27,19 +27,6 @@ dada2_chimera_method: consensus
 dada2_min_fold_parent_over_abundance: 1
 dada2_n_reads_learn: 1000000
 dada2_hashed_feature_ids: --p-hashed-feature-ids
-
-
-# DEBLUR SINGLE-END
-# For more info run: qiime deblur denoise-other --help
-
-deblur_trim_length: 0
-deblur_sample_stats: --p-sample-stats
-deblur_mean_error: 0.005
-deblur_indel_prob: 0.01
-deblur_indel_max: 3
-deblur_min_reads: 10
-deblur_min_size: 2
-deblur_hashed_feature_ids: --p-hashed-feature-ids
 
 # FILTERING (OPTIONAL)
 to_filter: False
