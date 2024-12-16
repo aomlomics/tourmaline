@@ -9,7 +9,7 @@
 Instead of interacting with snakemake rules directly, the main way to run Tourmaline V2 is through the `tourmaline.sh` script. This script allows you to run one or more of the workflow steps at a time, specify specific config files, and set the maximum number of cores. You must be located in the tourmaline directory when running it, however you can set the output file destinations to anywhere. Useage:  
 
 ```
-conda activate snakemake
+conda activate snakemake-tour
 ./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
 ```
 
@@ -48,10 +48,9 @@ Tourmaline 2.0 is a modular Snakemake pipeline for processing DNA metabarcoding 
 
 - [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
 - [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
-- [Snakemake conda environment, with Biopython installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+- [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
    - ```
-      conda activate snakemake
-     conda install -c conda-forge biopython 
+     conda create -c conda-forge -c bioconda -n snakemake-tour snakemake biopython yq
      ```
 - [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
 
