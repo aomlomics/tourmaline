@@ -9,11 +9,15 @@
 Instead of interacting with snakemake rules directly, the main way to run Tourmaline V2 is through the `tourmaline.sh` script. This script allows you to run one or more of the workflow steps at a time, specify specific config files, and set the maximum number of cores. You must be located in the tourmaline directory when running it, however you can set the output file destinations to anywhere. Useage:  
 
 ```
-conda activate snakemake
+conda activate snakemake-tour
 ./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
 ```
 
-You can still run individual snakemake rules as before. Each of the three steps (explained more below) has it's own Snakefile, so you must specify the correct snakefile when running an individual rule.   
+You can still run individual snakemake rules as before. Each of the three steps (explained more below) has it's own Snakefile, so you must specify the correct snakefile when running an individual rule. 
+
+#### Providing externally-generated data  
+
+Unlike Tourmaline V1, you can start any of the 3 workflow steps with data from an external program, so long as it is formatted correctly. For example, if you already have ASV sequences and just want to assign taxonomy with Tourmaline, you can format them for QIIME2 (code to help with this below) and just provide the file path in your config file. 
 
 ## Overview
 
@@ -44,7 +48,10 @@ Tourmaline 2.0 is a modular Snakemake pipeline for processing DNA metabarcoding 
 
 - [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
 - [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
-- [Snakemake conda environment](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+- [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+   - ```
+     conda create -c conda-forge -c bioconda -n snakemake-tour snakemake biopython yq
+     ```
 - [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
 
 ### Running Requirements
@@ -159,6 +166,30 @@ You have two options for providing files to the repseqs step:
 **2) Provide an externally generated QIIME2 sequence archive (.qza)**    
 
 
+To generate a QIIME2 sequence archive, you need a manifest file linking sample names with the absolute file path of the fastq.gz files (see the [TSV format above](https://github.com/aomlomics/tourmaline/blob/develop/README.md#sample-manifest-format). 
+
+Activate ```qiime2-amplicon-2024.10``` environment.  
+```
+conda activate qiime2-amplicon-2024.10
+```
+Import to a QIIME2 artifact. Change code to match your manifest file name and desired output .qza file name and path.     
+**Paired-end data**  
+```
+qiime tools import \
+   --type 'SampleData[PairedEndSequencesWithQuality]' \
+   --input-path my_pe.manifest \
+   --output-path output-file_pe_fastq.qza \
+   --input-format PairedEndFastqManifestPhred33V2
+```
+**Single-end data**  
+```
+qiime tools import \
+   --type 'SampleData[SequencesWithQuality]' \
+   --input-path my_se.manifest \
+   --output-path output-file_se_fastq.qza \
+   --input-format SingleEndFastqManifestPhred33V2
+``` 
+
 ### 3. Taxonomy Configuration (config-03-taxonomy.yaml)
 
 Key parameters:
@@ -172,7 +203,7 @@ classify_threads: [int]
 # Number of threads for classification
 ```
 
-#### Repseqs Input Files
+#### Taxonomy Input Files
 
 You have two options for providing files to the taxonomy step:  
 
@@ -181,6 +212,47 @@ You have two options for providing files to the taxonomy step:
     b) Use a different ```run_name``` for the taxonomy step, and provide the ```repseqs_run_name``` you want to use. Can be helpful if you are testing out different ASV parameters.  
 **2) Provide externally generated QIIME2 sequence archive and table (.qza)**   
     * Must provide paths for both ```repseqs_qza_file``` and ```table_qza_file```  
+
+**ASV sequences**  
+If you have a fasta file of ASV/OTU sequences, you can use the following code to generate a QIIME2 repseqs archive. 
+
+Activate ```qiime2-amplicon-2024.10``` environment.  
+```
+conda activate qiime2-amplicon-2024.10
+```
+Import to a QIIME2 artifact. Change code to match your fasta file name and desired output .qza file name and path.
+```
+qiime tools import \
+   --type 'FeatureData[Sequence]' \
+   --input-path my-asvs.fasta \
+   --output-path output-asvs.qza 
+```
+**Read count table**  
+
+If you have a biom formatted table, you can [follow the QIIME2 guidance and check the format prior to importing](https://docs.qiime2.org/2024.10/tutorials/importing/#feature-table-data). Example for a BIOM v1.0.o formatted file:  
+ 
+```
+conda activate qiime2-amplicon-2024.10
+
+qiime tools import \
+  --input-path feature-table-v100.biom \
+  --type 'FeatureTable[Frequency]' \
+  --input-format BIOMV100Format \
+  --output-path feature-table.qza
+```
+
+If you have a .tsv file with rows as unique sequences and columns as sample read counts, you can first [convert to BIOM](https://biom-format.org/documentation/biom_conversion.html) then convert to .qza. Example: 
+```
+conda activate qiime2-amplicon-2024.10
+
+biom convert -i otu_table.txt -o new_otu_table.biom --to-hdf5 --table-type="OTU table"
+
+qiime tools import \
+  --input-path new_otu_table.biom \
+  --type 'FeatureTable[Frequency]' \
+  --input-format BIOMV210Format \
+  --output-path feature-table.qza
+```
 
 Key parameters for reference database:
 ```yaml
