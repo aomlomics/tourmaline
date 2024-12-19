@@ -50,7 +50,7 @@ Tourmaline 2.0 is a modular Snakemake pipeline for processing DNA metabarcoding 
 - [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
 - [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
    - ```
-     conda create -c conda-forge -c bioconda -n snakemake-tour snakemake biopython yq
+     conda create -c conda-forge -c bioconda -n snakemake-tour snakemake biopython yq parallel
      ```
 - [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
 
