@@ -1,6 +1,6 @@
 run_name: test-data
 output_dir: "../v2-results"
-sample_run_name: # if empty, will use run_name-samples/
+sample_run_name: test-data # if empty, will use run_name-samples/
 fastq_qza_file: # if empty, will use run_name-samples/ 
 sample_metadata_file: 00-data/metadata.tsv # optional if not wanted for summary plotting
 plot_diversity: True # plot alpha diversity plots, must have metadata file

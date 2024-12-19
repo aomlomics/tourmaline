@@ -2,8 +2,8 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --config-dir DIR --step STEP --parallel-jobs N --cores-per-job M"
-    echo "Example: $0 --config-dir parameter_sweep_configs --step qaqc --parallel-jobs 4 --cores-per-job 6"
+    echo "Usage: $0 --config-dir DIR --config-prefix PREFIX --step STEP --parallel-jobs N --cores-per-job M"
+    echo "Example: $0 --config-dir parameter_sweep_configs --config-prefix config-01-qaqc --step qaqc --parallel-jobs 4 --cores-per-job 6"
     exit 1
 }
 
@@ -11,6 +11,7 @@ usage() {
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --config-dir) config_dir="$2"; shift ;;
+        --config-prefix) config_prefix="$2"; shift ;;
         --step) step="$2"; shift ;;
         --parallel-jobs) parallel_jobs="$2"; shift ;;
         --cores-per-job) cores_per_job="$2"; shift ;;
@@ -20,7 +21,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Check if required parameters are provided
-if [ -z "$config_dir" ] || [ -z "$step" ] || [ -z "$parallel_jobs" ] || [ -z "$cores_per_job" ]; then
+if [ -z "$config_dir" ] || [ -z "$config_prefix" ] || [ -z "$step" ] || [ -z "$parallel_jobs" ] || [ -z "$cores_per_job" ]; then
     usage
 fi
 
@@ -47,8 +48,8 @@ run_tourmaline() {
 }
 export -f run_tourmaline
 
-# Find all config files and run them in parallel
-find "$config_dir" -name "config-01-qaqc_*.yaml" | \
+# Find all config files matching the prefix and run them in parallel
+find "$config_dir" -name "${config_prefix}_*.yaml" | \
     parallel --jobs "$parallel_jobs" run_tourmaline {} "$step" "$cores_per_job"
 
 echo "All jobs completed!"

@@ -17,7 +17,7 @@ def generate_parameter_combinations(param_space):
     values = param_space.values()
     return [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-def create_config_file(base_config, params, output_dir, index, run_name_prefix):
+def create_config_file(base_config, params, output_dir, index, run_name_prefix, config_prefix):
     """Create a new config file with the given parameters."""
     # Create a copy of the base config and update with new parameters
     new_config = base_config.copy()
@@ -29,8 +29,8 @@ def create_config_file(base_config, params, output_dir, index, run_name_prefix):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
-    # Generate output filename
-    output_path = os.path.join(output_dir, f'config-01-qaqc_{index:03d}.yaml')
+    # Generate output filename using the provided config prefix
+    output_path = os.path.join(output_dir, f'{config_prefix}_{index:03d}.yaml')
     
     # Write the new config file
     with open(output_path, 'w') as f:
@@ -50,6 +50,7 @@ def main():
     param_space = param_space_config['parameter_space']
     output_dir = param_space_config.get('output_dir', 'parameter_sweep_configs')
     run_name_prefix = param_space_config.get('run_name_prefix', 'test_data')
+    config_prefix = param_space_config.get('config_prefix', 'config-01-qaqc')
     
     # Load the base config
     base_config = load_yaml(args.base_config)
@@ -60,7 +61,8 @@ def main():
     # Generate config files
     generated_files = []
     for i, params in enumerate(combinations):
-        output_path = create_config_file(base_config, params, output_dir, i, run_name_prefix)
+        output_path = create_config_file(base_config, params, output_dir, i, 
+                                       run_name_prefix, config_prefix)
         generated_files.append(output_path)
         
         # Print parameter combination

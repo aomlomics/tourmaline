@@ -1,0 +1,14 @@
+# Run name prefix for all generated configs
+run_name_prefix: "test_data"
+
+# Config file prefix (e.g., "config-01-qaqc" or "my-config")
+config_prefix: "config-01-repseqs"
+
+# Parameter ranges to iterate over
+parameter_space:
+  dada2_trunc_len_f: [230,240,245]
+  dada2pe_trunc_len_r: [175,190,200]
+  dada2_pooling_method: [independent,pseudo]
+
+# Output directory for generated configs
+output_dir: "../v2-results/"

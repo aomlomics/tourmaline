@@ -1,10 +1,14 @@
 # Run name prefix for all generated configs
 run_name_prefix: "test_data"
 
+# Config file prefix (e.g., "config-01-qaqc" or "my-config")
+config_prefix: "config-01-qaqc"
+
 # Parameter ranges to iterate over
 parameter_space:
-  minimum_length: [50, 100]
-  #seq_quality_cutoff: [0.8, 0.85, 0.9]
+  minimum_length: [50, 100, 150]
+  trimming_threads: [2, 4, 8]
+  seq_quality_cutoff: [0.8, 0.85, 0.9]
   to_trim: [true, false]
   discard_untrimmed: [true, false]
 
