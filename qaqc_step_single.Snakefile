@@ -169,7 +169,8 @@ rule cutadapt_se:
         discard=config['discard_untrimmed'],
         min_len=config['minimum_length'],
         primerF=config["fwd_primer"],
-        primerR=config["rev_primer"]
+        primerR=config["rev_primer"],
+        tempTrim=output_dir+config["run_name"]+"-qaqc/trimmed_1.qza"
     conda:
         "qiime2-amplicon-2024.10"
     threads: workflow.cores
@@ -186,12 +187,12 @@ rule cutadapt_se:
         --p-match-adapter-wildcards \
         --p-minimum-length {params.min_len} \
         --verbose \
-        --o-trimmed-sequences trimmed_1.qza 1> {output[1]}
+        --o-trimmed-sequences {params.tempTrim} 1> {output[1]}
 
         if [ {params.discard} = True ]; then
             qiime cutadapt trim-single \
             --p-cores {threads} \
-            --i-demultiplexed-sequences trimmed_1.qza \
+            --i-demultiplexed-sequences {params.tempTrim} \
             --p-front {params.primerF} \
             --p-match-read-wildcards \
             --p-match-adapter-wildcards \
@@ -203,7 +204,7 @@ rule cutadapt_se:
         else
             qiime cutadapt trim-single \
             --p-cores {threads} \
-            --i-demultiplexed-sequences trimmed_1.qza \
+            --i-demultiplexed-sequences {params.tempTrim} \
             --p-front {params.primerF} \
             --p-match-read-wildcards \
             --p-match-adapter-wildcards \
@@ -211,7 +212,7 @@ rule cutadapt_se:
             --verbose \
             --o-trimmed-sequences {output[0]} 1>> {output[1]}
         fi;        
-        rm trimmed_1.qza
+        rm {params.tempTrim}
         """
 
 # make updated manifest file

@@ -183,7 +183,8 @@ rule cutadapt_pe:
         output_dir+config["run_name"]+"-qaqc/stats/cutadapt_summary.txt",
     params:
         discard=config['discard_untrimmed'],
-        min_len=config['minimum_length']
+        min_len=config['minimum_length'],
+        tempTrim=output_dir+config["run_name"]+"-qaqc/trimmed_1.qza",
     conda:
         "qiime2-amplicon-2024.10"
     threads: workflow.cores
@@ -200,12 +201,12 @@ rule cutadapt_pe:
         --p-match-adapter-wildcards \
         --p-minimum-length {params.min_len} \
         --verbose \
-        --o-trimmed-sequences trimmed_1.qza 1> {output[1]}
+        --o-trimmed-sequences {params.tempTrim} 1> {output[1]}
 
         if [ {params.discard} = True ]; then
             qiime cutadapt trim-paired \
             --p-cores {threads} \
-            --i-demultiplexed-sequences trimmed_1.qza \
+            --i-demultiplexed-sequences {params.tempTrim} \
             --p-front-f {primerF} \
             --p-front-r {primerR} \
             --p-match-read-wildcards \
@@ -217,7 +218,7 @@ rule cutadapt_pe:
         else
             qiime cutadapt trim-paired \
             --p-cores {threads} \
-            --i-demultiplexed-sequences trimmed_1.qza \
+            --i-demultiplexed-sequences {params.tempTrim} \
             --p-front-f {primerF} \
             --p-front-r {primerR} \
             --p-match-read-wildcards \
@@ -227,7 +228,7 @@ rule cutadapt_pe:
             --o-trimmed-sequences {output[0]} 1>> {output[1]}
         fi;
 
-        rm trimmed_1.qza
+        rm {params.tempTrim}
         """
 
 # make updated manifest file
