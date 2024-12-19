@@ -79,7 +79,7 @@ def assign_collapse(taxa):
         min_con = f"minimum consensus of {str(taxa['min_consensus'])}"
     elif taxa['classify_method'] == 'naive-bayes':
         min_con = f"confidence threshold of {str(taxa['skl_confidence'])}"
-    level = taxa['classify_taxalevel']
+    level = taxa['collapse_taxalevel']
     output = f"collapse to {taxa['taxa_ranks'][level-1]} level with {min_con}"
     return output
 

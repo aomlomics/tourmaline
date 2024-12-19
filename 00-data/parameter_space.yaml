@@ -1,0 +1,12 @@
+# Run name prefix for all generated configs
+run_name_prefix: "test_data"
+
+# Parameter ranges to iterate over
+parameter_space:
+  minimum_length: [50, 100]
+  #seq_quality_cutoff: [0.8, 0.85, 0.9]
+  to_trim: [true, false]
+  discard_untrimmed: [true, false]
+
+# Output directory for generated configs
+output_dir: "parameter_sweep_configs"

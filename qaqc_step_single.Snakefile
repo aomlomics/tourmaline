@@ -2,7 +2,6 @@
 
 ## NEED TO add manifest rules as in the paired end version
 
-from Bio.Seq import Seq
 import os
 import shutil
 
