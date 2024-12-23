@@ -6,8 +6,6 @@
 # test full: ./tourmaline.sh -s qaqc,repseqs,taxonomy --configfile config-01-sample.yaml,config-02-repseqs.yaml,config-03-taxonomy.yaml --cores 6
 ##
 
-
-
 # Function to display usage
 usage() {
     echo "Usage: $0 --step qaqc,repseqs,taxonomy --configfile config1,config2,... --cores N"
@@ -46,23 +44,12 @@ for index in "${!step_array[@]}"; do
     CONFIG="${configfile_array[$index]}"
     case $step in
         qaqc)
-            echo "Running QA/QC step with configfile $configfile and cores $cores\n"
-            paired=$(yq -r '.paired_end' $CONFIG);
+            echo "Running QA/QC step with configfile $CONFIG and cores $cores\n"
             trim=$(yq -r '.to_trim' $CONFIG);
-            if [[ "${paired}" = true ]]; then
-                if [[ "${trim}" = true ]]; then
-                #snakemake --use-conda -s qaqc_step_paired.Snakefile --configfile $CONFIG --cores $CORES  --latency-wait 15
-                    snakemake --use-conda -s qaqc_step_paired.Snakefile trim_pe_all --configfile $CONFIG --cores $cores  --latency-wait 15
-                else
-                    snakemake --use-conda -s qaqc_step_paired.Snakefile no_trim_pe_all --configfile $CONFIG --cores $cores --latency-wait 15
-                fi;
+            if [[ "${trim}" = true ]]; then
+                snakemake --use-conda -s qaqc_step.Snakefile trim_all --configfile $CONFIG --cores $cores --latency-wait 15
             else
-                #snakemake --use-conda -s qaqc_step_single.Snakefile --configfile $CONFIG --cores $CORES --latency-wait 15
-                if [[ "${trim}" = true ]]; then
-                    snakemake --use-conda -s qaqc_step_single.Snakefile trim_se_all --configfile $CONFIG --cores $cores  --latency-wait 15
-                else
-                    snakemake --use-conda -s qaqc_step_single.Snakefile no_trim_se_all --configfile $CONFIG --cores $cores  --latency-wait 15
-                fi;
+                snakemake --use-conda -s qaqc_step.Snakefile no_trim_all --configfile $CONFIG --cores $cores --latency-wait 15
             fi;
             ;;
         repseqs)
@@ -89,6 +76,3 @@ for index in "${!step_array[@]}"; do
             ;;
     esac
 done
-
-
-
