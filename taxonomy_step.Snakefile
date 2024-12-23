@@ -231,7 +231,7 @@ elif config["classify_method"] == "bt2-blca":
         params:
             prefix=output_dir+config["run_name"] + "-taxonomy/bowtie2_index/bowtie2_index",
             classifyparams=config["classify_params"],
-            temp_dir=output_dir+config["run_name"]+"-taxonomy/temp/",
+            temp_dir=output_dir+config["run_name"]+"-taxonomy/temp",
             percID=config["perc_identity"],
             querycov=config["query_cov"],
             taxaranks=config["taxa_ranks"],
@@ -259,7 +259,12 @@ elif config["classify_method"] == "bt2-blca":
             echo "Summarize BLCA output"
             python scripts/reformat_summary_for_r.py {output.raw_taxonomy} {output.taxonomy} {params.conf} {params.taxaranks}
             # Append unassigned reads to the taxonomy file
-            grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta | sed 's/^>//; s/$/\tUnassigned\t0/' >> {output.taxonomy}
+            if grep -q grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta > /dev/null 2>&1; then
+                # Run your command here
+                grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta | sed 's/^>//; s/$/\tUnassigned\t0/' >> {output.taxonomy}
+            else
+                echo "There are no unassigned reads."
+            fi
 
             """
     rule import_taxonomy_to_qza:
