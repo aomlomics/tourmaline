@@ -8,6 +8,8 @@ Tourmaline is an amplicon sequence processing workflow for Illumina sequence dat
 
 **The current version of Tourmaline supports [qiime2-2023.5](https://docs.qiime2.org/2023.5/).** To use previous versions of Qiime2, check out previous Tourmaline versions under [Releases](https://github.com/aomlomics/tourmaline/releases). 
 
+**If you would like to test the development version of Tourmaline 2**, check out the [develop branch](https://github.com/aomlomics/tourmaline/tree/develop) of this repository!
+
 ### Why should I use Tourmaline?
 
 Tourmaline has several features that enhance usability and interoperability:
