@@ -9,7 +9,7 @@
 Instead of interacting with snakemake rules directly, the main way to run Tourmaline V2 is through the `tourmaline.sh` script. This script allows you to run one or more of the workflow steps at a time, specify specific config files, and set the maximum number of cores. You must be located in the tourmaline directory when running it, however you can set the output file destinations to anywhere. Useage:  
 
 ```
-conda activate snakemake-tour
+conda activate snakemake-tour2
 ./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
 ```
 
@@ -313,7 +313,7 @@ git clone --branch develop https://github.com/aomlomics/tourmaline.git
 ### Activate snakemake conda env
 
 ```
-conda activate snakemake
+conda activate snakemake-tour2
 ```
 
 Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed, with that name. You do not need to install anything else in that environment.
