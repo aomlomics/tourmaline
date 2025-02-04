@@ -13,11 +13,11 @@ else:
 # set run name
 if config["sample_run_name"] != None:
     sample_run_name=config["sample_run_name"]
-    input_fastq=output_dir+sample_run_name+"-qaqc/"+sample_run_name+"_fastq_pe.qza"
+    input_fastq=output_dir+sample_run_name+"-qaqc/"+sample_run_name+"_fastq.qza"
 elif config["fastq_qza_file"] != None:
     input_fastq=config["fastq_qza_file"]
 else:
-    input_fastq=output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq_pe.qza"
+    input_fastq=output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
 
 # set Filtering
 if config["to_filter"] == True:
@@ -50,7 +50,7 @@ def get_required_inputs(config):
     return required
 
 
-rule run_dada2_pe_denoise:
+rule run_denoise:
     """Run paired end dada2"""
     input:
         get_required_inputs(config)
@@ -63,56 +63,94 @@ rule run_dada2_pe_denoise:
         #output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
         # add figures here
 
-#rule run_dada2_se_denoise:
-
-#rule run_deblur_se_denoise:
-
-rule denoise_dada2_pe:
-    input:
-        input_fastq
-    params:
-        trunclenf=config["dada2_trunc_len_f"],
-        trunclenr=config["dada2pe_trunc_len_r"],
-        trimleftf=config["dada2_trim_left_f"],
-        trimleftr=config["dada2pe_trim_left_r"],
-        maxeef=config["dada2_max_ee_f"],
-        maxeer=config["dada2pe_max_ee_r"],
-        truncq=config["dada2_trunc_q"],
-        poolingmethod=config["dada2_pooling_method"],        
-        chimeramethod=config["dada2_chimera_method"],
-        minfoldparentoverabundance=config["dada2_min_fold_parent_over_abundance"],
-        nreadslearn=config["dada2_n_reads_learn"],
-        hashedfeatureids=config["dada2_hashed_feature_ids"]
-    output:
-        table=temp_table,
-        repseqs=temp_repseqs,
-        stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza",
-    conda:
-        "qiime2-amplicon-2024.10"
-    threads: config["asv_threads"]
-    shell:
-        """
-        qiime dada2 denoise-paired \
-        --i-demultiplexed-seqs {input[0]} \
-        --p-trunc-len-f {params.trunclenf} \
-        --p-trunc-len-r {params.trunclenr} \
-        --p-trim-left-f {params.trimleftf} \
-        --p-trim-left-r {params.trimleftr} \
-        --p-max-ee-f {params.maxeef} \
-        --p-max-ee-r {params.maxeer} \
-        --p-trunc-q {params.truncq} \
-        --p-pooling-method {params.poolingmethod} \
-        --p-chimera-method {params.chimeramethod} \
-        --p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} \
-        --p-n-reads-learn {params.nreadslearn} \
-        --p-n-threads {threads} \
-        {params.hashedfeatureids} \
-        --o-table {output.table} \
-        --o-representative-sequences {output.repseqs} \
-        --o-denoising-stats {output.stats} \
-        --verbose  
-        """
-
+if config["asv_method"] == "dada2pe":
+    rule denoise_dada2_pe:
+        input:
+            input_fastq
+        params:
+            trunclenf=config["dada2_trunc_len_f"],
+            trunclenr=config["dada2pe_trunc_len_r"],
+            trimleftf=config["dada2_trim_left_f"],
+            trimleftr=config["dada2pe_trim_left_r"],
+            maxeef=config["dada2_max_ee_f"],
+            maxeer=config["dada2pe_max_ee_r"],
+            truncq=config["dada2_trunc_q"],
+            poolingmethod=config["dada2_pooling_method"],        
+            chimeramethod=config["dada2_chimera_method"],
+            minfoldparentoverabundance=config["dada2_min_fold_parent_over_abundance"],
+            nreadslearn=config["dada2_n_reads_learn"],
+            hashedfeatureids=config["dada2_hashed_feature_ids"]
+        output:
+            table=temp_table,
+            repseqs=temp_repseqs,
+            stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza",
+        conda:
+            "qiime2-amplicon-2024.10"
+        threads: config["asv_threads"]
+        shell:
+            """
+            qiime dada2 denoise-paired \
+            --i-demultiplexed-seqs {input[0]} \
+            --p-trunc-len-f {params.trunclenf} \
+            --p-trunc-len-r {params.trunclenr} \
+            --p-trim-left-f {params.trimleftf} \
+            --p-trim-left-r {params.trimleftr} \
+            --p-max-ee-f {params.maxeef} \
+            --p-max-ee-r {params.maxeer} \
+            --p-trunc-q {params.truncq} \
+            --p-pooling-method {params.poolingmethod} \
+            --p-chimera-method {params.chimeramethod} \
+            --p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} \
+            --p-n-reads-learn {params.nreadslearn} \
+            --p-n-threads {threads} \
+            {params.hashedfeatureids} \
+            --o-table {output.table} \
+            --o-representative-sequences {output.repseqs} \
+            --o-denoising-stats {output.stats} \
+            --verbose  
+            """
+elif config["asv_method"] == "dada2se":
+    rule denoise_dada2_se:
+        input:
+            input_fastq
+        params:
+            trunclenf=config["dada2_trunc_len_f"],
+            trimleftf=config["dada2_trim_left_f"],
+            maxeef=config["dada2_max_ee_f"],
+            truncq=config["dada2_trunc_q"],
+            poolingmethod=config["dada2_pooling_method"],        
+            chimeramethod=config["dada2_chimera_method"],
+            minfoldparentoverabundance=config["dada2_min_fold_parent_over_abundance"],
+            nreadslearn=config["dada2_n_reads_learn"],
+            hashedfeatureids=config["dada2_hashed_feature_ids"]
+        output:
+            table=temp_table,
+            repseqs=temp_repseqs,
+            stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza",
+        conda:
+            "qiime2-amplicon-2024.10"
+        threads: config["asv_threads"]
+        shell:
+            """
+            qiime dada2 denoise-single \
+            --i-demultiplexed-seqs {input[0]} \
+            --p-trunc-len {params.trunclenf} \
+            --p-trim-left {params.trimleftf} \
+            --p-max-ee {params.maxeef} \
+            --p-trunc-q {params.truncq} \
+            --p-pooling-method {params.poolingmethod} \
+            --p-chimera-method {params.chimeramethod} \
+            --p-min-fold-parent-over-abundance {params.minfoldparentoverabundance} \
+            --p-n-reads-learn {params.nreadslearn} \
+            --p-n-threads {threads} \
+            {params.hashedfeatureids} \
+            --o-table {output.table} \
+            --o-representative-sequences {output.repseqs} \
+            --o-denoising-stats {output.stats} \
+            --verbose  
+            """
+else:
+    raise ValueError("Invalid ASV method specified")
 
 #repseq_min_samples: 0 #qiime feature-table filter-features --p-min-samples
 

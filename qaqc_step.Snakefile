@@ -7,6 +7,12 @@ import shutil
 
 output_dir = config["output_dir"]+"/"
 
+# Copy config file to output directory
+config_output_path = output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-qaqc_config.yaml"
+os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
+shutil.copy(workflow.configfiles[0], config_output_path)
+
+
 # HELPER FUNCTIONS
 
 def check_file_separator(file_path):
@@ -31,6 +37,18 @@ SEQUENCE_TYPE = "PairedEnd" if IS_PAIRED else "SingleEnd"
 MANIFEST_FORMAT = f"{SEQUENCE_TYPE}FastqManifestPhred33V2"
 IMPORT_TYPE = "SampleData[PairedEndSequencesWithQuality]" if IS_PAIRED else "SampleData[SequencesWithQuality]"
 CUTADAPT_COMMAND = "trim-paired" if IS_PAIRED else "trim-single"
+
+rule trim_all:
+    """Trim all reads with all supplied trimming parameters"""
+    input:
+        output_dir+config["run_name"]+"-qaqc/raw_fastq.qza",
+        output_dir+config["run_name"]+"-qaqc/stats/raw_fastq_summary.qzv",
+        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv"
+
+rule no_trim_all:
+    """Process all reads without trimming"""
+    input:
+        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv",
 
 if config["sample_manifest_file"] != None:
     separator = check_file_separator(config["sample_manifest_file"])
@@ -162,18 +180,6 @@ else:
 #    primerR=config["rev_primer"]
 #    revcomp_primerF=Seq(config["fwd_primer"]).reverse_complement()
 #    revcomp_primerR=Seq(config["rev_primer"]).reverse_complement()
-
-rule trim_all:
-    """Trim all reads with all supplied trimming parameters"""
-    input:
-        output_dir+config["run_name"]+"-qaqc/raw_fastq.qza",
-        output_dir+config["run_name"]+"-qaqc/stats/raw_fastq_summary.qzv",
-        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv",
-
-rule no_trim_all:
-    """Process all reads without trimming"""
-    input:
-        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv",
 
 rule raw_fastq_summary:
     input:
@@ -337,13 +343,14 @@ rule summarize_fastq_demux:
     input:
         output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
     output:
-        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv"
+        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv",
     conda:
         "qiime2-amplicon-2024.10"
     shell:
         "qiime demux summarize "
         "--i-data {input} "
         "--o-visualization {output}"
+        #"cp
 
 rule check_seq_qual_dropoff:
     input:
