@@ -8,7 +8,7 @@ alpha_max_depth: 500 # optional, max depth for alpha diversity plots
 core_sampling_depth: 500 # optional, sampling depth for core diversity metrics
 
 # ASV STEP: Denoising and clustering, saves to [run_name]-repseqs folder
-asv_method: dada2se # dada2pe, dada2se, deblur
+asv_method: dada2pe # dada2pe, dada2se, deblur
 asv_threads: 5
 
 # ASV METHODS
