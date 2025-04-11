@@ -159,7 +159,7 @@ sample1,/path/to/sample1_R1.fastq.gz
 * Alternative format: `{sample}_R1_001.fastq.gz` and `{sample}_R2_001.fastq.gz`
 * Single-end naming: `{sample}_R1.fastq.gz` or `{sample}_R1_001.fastq.gz`
 
-### 2. Representative Sequences Configuration (config-02-repseqs.yaml)
+### 2. Representative sequences configuration (config_02_repseqs.yaml)
 
 Key parameters:
 
@@ -365,13 +365,13 @@ Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed,
 Run a single step (taxonomy):
 
 ```bash
-./tourmaline.sh -s taxonomy -c config-03-taxonomy.yaml -n 6
+./tourmaline.sh -s taxonomy -c config_03_taxonomy.yaml -n 6
 ```
 
 Run all steps with one command:
 
 ```bash
-./tourmaline.sh -s qaqc,repseqs,taxonomy -c config-01-sample.yaml,config-02-repseqs.yaml,config-03-taxonomy.yaml -n 6
+./tourmaline.sh -s qaqc,repseqs,taxonomy -c config_01_sample.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml -n 6
 ```
 
 #### Important notes
@@ -385,7 +385,7 @@ Run all steps with one command:
 To generate a report file with metadata on the bioinformatics, provide your three config files to the ```scripts/format_analysisMetadata.py``` along with the tourmaline metadata file.
 
 ```bash
-python scripts/format_analysisMetadata.py -s config-01-sample.yaml -r config-02-repseqs.yaml -t config-03-taxonomy.yaml -o my-tourmaline-metadata.tsv
+python scripts/format_analysisMetadata.py -s config_01_sample.yaml -r config_02_repseqs.yaml -t config_03_taxonomy.yaml -o my-tourmaline-metadata.tsv
 ```
 
 ## Directory structure
