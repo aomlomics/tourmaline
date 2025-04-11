@@ -54,16 +54,7 @@ for index in "${!step_array[@]}"; do
             ;;
         repseqs)
             echo "Running repseqs step with configfile $CONFIG and cores $cores\n"
-            asv_method=$(yq -r '.asv_method' $CONFIG);
-            if [[ ${asv_method} = dada2pe ]]; then
-                snakemake --use-conda -s repseqs_step.Snakefile run_dada2_pe_denoise --configfile $CONFIG --cores $cores  --latency-wait 15
-            elif [[ "${asv_method}" = "dada2se" ]]; then
-                snakemake --use-conda -s repseqs_step.Snakefile run_dada2_se_denoise --configfile $CONFIG --cores $cores  --latency-wait 15
-            elif [[ "${asv_method}" = "deblur" ]]; then
-                snakemake --use-conda -s repseqs_step.Snakefile run_deblur_se_denoise --configfile $CONFIG --cores $cores  --latency-wait 15
-            else
-                echo "ASV method not recognized"
-            fi;
+            snakemake --use-conda -s repseqs_step.Snakefile run_denoise --configfile $CONFIG --cores $cores  --latency-wait 15
             ;;
         taxonomy)
             echo "Running taxonomy step with configfile $CONFIG and cores $cores"

@@ -2,7 +2,7 @@ run_name: test_data
 output_dir: "../v2-results"
 raw_fastq_path: #00-data/fastq/ #path to raw fastq files 
 trimmed_fastq_path: #trimmed files must have suffix _R[1,2].fastq.gz
-sample_manifest_file: 00-data/manifest_pe.csv # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
+sample_manifest_file: 00-data/manifest_pe_docker.csv # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
 #if provided and not trimming, just import to fastq.qza
 
 to_trim: True #Boolean

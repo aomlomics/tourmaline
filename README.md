@@ -13,7 +13,7 @@ Instead of interacting with Snakemake rules directly, the main way to run Tourma
 Usage:
 
 ```bash
-conda activate snakemake-tour
+conda activate snakemake-tour2
 ./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
 ```
 
@@ -60,26 +60,25 @@ Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding da
 
 ## Setup Requirements
 
-* [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
-* [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
-* [Snakemake Conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
-
-  * ```bash
-     conda create -c conda-forge -c bioconda -n snakemake-tour snakemake biopython yq parallel
+- [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+- [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
+- [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+   - ```
+     conda create -c conda-forge -c bioconda -n snakemake-tour2 snakemake biopython yq parallel
      ```
-
-* [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
-* bowtie2-blca conda env, only if running BLCA taxa assignment
-
-  * ```bash
+- [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
+   - ```bash
+      git clone --branch develop https://github.com/aomlomics/tourmaline.git
+      ```
+- bowtie2-blca conda env, only install if running BLCA taxa assignment
+   - ```
      conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2
      ```
 
 ### Running Requirements
-
-* Snakemake environment must be activated
-* Required configuration files for each step
-* Input data files (vary depending on starting step)
+- `snakemake-tour2` environment must be activated
+- Required configuration files for each step
+- Input data files (vary depending on starting step)
 
 ## Configuration Files
 
@@ -348,8 +347,8 @@ git clone --branch develop https://github.com/aomlomics/tourmaline.git
 
 ### Activate Snakemake Conda environment
 
-```bash
-conda activate snakemake
+```
+conda activate snakemake-tour2
 ```
 
 Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed, with that name. You do not need to install anything else in that environment.
@@ -400,3 +399,7 @@ output_dir/
 ```
 
 Each directory contains the relevant outputs for that step of the pipeline.
+
+## Disclaimer
+
+This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration, or the United States Department of Commerce. All NOAA GitHub project code is provided on an 'as is' basis and the user assumes responsibility for its use. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
