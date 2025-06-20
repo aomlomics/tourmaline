@@ -76,23 +76,26 @@ def trim_paramF(samples,repseqs,tour):
 
 def assign_collapse(taxa):
     if taxa['classify_method'] in ['consensus-blast','consensus-vsearch']:
-        min_con = f"minimum consensus of {str(taxa['min_consensus'])}"
+        output = f"minimum consensus lowest common ancestor of {str(taxa['min_consensus'])}"
     elif taxa['classify_method'] == 'naive-bayes':
-        min_con = f"confidence threshold of {str(taxa['skl_confidence'])}"
-    level = taxa['collapse_taxalevel']
-    output = f"collapse to {taxa['taxa_ranks'][level-1]} level with {min_con}"
+        output = f"confidence threshold of {str(taxa['skl_confidence'])}"
+    elif taxa['classify_method'] == 'bt2-blca':
+        output = f"minimum confidence threshold of {str(taxa['confidence_threshold'])}"
     return output
 
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a single TSV file from multiple YAML files.")
-    parser.add_argument('-s','--samples_config', required=True, help='Path to the first YAML file')
-    parser.add_argument('-r','--repseqs_config', required=True, help='Path to the second YAML file')
-    parser.add_argument('-t','--taxonomy_config', required=True, help='Path to the third YAML file')
+    parser.add_argument('-s','--samples_config', required=True, help='Path to the samples config file')
+    parser.add_argument('-r','--repseqs_config', required=True, help='Path to the repseqs config file')
+    parser.add_argument('-t','--taxonomy_config', required=True, help='Path to the taxonomy config file')
+    parser.add_argument('-p','--project_id', required=True, help='Value for project_id')
+    parser.add_argument('-a','--assay_name', help='Value for assay_name, otherwise use value in samples config')
+    parser.add_argument('-A','--analysis_run_name', help='Value for analysis_run_name, otherwise use value in samples config')
     parser.add_argument('-T','--tourmaline_metadata',default="./00-data/tourmaline_metadata.yaml", help='Path to tourmaline metadata')
     #parser.add_argument('--checklist', required=True, help='Path to the CSV file with metadata terms')
-    parser.add_argument('-o','--output', required=True, help='Path to the output YAML file')
+    parser.add_argument('-o','--output', required=True, help='Path to the output file')
 
     args = parser.parse_args()
 
@@ -101,36 +104,55 @@ def main():
     repseqs2 = load_yaml(args.repseqs_config)
     taxa3 = load_yaml(args.taxonomy_config)
     tour = load_yaml(args.tourmaline_metadata)
+    project_id = args.project_id
+    assay_name = args.assay_name if args.assay_name else samples1['amplicon_name']
+    analysis_run_name = args.analysis_run_name if args.analysis_run_name else samples1['run_name']
 
     # MAPPINGS
     mappings = {
         # FAIR eDNA TERMS
-        'project_id': "",
+        'project_id': project_id,
+        'assay_name': assay_name,
+        'analysis_run_name': analysis_run_name,
         "sop_bioinformatics": tour['sop_bioinformatics'],
         "trim_method": trim_paramF(samples1,repseqs2,tour)[0],
         "trim_param": trim_paramF(samples1,repseqs2,tour)[1],
-        "min_reads_cutoff": min_reads(repseqs2)[0],
-        "min_reads_cutoff_unit": min_reads(repseqs2)[1],
-        "min_reads_tool": asv_tools(repseqs2,tour),
+        "demux_tool": "",
+        "demux_max_mismatch": "",
+        "merge_tool": asv_tools(repseqs2,tour),
+        "merge_min_overlap": 12 if repseqs2['asv_method'] == 'dada2pe' else "not applicable",
+        "min_len_cutoff": samples1['minimum_length'], # CHECK!
+        "min_len_tool": "Cutadapt "+str(tour['cutadapt_version']) if samples1['to_trim'] else "not applicable",
         "error_rate_tool": asv_tools(repseqs2,tour),
         "error_rate_cutoff": repseqs2['dada2_max_ee_f'],
         "error_rate_type": "expected error rate",
-        "merge_min_overlap": 12 if repseqs2['asv_method'] == 'dada2pe' else "not applicable",
-        "merge_tool": asv_tools(repseqs2,tour),
-        "otu_clust_cutoff": 100,
-        "otu_clust_tool": asv_tools(repseqs2,tour),
         "chimera_check_method": "denovo; "+asv_tools(repseqs2,tour),
         "chimera_check_param": "--chimera_method "+repseqs2['dada2_chimera_method']+" --min_parental_fold "+str(repseqs2['dada2_min_fold_parent_over_abundance']) if repseqs2['asv_method'] in ['dada2pe','dada2se'] else "default",
+        "otu_clust_tool": asv_tools(repseqs2,tour),
+        "otu_clust_cutoff": 100,
+        "min_reads_cutoff": min_reads(repseqs2)[0],
+        "min_reads_cutoff_unit": min_reads(repseqs2)[1],
+        "min_reads_tool": asv_tools(repseqs2,tour),
+        "otu_db": "custom",
+        "otu_db_custom": taxa3['database_name'],
         "tax_asign_cat": assign_tools(taxa3,tour)[1],
         "otu_seq_comp_appr": assign_tools(taxa3,tour)[0],
-        "otu_db": taxa3['database_name'],
         "tax_class_id_cutoff": taxa3['perc_identity'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
         "tax_class_query_cutoff": taxa3['query_cov'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
         "tax_class_other": taxa3['classify_params'],
         "tax_class_collapse": assign_collapse(taxa3),
+        "tax_class_other": "",
+        "screen_contam_method": "",
+        "screen_geograph_method": "",
+        "screen_nontarget_method": "",
+        "screen_other": "",
+        "otu_raw_description": "",
+        "otu_final_description": "",
+        "bioinfo_method_additional": "",
+
 
         # CUSTOM TERMS
-        "analysis_run_name": " | ".join([samples1['run_name'],repseqs2['run_name'],taxa3['run_name']]),
+        #"analysis_run_name": " | ".join([samples1['run_name'],repseqs2['run_name'],taxa3['run_name']]),
         "discard_untrimmed": samples1['discard_untrimmed'],
         "qiime2_version": tour['qiime2_version'],
         "tourmaline_asv_method": repseqs2['asv_method'],
@@ -153,6 +175,7 @@ def main():
         "repseqs_min_prevalence": repseqs2['repseq_min_prevalence'] if repseqs2['to_filter'] else 0,
         "skl_confidence": taxa3['skl_confidence'] if taxa3['classify_method'] == 'naive-bayes' else "not applicable",
         "min_consensus": taxa3['min_consensus'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
+        "confidence_threshold": taxa3['confidence_threshold'] if taxa3['classify_method'] == 'bt2-blca' else "not applicable",
 
     }
 
