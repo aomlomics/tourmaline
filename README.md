@@ -381,10 +381,39 @@ Run all steps with one command:
 
 ### Generate bioinformatics metadata
 
-To generate a report file with metadata on the bioinformatics, provide your three config files to the ```scripts/format_analysisMetadata.py``` along with the tourmaline metadata file.
+To generate a report file with metadata on the bioinformatics, provide your three config files to the ```scripts/format_analysisMetadata.py```, along with a `project_id`. Optionally, you can provide an `analysis_run_name` and `assay_name`, or the default will use the values provided in the sample step config file.  If you are running the script outside of the tourmaline folder, you must also provide the path to the tourmaline metadata file. 
 
+Example:  
 ```bash
-python scripts/format_analysisMetadata.py -s config_01_sample.yaml -r config_02_repseqs.yaml -t config_03_taxonomy.yaml -o my-tourmaline-metadata.tsv
+python scripts/format_analysisMetadata.py -s config_01_sample.yaml -r config_02_repseqs.yaml -t config_03_taxonomy.yaml -p my_project -o my-tourmaline-metadata.tsv
+```
+
+Full documentation:  
+```
+usage: format_analysisMetadata.py [-h] -s SAMPLES_CONFIG -r REPSEQS_CONFIG -t TAXONOMY_CONFIG -p PROJECT_ID [-a ASSAY_NAME]
+                                  [-A ANALYSIS_RUN_NAME] [-T TOURMALINE_METADATA] -o OUTPUT
+
+Generate a single TSV file from multiple YAML files.
+
+options:
+  -h, --help            show this help message and exit
+  -s SAMPLES_CONFIG, --samples_config SAMPLES_CONFIG
+                        Path to the samples config file
+  -r REPSEQS_CONFIG, --repseqs_config REPSEQS_CONFIG
+                        Path to the repseqs config file
+  -t TAXONOMY_CONFIG, --taxonomy_config TAXONOMY_CONFIG
+                        Path to the taxonomy config file
+  -p PROJECT_ID, --project_id PROJECT_ID
+                        Value for project_id
+  -a ASSAY_NAME, --assay_name ASSAY_NAME
+                        Value for assay_name, otherwise use value in samples config
+  -A ANALYSIS_RUN_NAME, --analysis_run_name ANALYSIS_RUN_NAME
+                        Value for analysis_run_name, otherwise use value in samples config
+  -T TOURMALINE_METADATA, --tourmaline_metadata TOURMALINE_METADATA
+                        Path to tourmaline metadata
+  -o OUTPUT, --output OUTPUT
+                        Path to the output file
+            
 ```
 
 ## Directory structure
