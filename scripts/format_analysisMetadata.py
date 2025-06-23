@@ -106,7 +106,7 @@ def main():
     tour = load_yaml(args.tourmaline_metadata)
     project_id = args.project_id
     assay_name = args.assay_name if args.assay_name else samples1['amplicon_name']
-    analysis_run_name = args.analysis_run_name if args.analysis_run_name else samples1['run_name']
+    analysis_run_name = args.analysis_run_name if args.analysis_run_name else taxa3['run_name']
 
     # MAPPINGS
     mappings = {
