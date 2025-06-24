@@ -9,7 +9,7 @@ def load_yaml(file_path):
         return yaml.safe_load(file)
 
 def dict_to_tsv(data, file_path):
-    df = pd.DataFrame(list(data.items()), columns=['field_name', 'values'])
+    df = pd.DataFrame(list(data.items()), columns=['term_name', 'values'])
     df.to_csv(file_path, sep='\t', index=False)
 
 def save_yaml(data, file_path):
