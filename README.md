@@ -47,11 +47,10 @@ Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding da
 * Called "taxonomy" in Tourmaline 2 code.
 * Generates taxonomic assignments and visualizations.
 * Assigns taxonomy using one of four methods:
-
-    1. [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
-    2. [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
-    3. [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
-    4. [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
+  * [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
+  * [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
+  * [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
+  * [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
 
 ### Step 4. Generate bioinformatics metadata
 
@@ -60,25 +59,32 @@ Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding da
 
 ## Setup Requirements
 
-- [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
-- [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
-- [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
-   - ```
-     conda create -c conda-forge -c bioconda -n snakemake-tour2 snakemake biopython yq parallel
-     ```
-- [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
-   - ```bash
-      git clone --branch develop https://github.com/aomlomics/tourmaline.git
-      ```
-- bowtie2-blca conda env, only install if running BLCA taxa assignment
-   - ```
-     conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2
-     ```
+* [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+* [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
+* [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+
+   ```bash
+   conda create -c conda-forge -c bioconda -n snakemake-tour2 snakemake biopython yq parallel
+   ```
+
+* [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
+
+   ```bash
+   git clone --branch develop https://github.com/aomlomics/tourmaline.git
+   ```
+
+* bowtie2-blca conda environment (required only if running BLCA taxa assignment)
+
+    ```bash
+   conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2
+    ```
 
 ### Running Requirements
-- `snakemake-tour2` environment must be activated
-- Required configuration files for each step
-- Input data files (vary depending on starting step)
+
+* `snakemake-tour2` environment must be activated
+* Required configuration files for each step
+* Input data files (vary depending on starting step)
+* Must run from the Tourmaline directory downloaded from GitHub, which contains the `tourmaline.sh` script and Snakefiles
 
 ## Configuration Files
 
@@ -187,14 +193,16 @@ repseq_min_prevalence: [float] # Minimum prevalence threshold
 You have two options for providing files to the repseqs step:
 
 **1) Provide an existing Tourmaline QA/QC run**
-    a) Either use the same `run_name` and `output_dir` for both steps, or
-    b) Use a different `run_name` for the repseqs step, and provide the `sample_run_name` you want to use. Can be helpful if you are testing out different trimming parameters.
+
+* Either use the same `run_name` and `output_dir` for both steps, or
+* Use a different `run_name` for the repseqs step, and provide the `sample_run_name` you want to use. Can be helpful if you are testing out different trimming parameters.
+
 **2) Provide an externally generated QIIME2 sequence archive (.qza)**
 
 
 To generate a QIIME2 sequence archive, you need a manifest file linking sample names with the absolute file path of the fastq.gz files (see the [TSV format above](https://github.com/aomlomics/tourmaline/blob/develop/README.md#sample-manifest-format).
 
-Activate `qiime2-amplicon-2024.10` environment.
+Activate the `qiime2-amplicon-2024.10` environment.
 
 ```bash
 conda activate qiime2-amplicon-2024.10
@@ -240,8 +248,8 @@ You have two options for providing files to the taxonomy step:
 
 **1) Provide an existing Tourmaline repseqs run**
 
-a) Either use the same `run_name` and `output_dir` for both steps, or
-b) Use a different `run_name` for the taxonomy step, and provide the `repseqs_run_name` you want to use. Can be helpful if you are testing out different ASV parameters.
+* Either use the same `run_name` and `output_dir` for both steps, or
+* Use a different `run_name` for the taxonomy step, and provide the `repseqs_run_name` you want to use. Can be helpful if you are testing out different ASV parameters.
 
 **2) Provide externally generated QIIME2 sequence archive and table (.qza)**
 
@@ -251,7 +259,7 @@ Must provide paths for both `repseqs_qza_file` and `table_qza_file`
 
 If you have a fasta file of ASV/OTU sequences, you can use the following code to generate a QIIME 2 repseqs archive.
 
-Activate `qiime2-amplicon-2024.10` environment.
+Activate the `qiime2-amplicon-2024.10` environment.
 
 ```bash
 conda activate qiime2-amplicon-2024.10
@@ -342,7 +350,6 @@ Start by cloning the Tourmaline directory and files of the **develop** branch:
 
 ```bash
 git clone --branch develop https://github.com/aomlomics/tourmaline.git
-
 ```
 
 ### Activate Snakemake Conda environment
@@ -354,6 +361,8 @@ conda activate snakemake-tour2
 Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed, with that name. You do not need to install anything else in that environment.
 
 ### Basic usage
+
+Navigate to the Tourmaline directory downloaded from GitHub as your working directory, then run:
 
 ```bash
 ./tourmaline.sh --step/-s [step] --configfile/-c [config_file] --cores/-n [num_cores]

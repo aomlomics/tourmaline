@@ -345,7 +345,6 @@ elif config["classify_method"] == "consensus-vsearch":
 else:
     print("classify_method must be one of the following: naive-bayes, consensus-blast, consensus-vsearch")
 
-
 rule export_taxa_biom:
     input:
         table=input_table,
@@ -367,9 +366,10 @@ rule export_taxa_biom:
         "--output-path temp_export;"
         "biom convert "
         "-i temp_export/feature-table.biom "
-        "-o {output.taxa_table} "
-        "--to-tsv;"
-        "/bin/rm -r tempfile_collapsed.qza temp_export/"
+        "-o TEMP.tsv "
+        "--to-tsv "
+        "&& cat TEMP.tsv | tail -n +2 | sed 's/^#OTU ID/taxonomy/' > {output.taxa_table} "
+        "&& /bin/rm -r tempfile_collapsed.qza temp_export/ TEMP.tsv"
 
 rule export_asv_taxa_features:
     input:
