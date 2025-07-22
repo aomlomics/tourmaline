@@ -3,7 +3,7 @@ output_dir: "../v2-results"
 repseqs_run_name: test_data # if empty, will use run_name-repseqs/
 repseqs_qza_file: # if empty, will use run_name-repseqs/ 
 table_qza_file: # if empty, will use run_name-repseqs/
-sample_metadata_file: 00-data/metadata.tsv # optional if no summary plotting
+sample_metadata_file: 00-data/metadata.tsv # optional for providing metadata to summary plotting 
 # TAXONOMY STEP: Assign taxonomy, saves to [run_name]-taxonomy folder
 database_name: "silva-138_1-99-515f_926r-uniq"
 refseqs_file: "00-data/silva-138_1-99-515f_926r-uniq-seq.qza" #can be a fasta file (.fa, .fna, .fasta) or a .qza file
