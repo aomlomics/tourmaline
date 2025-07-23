@@ -427,8 +427,10 @@ rule export_biom_tsv:
     shell:
         "biom convert "
         "-i {input} "
-        "-o {output} "
-        "--to-tsv"
+        "-o TEMP.tsv "
+        "--to-tsv "
+        "&& cat TEMP.tsv | tail -n +2 | sed 's/^#OTU ID/featureid/' > {output} "
+        "&& /bin/rm TEMP.tsv"
 
 rule diversity_alpha_rarefaction:
     input:
