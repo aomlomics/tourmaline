@@ -32,27 +32,39 @@ def check_files_for_substring(directory, substring):
     return False
 
 # Set data type specific variables
-IS_PAIRED = config.get("paired_end", False)
+IS_PAIRED = config.get("paired_end",False)
+TO_TRIM = config.get("to_trim",False)
 SEQUENCE_TYPE = "PairedEnd" if IS_PAIRED else "SingleEnd"
 MANIFEST_FORMAT = f"{SEQUENCE_TYPE}FastqManifestPhred33V2"
 IMPORT_TYPE = "SampleData[PairedEndSequencesWithQuality]" if IS_PAIRED else "SampleData[SequencesWithQuality]"
 CUTADAPT_COMMAND = "trim-paired" if IS_PAIRED else "trim-single"
 
-rule trim_all:
-    """Trim all reads with all supplied trimming parameters"""
-    input:
-        output_dir+config["run_name"]+"-qaqc/raw_fastq.qza",
-        output_dir+config["run_name"]+"-qaqc/stats/raw_fastq_summary.qzv",
-        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv"
+# Helper function to determine required input files
+def get_required_inputs(config):
+    required = []
+    
+    # Add stats file based on trimming
+    if config.get("to_trim",False):
+        required.append(output_dir+config["run_name"]+"-qaqc/raw_fastq.qza")
+        required.append(output_dir+config["run_name"]+"-qaqc/stats/raw_fastq_summary.qzv")
+        required.append(output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv")
+    else:
+        required.append(output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv")
 
-rule no_trim_all:
-    """Process all reads without trimming"""
+    # Conditional outputs based on config
+    if config.get("to_merge", False):
+        required.append(output_dir+config["run_name"]+"-qaqc/stats/merged_fastq_summary.qzv")
+        
+    return required
+
+
+rule qaqc_all:
     input:
-        output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv",
+        get_required_inputs(config)
 
 if config["sample_manifest_file"] != None:
     separator = check_file_separator(config["sample_manifest_file"])
-    if config["to_trim"] == True:
+    if TO_TRIM:
         print(f"Manifest provided, trimming {SEQUENCE_TYPE.lower()} reads\n")
         rule raw_fastq_demux:
             input:
@@ -174,6 +186,26 @@ else:
         SAMPLES, =glob_wildcards(config["trimmed_fastq_path"]+"/{sample}.1.fastq.gz")
         ruleorder: import_fastq_demux > cutadapt
         ruleorder: make_manifest > make_manifest_file
+    elif config["preexisting_fastq_qza"] != None:
+        print(f"Demultiplexed .qza file provided.\n")
+        if TO_TRIM:
+            pre_output = output_dir+config["run_name"]+"-qaqc/raw_fastq.qza"
+        else:
+            pre_output = output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+            ruleorder: import_preexisting_qza > cutadapt
+        rule import_preexisting_qza:
+            input:
+                config["preexisting_fastq_qza"]
+            output:
+                pre_output
+            conda:
+                "qiime2-amplicon-2024.10"
+            shell:
+                "ln -s {input} {output}"
+        SAMPLES=['nothing']
+    else:
+        print(f"No reads provided.\n")
+
 
 #if IS_PAIRED:
 #    primerF=config["fwd_primer"]
@@ -192,6 +224,47 @@ rule raw_fastq_summary:
         "qiime demux summarize "
         "--i-data {input} "
         "--o-visualization {output}"
+
+if config.get("to_merge", True):
+    rule merge_paired_reads:
+        input:
+            #merge_input
+            output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+        output:
+            output_dir+config["run_name"]+"-qaqc/merged_fastq.qza",
+            output_dir+config["run_name"]+"-qaqc/unmerged_fastq.qza",
+            output_dir+config["run_name"]+"-qaqc/stats/merge_stats.txt"
+        params:
+            maxdiffs=config["maxdiffs"],
+            merge_stagger=config["merge_stagger"]
+        conda:
+            "qiime2-amplicon-2024.10"
+        threads: 4
+        shell:
+            """
+            qiime vsearch merge-pairs \
+              --i-demultiplexed-seqs {input} \
+              --o-merged-sequences {output[0]} \
+              --o-unmerged-sequences {output[1]} \
+              --p-maxdiffs {params.maxdiffs} \
+              {params.merge_stagger} \
+              --p-threads {threads} \
+              --verbose 1> {output[2]}
+            """
+
+    rule merged_fastq_summary:
+        input:
+            output_dir+config["run_name"]+"-qaqc/merged_fastq.qza"
+        output:
+            output_dir+config["run_name"]+"-qaqc/stats/merged_fastq_summary.qzv"
+        conda:
+            "qiime2-amplicon-2024.10"
+        shell:
+            """
+            qiime demux summarize \
+              --i-data {input} \
+              --o-visualization {output}
+            """
 
 rule cutadapt:
     input:

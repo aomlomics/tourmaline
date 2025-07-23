@@ -45,12 +45,13 @@ for index in "${!step_array[@]}"; do
     case $step in
         qaqc)
             echo "Running QA/QC step with configfile $CONFIG and cores $cores\n"
-            trim=$(yq -r '.to_trim' $CONFIG);
-            if [[ "${trim}" = true ]]; then
-                snakemake --use-conda -s qaqc_step.Snakefile trim_all --configfile $CONFIG --cores $cores --latency-wait 15
-            else
-                snakemake --use-conda -s qaqc_step.Snakefile no_trim_all --configfile $CONFIG --cores $cores --latency-wait 15
-            fi;
+            #trim=$(yq -r '.to_trim' $CONFIG);
+            #if [[ "${trim}" = true ]]; then
+                #snakemake --use-conda -s qaqc_step.Snakefile trim_all --configfile $CONFIG --cores $cores --latency-wait 15
+            #else
+                #snakemake --use-conda -s qaqc_step.Snakefile no_trim_all --configfile $CONFIG --cores $cores --latency-wait 15
+            #fi;
+            snakemake --use-conda -s qaqc_step.Snakefile qaqc_all --configfile $CONFIG --cores $cores --latency-wait 15
             ;;
         repseqs)
             echo "Running repseqs step with configfile $CONFIG and cores $cores\n"

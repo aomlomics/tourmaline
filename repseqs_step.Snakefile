@@ -33,8 +33,12 @@ else:
 def get_required_inputs(config):
     required = []
     
-    # Base outputs always required
-    required.append(output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv")
+    # Add stats file based on asv_method
+    if config.get("asv_method") in ["dada2pe", "dada2se"]:
+        required.append(output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv")
+    elif config.get("asv_method") == "deblur":
+        required.append(output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.tsv")
+    
     required.append(output_dir + config["run_name"] + "-repseqs/stats/table_summary.qzv")
     required.append(output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt")
     required.append(output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt")
@@ -149,6 +153,44 @@ elif config["asv_method"] == "dada2se":
             --o-denoising-stats {output.stats} \
             --verbose  
             """
+elif config["asv_method"] == "deblur":
+    rule denoise_deblur:
+        input:
+            input_fastq,
+            reference_seqs=config["reference_seqs"]
+        params:
+            trim_length=config["deblur_trim_length"],
+            trim_left=config["deblur_trim_left"],
+            mean_error=config["deblur_mean_error"],
+            min_reads=config["deblur_min_reads"],
+            min_size=config["deblur_min_size"],
+            indel_max=config["deblur_indel_max"]
+        output:
+            table=temp_table,
+            repseqs=temp_repseqs,
+            stats=output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.qza",
+        conda:
+            "qiime2-amplicon-2024.10"
+        threads: config["asv_threads"]
+        shell:
+            """
+            qiime deblur denoise-other \
+            --i-demultiplexed-seqs {input[0]} \
+            --i-reference-seqs {input.reference_seqs} \
+            --p-trim-length {params.trim_length} \
+            --p-left-trim-len {params.trim_left} \
+            --p-mean-error {params.mean_error} \
+            --p-min-reads {params.min_reads} \
+            --p-min-size {params.min_size} \
+            --p-indel-max {params.indel_max} \
+            --p-hashed-feature-ids \
+            --p-sample-stats \
+            --p-jobs-to-start {threads} \
+            --o-table {output.table} \
+            --o-representative-sequences {output.repseqs} \
+            --o-stats {output.stats} \
+            --verbose  \
+            """
 else:
     raise ValueError("Invalid ASV method specified")
 
@@ -230,29 +272,57 @@ rule summarize_feature_table:
         fi
         """
 
-rule summarize_repseqs:
-    input:
-        stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza"
-    output:
-        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
-    conda:
-        "qiime2-amplicon-2024.10"
-    shell:
-        "qiime metadata tabulate "
-        "--m-input-file {input.stats} "
-        "--o-visualization {output}"
-
-rule export_repseqs_summary_to_tsv:
-    input:
-        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
-    output:
-        output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv"
-    conda:
-        "qiime2-amplicon-2024.10"
-    shell:
-        "unzip -qq -o {input} -d temp0; "
-        "mv temp0/*/data/metadata.tsv {output}; "
-        "/bin/rm -r temp0"
+# Summarize denoising stats (dada2 or deblur)
+if config["asv_method"] in ["dada2pe", "dada2se"]:
+    stats_tsv = output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv"
+    rule summarize_dada2_repseqs:
+        input:
+            stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza"
+        output:
+            output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
+        conda:
+            "qiime2-amplicon-2024.10"
+        shell:
+            "qiime metadata tabulate --m-input-file {input.stats} --o-visualization {output}"
+    
+    rule export_dada2_summary_to_tsv:
+        input:
+            output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
+        output:
+            stats_tsv
+        conda:
+            "qiime2-amplicon-2024.10"
+        shell:
+            "unzip -qq -o {input} -d temp0; "
+            "mv temp0/*/data/metadata.tsv {output}; "
+            "/bin/rm -r temp0"
+    
+elif config["asv_method"] == "deblur":
+    stats_tsv = output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.tsv"
+    rule summarize_deblur_repseqs:
+        input:
+            stats=output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.qza"
+        output:
+            output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.qzv"
+        conda:
+            "qiime2-amplicon-2024.10"
+        shell:
+            "qiime deblur visualize-stats --i-deblur-stats {input.stats} --o-visualization {output}"
+    
+    rule export_deblur_summary_to_tsv:
+        input:
+            output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.qza"
+        output:
+            stats_tsv
+        conda:
+            "qiime2-amplicon-2024.10"
+        shell:
+            "unzip -qq -o {input} -d temp0; "
+            "sed 's/,/\t/g' temp0/*/data/stats.csv > {output}; "
+            "/bin/rm -r temp0"
+    
+else:
+    raise ValueError("Invalid ASV method specified for stats export")
 
 
 rule export_table_to_biom:

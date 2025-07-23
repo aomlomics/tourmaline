@@ -28,6 +28,17 @@ dada2_min_fold_parent_over_abundance: 1
 dada2_n_reads_learn: 1000000
 dada2_hashed_feature_ids: --p-hashed-feature-ids
 
+# DEBLUR PARAMETERS
+# For more info run: qiime deblur denoise-other --help
+deblur_trim_length: 150  # integer, required
+deblur_trim_left: 0
+deblur_mean_error: 0.005
+deblur_min_reads: 2      # integer, default 10
+deblur_min_size: 2
+deblur_indel_max: 3 
+# Reference sequences for deblur positive filtering (required for deblur)
+reference_seqs:  # e.g., 00-data/some_reference_seqs.qza
+
 # FILTERING (OPTIONAL)
 to_filter: False
 
