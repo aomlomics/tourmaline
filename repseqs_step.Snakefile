@@ -58,14 +58,7 @@ rule run_denoise:
     """Run paired end dada2"""
     input:
         get_required_inputs(config)
-        #output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv",
-        #output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv",
-        #output_dir+config["run_name"]+"-repseqs/stats/table_summary_samples.txt",
-        #output_dir+config["run_name"]+"-repseqs/stats/table_summary_features.txt",
-        #output_dir+config["run_name"]+"-repseqs/stats/repseqs.qzv",
-        #output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths_describe.md",
-        #output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.tsv"
-        # add figures here
+
 
 if config["asv_method"] == "dada2pe":
     rule denoise_dada2_pe:
@@ -210,6 +203,8 @@ if config["to_filter"] == True:
             maxlength=config["repseq_max_length"],
             minabund=config["repseq_min_abundance"],
             minprev=config["repseq_min_prevalence"],
+            minfreq=config["repseq_min_frequency"],
+            minsamps=config["repseq_min_samples"]
         output:
             output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
             output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza",
@@ -227,6 +222,8 @@ if config["to_filter"] == True:
             "qiime feature-table filter-features "
             "--i-table {input.table} "
             "--m-metadata-file temp_repseqs1.qza "
+            "--p-min-frequency {params.minfreq} "
+            "--p-min-samples {params.minsamps} "
             "--o-filtered-table temp_table.qza; "
             "/bin/rm {input.table}; "
             # FILTER TABLE BY ABUNDANCE & PREVALENCE

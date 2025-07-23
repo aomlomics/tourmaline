@@ -65,5 +65,5 @@ repseq_max_length: 0
 
 repseq_min_abundance: 0
 repseq_min_prevalence: 0
-
-repseq_min_samples: 0 # NOT DONE. remove features that are not present in at least this many samples
+repseq_min_frequency: 0 # The minimum total frequency that a feature must have to be retained.
+repseq_min_samples: 0 # Remove features that are not present in at least this many samples
