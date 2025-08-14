@@ -22,7 +22,7 @@ def copy_configs(tourmaline_folder, output_folder, config_to_copy=None, run_name
         original_name = config_to_copy.replace('00_', '')
         configs = [os.path.join(tourmaline_folder, original_name)]
     else:
-        configs = glob.glob(os.path.join(tourmaline_folder, "config-*.yaml"))
+        configs = glob.glob(os.path.join(tourmaline_folder, "config_*.yaml"))
     
     for config_file in configs:
         if not os.path.exists(config_file):
