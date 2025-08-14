@@ -18,8 +18,8 @@ def create_output_folder(path):
 def copy_configs(tourmaline_folder, output_folder, config_to_copy=None, run_name=None, classifier_method=None, database_name=None):
     # Look for original config files without 00_ prefix
     if config_to_copy:
-        # Remove 00_ prefix and convert underscores to hyphens to match original files
-        original_name = config_to_copy.replace('00_', '').replace('_', '-')
+        # Remove 00_ prefix to match original files
+        original_name = config_to_copy.replace('00_', '')
         configs = [os.path.join(tourmaline_folder, original_name)]
     else:
         configs = glob.glob(os.path.join(tourmaline_folder, "config-*.yaml"))
