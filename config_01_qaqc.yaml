@@ -8,7 +8,7 @@ preexisting_fastq_qza: #00-data/my_fastq.qza # Optional: path to a pre-existing 
 
 paired_end: True #Boolean
 to_trim: True #Boolean
-to_merge: True #Boolean
+to_merge: False #Boolean
 
 amplicon_name: ssu16sv4v5 #not currently used
 # cutadapt parameters
