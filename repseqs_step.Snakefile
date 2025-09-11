@@ -66,6 +66,7 @@ rule run_denoise:
 
 
 if config["asv_method"] == "dada2pe":
+    
     rule denoise_dada2_pe:
         input:
             input_fastq
@@ -91,6 +92,33 @@ if config["asv_method"] == "dada2pe":
         threads: config["asv_threads"]
         shell:
             """
+            # Only check if trunclen > 0
+            if ([ {params.trunclenf} -gt 0 ] || [ {params.trunclenr} -gt 0 ]); then
+                echo "Checking that truncation lengths are less than maximum read length."
+                qiime demux summarize \
+                --i-data {input[0]} \
+                --o-visualization temp0-fastq;
+                unzip -qq -o temp0-fastq.qzv -d temp0
+                fwdresult=$(python ./scripts/get_last_column_int.py temp0/*/data/forward-seven-number-summaries.tsv)
+                revresult=$(python ./scripts/get_last_column_int.py temp0/*/data/reverse-seven-number-summaries.tsv)
+
+                # Check if the result is less than trunclen
+                if [ "$fwdresult" -le {params.trunclenf} ]; then
+                    echo "ERROR: Forward read length ($fwdresult) is less than dada2_trunc_len_f ({params.trunclenf}). Fix your config file so that dada2_trunc_len_f is less than the read length."
+                    /bin/rm -r temp0
+                    /bin/rm -r temp0-fastq.qzv
+                    exit 1
+                fi;
+                if [ "$revresult" -le {params.trunclenr} ]; then
+                    echo "ERROR: Reverse read length ($revresult) is less than dada2pe_trunc_len_r ({params.trunclenr}). Fix your config file so that dada2pe_trunc_len_r is less than the read length."
+                    /bin/rm -r temp0
+                    /bin/rm -r temp0-fastq.qzv
+                    exit 1
+                fi;
+                /bin/rm -r temp0
+                /bin/rm -r temp0-fastq.qzv
+            fi;
+
             qiime dada2 denoise-paired \
             --i-demultiplexed-seqs {input[0]} \
             --p-trunc-len-f {params.trunclenf} \
