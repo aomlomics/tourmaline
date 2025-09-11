@@ -1,5 +1,6 @@
 ## Snakefile for taxonomy step of Tourmaline V2 pipeline
 import os
+import shutil
 
 output_dir = config["output_dir"]+"/"
 

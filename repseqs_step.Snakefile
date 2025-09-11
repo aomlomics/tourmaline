@@ -1,6 +1,6 @@
 ## STILL NEED TO ADD some RULES FOR FILTERING SEQUENCES
 
-# NEED TO ADD TABLE TSV OUTPUT
+import shutil
 
 ## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
