@@ -182,7 +182,7 @@ if config["classify_method"] == "naive-bayes":
         output:
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
-            classifyparams=config["classify_params"],
+            classifyparams=config["classify_params"] if config["classify_params"] else "",
             conf=config["skl_confidence"]
         conda:
             "qiime2-amplicon-2024.10"
@@ -230,7 +230,7 @@ elif config["classify_method"] == "bt2-blca":
             taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv",
         params:
             prefix=output_dir+config["run_name"] + "-taxonomy/bowtie2_index/bowtie2_index",
-            classifyparams=config["classify_params"],
+            classifyparams=config["classify_params"] if config["classify_params"] else "",
             temp_dir=output_dir+config["run_name"]+"-taxonomy/temp",
             percID=config["perc_identity"],
             querycov=config["query_cov"],
@@ -259,7 +259,7 @@ elif config["classify_method"] == "bt2-blca":
             echo "Summarize BLCA output"
             python scripts/reformat_summary_for_r.py {output.raw_taxonomy} {output.taxonomy} {params.conf} {params.taxaranks}
             # Append unassigned reads to the taxonomy file
-            if grep -q grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta > /dev/null 2>&1; then
+            if grep -q '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta > /dev/null 2>&1; then
                 # Run your command here
                 grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta | sed 's/^>//; s/$/\tUnassigned\t0/' >> {output.taxonomy}
             else
@@ -290,7 +290,7 @@ elif config["classify_method"] == "consensus-blast":
         output:
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
-            classifyparams=config["classify_params"],
+            classifyparams=config["classify_params"] if config["classify_params"] else "",
             searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza",
             percID=config["perc_identity"],
             querycov=config["query_cov"],
@@ -320,7 +320,7 @@ elif config["classify_method"] == "consensus-vsearch":
         output:
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
         params:
-            classifyparams=config["classify_params"],
+            classifyparams=config["classify_params"] if config["classify_params"] else "",
             searchout=output_dir+config["run_name"]+"-taxonomy/search_results.qza",
             percID=config["perc_identity"],
             querycov=config["query_cov"],
