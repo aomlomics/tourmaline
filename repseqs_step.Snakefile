@@ -5,6 +5,11 @@
 ## Snakefile for repseqs step of Tourmaline V2 pipeline
 output_dir = config["output_dir"]+"/"
 
+# Copy config file to output directory
+config_output_path = output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs_config.yaml"
+os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
+shutil.copy(workflow.configfiles[0], config_output_path)
+
 if config["sample_metadata_file"] != None:
     use_metadata="yes"
 else:

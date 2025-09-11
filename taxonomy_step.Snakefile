@@ -3,6 +3,11 @@ import os
 
 output_dir = config["output_dir"]+"/"
 
+# Copy config file to output directory
+config_output_path = output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy_config.yaml"
+os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
+shutil.copy(workflow.configfiles[0], config_output_path)
+
 # Function to check if the file has a valid suffix
 def has_fa_suffix(file, suffixes):
     return any(file.endswith(suffix) for suffix in suffixes)
