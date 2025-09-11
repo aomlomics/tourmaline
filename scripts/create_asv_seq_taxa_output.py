@@ -47,7 +47,7 @@ def main():
     subprocess.run(f"mv {args.output}/metadata.tsv temp", shell=True, check=True)
     subprocess.run(f"rm -r {args.output}", shell=True, check=True)
     subprocess.run(
-        f"sed -e '2d' temp | sed '1 s|Feature ID\\t|featureid\\t|' | sed '1 s|Taxon|taxonomy|' | sed '1 s|Sequence|dna_sequence|' > {args.output}",
+        f"sed -e '2d' temp | sed '1 s|Feature ID\\t|featureid\\t|' | sed '1 s|Sequence|dna_sequence|' > {args.output}",
         shell=True,
         check=True
     )
@@ -58,9 +58,9 @@ def main():
 
     # Remove characters from the taxonomy column that match the pattern of an alpha character followed by __
     # and replace "; " with ";"
-    df['taxonomy'] = df['taxonomy'].fillna(value="Unassigned;")
-    df['verbatimIdentification'] = df['taxonomy']
-    df['taxonomy'] = df['taxonomy'].str.replace(r'\b[a-zA-Z]__', '', regex=True).str.replace('; ', ';')
+    df['Taxon'] = df['Taxon'].fillna(value="Unassigned;")
+    df['verbatimIdentification'] = df['Taxon']
+    df['Taxon'] = df['Taxon'].str.replace(r'\b[a-zA-Z]__', '', regex=True).str.replace('; ', ';')
 
 
     df[args.taxaranks] = [""] * len(args.taxaranks) 
@@ -68,7 +68,7 @@ def main():
 
     tax_ranks = args.taxaranks
     for index, row in df.iterrows():
-        taxa = row['taxonomy'].split(";")
+        taxa = row['Taxon'].split(";")
         for i in range(0,len(taxa)):
             if i < len(tax_ranks):
                 df.loc[index,tax_ranks[i]] = taxa[i]
