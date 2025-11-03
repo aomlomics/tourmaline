@@ -6,6 +6,8 @@ Tourmaline 2 is an amplicon sequence processing workflow for Illumina sequence d
 
 ## Major changes in v2 vs. v1
 
+**To use the Legacy V1 version of Tourmaline**, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository!
+
 ### Run via tourmaline.sh script
 
 Instead of interacting with Snakemake rules directly, the main way to run Tourmaline 2 is through the `tourmaline.sh` script. This script allows you to run one or more of the workflow steps at a time, specify specific config files, and set the maximum number of cores. You must be located in the tourmaline directory when running it, however you can set the output file destinations to anywhere.
