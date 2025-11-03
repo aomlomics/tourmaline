@@ -2,13 +2,13 @@
 
 <img src="png/figure1.png" alt="png/figure1" width="70%"/>
 
-## Tourmaline
+### This is the legacy version of Tourmaline! For the most recent version of Tourmaline, check out the [default branch](https://github.com/aomlomics/tourmaline) of this repository!
+
+## Tourmaline V1 (Legacy version)
 
 Tourmaline is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
-**The current version of Tourmaline supports [qiime2-2023.5](https://docs.qiime2.org/2023.5/).** To use previous versions of Qiime2, check out previous Tourmaline versions under [Releases](https://github.com/aomlomics/tourmaline/releases). 
-
-**If you would like to test the development version of Tourmaline 2**, check out the [develop branch](https://github.com/aomlomics/tourmaline/tree/develop) of this repository!
+**The V1 version of Tourmaline supports [qiime2-2023.5](https://docs.qiime2.org/2023.5/).** To use previous versions of Qiime2, check out previous Tourmaline versions under [Releases](https://github.com/aomlomics/tourmaline/releases). 
 
 ### Why should I use Tourmaline?
 
