@@ -67,10 +67,10 @@ Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding da
    conda create -c conda-forge -c bioconda -n snakemake-tour2 snakemake biopython yq parallel
    ```
 
-* [Development branch of Tourmaline](https://github.com/aomlomics/tourmaline/tree/develop)
+* [V2 (default) branch of Tourmaline](https://github.com/aomlomics/tourmaline.git)
 
    ```bash
-   git clone --branch develop https://github.com/aomlomics/tourmaline.git
+   git clone https://github.com/aomlomics/tourmaline.git
    ```
 
 * bowtie2-blca conda environment (required only if running BLCA taxa assignment)
