@@ -10,11 +10,6 @@ config_output_path = output_dir+config["run_name"]+"-repseqs/"+config["run_name"
 os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
 shutil.copy(workflow.configfiles[0], config_output_path)
 
-if config["sample_metadata_file"] != None:
-    use_metadata="yes"
-else:
-    use_metadata="no"
-
 # set run name
 if config["sample_run_name"] != None:
     sample_run_name=config["sample_run_name"]
@@ -63,6 +58,35 @@ rule run_denoise:
     """Run paired end dada2"""
     input:
         get_required_inputs(config)
+
+
+# set metadata file option
+if config["sample_metadata_file"] != None:
+    use_metadata="yes"
+
+    rule cp_metadata:
+        input:
+            config["sample_metadata_file"]
+        output: 
+            output_dir+config["run_name"]+"-repseqs/stats/metadata_used.tsv"
+        conda: "qiime2-amplicon-2024.10"
+        threads: config["asv_threads"]
+        shell: "cp {input} {output}" 
+else:
+    use_metadata="no"
+    rule autogenerate_metadata:
+        input:
+            input_fastq
+        output:
+            output_dir+config["run_name"]+"-repseqs/stats/metadata_used.tsv"
+        conda: "qiime2-amplicon-2024.10"
+        threads: config["asv_threads"]
+        shell:
+            """
+            qiime tools export --input-path {input} --output-path exported_data
+            awk -F',' 'NR>1 && !seen[$1]++ {{print $1}}' exported_data/MANIFEST | awk 'BEGIN{{print "sample_name"}} {{print}}' > {output}
+            /bin/rm -r exported_data
+            """
 
 
 if config["asv_method"] == "dada2pe":
@@ -281,10 +305,9 @@ if config["to_filter"] == True:
 rule summarize_feature_table:
     input:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+        metadata=output_dir+config["run_name"]+"-repseqs/stats/metadata_used.tsv"
     output:
         output_dir+config["run_name"]+"-repseqs/stats/table_summary.qzv"
-    params:
-        metadata=config["sample_metadata_file"]
     conda:
         "qiime2-amplicon-2024.10"
     threads: config["asv_threads"]
@@ -293,7 +316,7 @@ rule summarize_feature_table:
         if [ {use_metadata} == "yes" ]; then
             qiime feature-table summarize \
             --i-table {input.table} \
-            --m-sample-metadata-file {params.metadata} \
+            --m-sample-metadata-file {input.metadata} \
             --o-visualization {output}
         else
             qiime feature-table summarize \
@@ -465,9 +488,9 @@ rule export_biom_tsv:
 rule diversity_alpha_rarefaction:
     input:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+        metadata=output_dir+config["run_name"]+"-repseqs/stats/metadata_used.tsv"
     params:
         maxdepth=config["alpha_max_depth"],
-        metadata=config["sample_metadata_file"]
     output:
         output_dir+config["run_name"]+"-repseqs/stats/alpha_rarefaction.qzv"
     conda:
@@ -481,7 +504,7 @@ rule diversity_alpha_rarefaction:
             --p-metrics observed_features \
             --p-metrics shannon \
             --p-metrics pielou_e \
-            --m-metadata-file {params.metadata} \
+            --m-metadata-file {input.metadata} \
             --o-visualization {output}
         else
             qiime diversity alpha-rarefaction \
@@ -496,9 +519,9 @@ rule diversity_alpha_rarefaction:
 rule diversity_core_metrics:
     input:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
+        metadata=output_dir+config["run_name"]+"-repseqs/stats/metadata_used.tsv"
     params:
         samplingdepth=config["core_sampling_depth"],
-        metadata=config["sample_metadata_file"]
     output:
         rarefiedtable=output_dir+config["run_name"]+"-repseqs/stats/rarefied_table.qza",
         observedfeaturesvector=output_dir+config["run_name"]+"-repseqs/stats/observed_features_vector.qza",
@@ -517,7 +540,7 @@ rule diversity_core_metrics:
         "qiime diversity core-metrics "
         "--i-table {input.table} "
         "--p-sampling-depth {params.samplingdepth} "
-        "--m-metadata-file {params.metadata} "
+        "--m-metadata-file {input.metadata} "
         "--o-rarefied-table {output.rarefiedtable} "
         "--o-observed-features-vector {output.observedfeaturesvector} "
         "--o-shannon-vector {output.shannonvector} "
