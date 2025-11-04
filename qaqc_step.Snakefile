@@ -117,7 +117,7 @@ if config["sample_manifest_file"] != None:
         SAMPLES=['nothing']
 else:
     if config["raw_fastq_path"] != None:
-        print(f"no manifest, trimming {SEQUENCE_TYPE.lower()} reads\n")
+        print(f"No manifest provided, generating from filenames. Trimming {SEQUENCE_TYPE.lower()} reads\n")
         if check_files_for_substring(config["raw_fastq_path"], "_001.fastq"):
             SAMPLES, = glob_wildcards(config["raw_fastq_path"]+"/{sample}_R1_001.fastq.gz")
             fwdreads=expand(config["raw_fastq_path"]+"/{sample}_R1_001.fastq.gz",sample=SAMPLES)
@@ -141,12 +141,12 @@ else:
                     if [ {params.SUF} == "_001" ]; then
                         for f in {input}
                             do
-                                echo -e "$(basename $f | sed 's/_R1.*\.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1_001.fastq.gz/_R2_001.fastq.gz/g')" >> {output}
+                                echo -e "$(basename $f | sed 's/_R1.*\\.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1_001.fastq.gz/_R2_001.fastq.gz/g')" >> {output}
                             done
                     else
                         for f in {input}
                             do
-                                echo -e "$(basename $f | sed 's/_R1.*\.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1.fastq.gz/_R2.fastq.gz/g')" >> {output}
+                                echo -e "$(basename $f | sed 's/_R1.*\\.fastq.gz//')\t$f\t$(echo $f | sed 's/_R1.fastq.gz/_R2.fastq.gz/g')" >> {output}
                             done
                     fi
                     """
@@ -161,7 +161,7 @@ else:
                     echo -e "sample-id\tabsolute-filepath" > {output}
                     for f in {input}
                         do
-                            echo "$(basename $f | sed 's/_R1.*\.fastq.gz//')\t$f" >> {output}
+                            echo "$(basename $f | sed 's/_R1.*\\.fastq.gz//')\t$f" >> {output}
                         done
                     """
 
@@ -182,15 +182,16 @@ else:
                 """
         ruleorder: cutadapt > import_fastq_demux
     elif config["trimmed_fastq_path"] != None:
-        print(f"no manifest, not trimming {SEQUENCE_TYPE.lower()} reads\n")
+        print(f"No manifest provided, generating from filenames. Not trimming {SEQUENCE_TYPE.lower()} reads\n")
         SAMPLES, =glob_wildcards(config["trimmed_fastq_path"]+"/{sample}.1.fastq.gz")
         ruleorder: import_fastq_demux > cutadapt
         ruleorder: make_manifest > make_manifest_file
     elif config["preexisting_fastq_qza"] != None:
-        print(f"Demultiplexed .qza file provided.\n")
         if TO_TRIM:
+            print(f"Demultiplexed .qza file provided. Trimming.\n")
             pre_output = output_dir+config["run_name"]+"-qaqc/raw_fastq.qza"
         else:
+            print(f"Demultiplexed .qza file provided. No trimming.\n")
             pre_output = output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
             ruleorder: import_preexisting_qza > cutadapt
         rule import_preexisting_qza:
@@ -204,7 +205,7 @@ else:
                 "ln -s {input} {output}"
         SAMPLES=['nothing']
     else:
-        print(f"No reads provided.\n")
+        print(f"ERROR: No reads provided. Please provide either a manifest file, path to folder with fastq.gz files, or .qza file.\n")
 
 
 #if IS_PAIRED:

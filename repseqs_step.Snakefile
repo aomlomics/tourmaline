@@ -55,7 +55,7 @@ def get_required_inputs(config):
 
 
 rule run_denoise:
-    """Run paired end dada2"""
+    """Run denoising step"""
     input:
         get_required_inputs(config)
 
@@ -90,7 +90,7 @@ else:
 
 
 if config["asv_method"] == "dada2pe":
-    
+    print(f"Running DADA2 paired-end.\n\n")
     rule denoise_dada2_pe:
         input:
             input_fastq
@@ -132,12 +132,16 @@ if config["asv_method"] == "dada2pe":
                     /bin/rm -r temp0
                     /bin/rm -r temp0-fastq.qzv
                     exit 1
+                else
+                    echo "SUCCESS: Forward read length ($fwdresult) is more than dada2_trunc_len_f ({params.trunclenf})."
                 fi;
                 if [ "$revresult" -le {params.trunclenr} ]; then
                     echo "ERROR: Reverse read length ($revresult) is less than dada2pe_trunc_len_r ({params.trunclenr}). Fix your config file so that dada2pe_trunc_len_r is less than the read length."
                     /bin/rm -r temp0
                     /bin/rm -r temp0-fastq.qzv
                     exit 1
+                else
+                    echo "SUCCESS: Reverse read length ($revresult) is less than dada2_trunc_len_r ({params.trunclenr})."
                 fi;
                 /bin/rm -r temp0
                 /bin/rm -r temp0-fastq.qzv
@@ -164,6 +168,7 @@ if config["asv_method"] == "dada2pe":
             --verbose  
             """
 elif config["asv_method"] == "dada2se":
+    print(f"Running DADA2 single-end.\n\n")
     rule denoise_dada2_se:
         input:
             input_fastq
@@ -204,6 +209,7 @@ elif config["asv_method"] == "dada2se":
             --verbose  
             """
 elif config["asv_method"] == "deblur":
+    print(f"Running Deblur.\n\n")
     rule denoise_deblur:
         input:
             input_fastq,
@@ -248,6 +254,7 @@ else:
 
 # FILTER
 if config["to_filter"] == True:
+    print(f"Filtering table and/or sequences.\n\n")
     rule filter_sequences:
         input:
             table=temp_table,

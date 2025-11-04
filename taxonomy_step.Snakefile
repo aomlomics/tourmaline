@@ -20,10 +20,8 @@ def change_suffix(file, new_suffix):
     return file_name + new_suffix
 
 if config["sample_metadata_file"] != None:
-    print("yes metadata\n")
     use_metadata="yes"
 else:
-    print("no metadata\n")
     use_metadata="no"
 
 # set input repseqs file
@@ -44,14 +42,16 @@ else:
 # Check the suffix of config["refseqs_file"]
 fasta_suffixes = [".fna", ".fa",".fasta"]
 
-print("check out classifier")
 if config["pretrained_classifier"] != None:
     use_classifier="yes"
     #os.makedirs(config["run_name"] + "-taxonomy/", exist_ok=True)
     #os.symlink(config["pretrained_classifier"], config["run_name"]+"-taxonomy/classifier.qza")
 else:
     use_classifier="no"
-    print("No pretrained classifier provided, using refseqs and reftax files")
+    print(f"No pretrained classifier provided, using refseqs and reftax files.\n")
+    if config["refseqs_file"] == None or config["taxa_file"] == None:
+        print(f"ERROR: refseqs_file and taxa_file must be provided if pretrained_classifier is not used.\n")
+    
 
 
 ## MASTER RULE
@@ -85,9 +85,8 @@ if config["classify_method"] == "bt2-blca":
         fasta_repseqs = input_repseqs
 
 
-if config["refseqs_file"] == None or config["taxa_file"] == None:
-    print("refseqs_file and taxa_file must be provided if pretrained_classifier is not used")
-elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
+
+if has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
     output_seq = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["refseqs_file"], ".qza")
     output_tax = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["taxa_file"], ".qza")
     rule import_ref_seqs:
@@ -153,7 +152,11 @@ elif config["classify_method"] == "bt2-blca":
 elif use_classifier == "no":
     raise ValueError("refseqs_file must have one of the following extensions: .qza, .fna, .fa, .fasta")
 else:
-    print("Using pretrained classifier")
+    if config["pretrained_classifier"] != None:
+        print(f"Using pretrained classifier.\n")
+    elif config["refseqs_file"] == None or config["taxa_file"] == None:
+        print(f"ERROR: refseqs_file and taxa_file must be provided if pretrained_classifier is not used.\n")
+
 
 if config["classify_method"] == "naive-bayes":
     if use_classifier != "yes":
@@ -349,7 +352,7 @@ elif config["classify_method"] == "consensus-vsearch":
             {params.classifyparams};
             """
 else:
-    print("classify_method must be one of the following: naive-bayes, consensus-blast, consensus-vsearch")
+    print(f"ERROR: classify_method must be one of the following: naive-bayes, consensus-blast, consensus-vsearch.\n")
 
 rule export_taxa_biom:
     input:

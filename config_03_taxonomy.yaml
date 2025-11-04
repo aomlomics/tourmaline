@@ -1,4 +1,4 @@
-run_name: test_data-cb
+run_name: test_data-nb
 output_dir: "../v2-results"
 repseqs_run_name: test_data # if empty, will use run_name-repseqs/
 repseqs_qza_file: # if empty, will use run_name-repseqs/ 
@@ -8,10 +8,10 @@ sample_metadata_file: 00-data/metadata.tsv # optional for providing metadata to 
 database_name: "silva-138_1-99-515f_926r-uniq"
 refseqs_file: "00-data/silva-138_1-99-515f_926r-uniq-seq.qza" #can be a fasta file (.fa, .fna, .fasta) or a .qza file
 taxa_file: "00-data/silva-138_1-99-515f_926r-uniq-tax.qza" #can be a .qza file or a .tsv file
-classify_method: consensus-blast # naive-bayes, consensus-blast, consensus-vsearch, bt2-blca
+classify_method: naive-bayes # naive-bayes, consensus-blast, consensus-vsearch, bt2-blca
 taxa_ranks: kingdom,phylum,class,order,family,genus,species # list of ranks titles in database , e.g. ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
 collapse_taxalevel: 7 # level to collapse taxonomy for summary table
-classify_threads: 6
+classify_threads: 10
 # Assignment method specific parameters
 
 # naive-bayes

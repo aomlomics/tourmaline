@@ -44,7 +44,7 @@ for index in "${!step_array[@]}"; do
     CONFIG="${configfile_array[$index]}"
     case $step in
         qaqc)
-            echo "Running QA/QC step with configfile $CONFIG and cores $cores\n"
+            echo "Running QA/QC step with configfile $CONFIG and cores $cores"
             #trim=$(yq -r '.to_trim' $CONFIG);
             #if [[ "${trim}" = true ]]; then
                 #snakemake --use-conda -s qaqc_step.Snakefile trim_all --configfile $CONFIG --cores $cores --latency-wait 15
@@ -54,12 +54,11 @@ for index in "${!step_array[@]}"; do
             snakemake --use-conda -s qaqc_step.Snakefile qaqc_all --configfile $CONFIG --cores $cores --latency-wait 15
             ;;
         repseqs)
-            echo "Running repseqs step with configfile $CONFIG and cores $cores\n"
+            echo "Running repseqs step with configfile $CONFIG and cores $cores"
             snakemake --use-conda -s repseqs_step.Snakefile run_denoise --configfile $CONFIG --cores $cores  --latency-wait 15
             ;;
         taxonomy)
             echo "Running taxonomy step with configfile $CONFIG and cores $cores"
-            echo -n "Running taxonomy step\n"
             snakemake --use-conda -s taxonomy_step.Snakefile --configfile $CONFIG --cores $cores  --latency-wait 15
             ;;
         *)
