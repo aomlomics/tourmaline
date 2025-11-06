@@ -16,6 +16,16 @@ markdown_extensions:
       base_path: .
   - admonition
 nav:
-  - 'Tourmaline Docs' : 'index.md'
-  - 'Setup': 'tourmaline_setup.md'
+  - 'Home': 'index.md'
+  - 'Install and Setup': 'install.md'
+  - 'Configuration': 'configuration.md'
+  - 'Running': 'running.md'
+  - 'Steps':
+    - 'QA/QC': 'steps/qaqc.md'
+    - 'Repseqs (ASV Generation)': 'steps/repseqs.md'
+    - 'Taxonomy': 'steps/taxonomy.md'
+  - 'External Data': 'external_data.md'
+  - 'Metadata': 'metadata.md'
+  - 'Troubleshooting': 'troubleshooting.md'
+  - 'Citation & Legacy': 'citation_legacy.md'
 use_directory_urls: false
