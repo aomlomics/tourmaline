@@ -211,7 +211,7 @@ def main():
         "min_reads_tool": asv_tools(repseqs2,tour),
         "otu_db": "custom",
         "otu_db_custom": taxa3['database_name'],
-        "tax_asign_cat": assign_tools(taxa3,tour)[1],
+        "tax_assign_cat": assign_tools(taxa3,tour)[1],
         "otu_seq_comp_appr": assign_tools(taxa3,tour)[0],
         "tax_class_id_cutoff": taxa3['perc_identity'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
         "tax_class_query_cutoff": taxa3['query_cov'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
