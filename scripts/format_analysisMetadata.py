@@ -1,9 +1,24 @@
+"""Create an analysis metadata TSV file and gather key outputs for a
+Tourmaline run.
+
+Reads Tourmaline step configs (qaqc, repseqs, taxonomy) plus a
+Tourmaline metadata YAML, then writes {analysis_run_name}_analysisMetadata.tsv
+and copies selected artifacts (taxonomy asv_taxa_features.tsv, repseqs
+table.tsv) into one output directory.
+
+Usage (common):
+  python tourmaline/scripts/format_analysisMetadata.py \
+    -w WORKDIR -q QAQC_RUN -r REPSEQS_RUN -t TAX_RUN \
+    -p PROJECT_ID -O OUT_DIR [-a ASSAY] [-A ANALYSIS] [-T META_YAML]
+"""
+
 import argparse
 import yaml
 import pandas as pd
 import os
 import glob
 import shutil
+from datetime import datetime
 
 ## ADD check for repeated run names, place to add project_id, assay_name, user provided terms
 
@@ -137,12 +152,12 @@ def assign_collapse(taxa):
 def main():
     parser = argparse.ArgumentParser(description="Generate a single TSV file from multiple YAML files.")
     parser.add_argument('-w','--working_dir', required=True, help='Working directory containing step folders')
-    parser.add_argument('-s','--qaqc_run_name', required=True, help='Run name for qaqc step')
+    parser.add_argument('-q','--qaqc_run_name', required=True, help='Run name for qaqc step')
     parser.add_argument('-r','--repseqs_run_name', required=True, help='Run name for repseqs step')
     parser.add_argument('-t','--taxonomy_run_name', required=True, help='Run name for taxonomy step')
     parser.add_argument('-p','--project_id', required=True, help='Value for project_id')
-    parser.add_argument('-a','--assay_name', help='Value for assay_name, otherwise use value in qaqc config')
-    parser.add_argument('-A','--analysis_run_name', help='Value for analysis_run_name, otherwise use taxonomy run name')
+    parser.add_argument('-a','--assay_name', help='Value for assay_name, otherwise uses value in qaqc config')
+    parser.add_argument('-A','--analysis_run_name', help='Value for analysis_run_name, otherwise uses taxonomy run name')
     parser.add_argument('-T','--tourmaline_metadata',default="./00-data/tourmaline_metadata.yaml", help='Path to tourmaline metadata')
     parser.add_argument('-O','--output_folder', required=True, help='Output folder path where files will be saved')
     #parser.add_argument('--checklist', required=True, help='Path to the CSV file with metadata terms')
@@ -181,8 +196,9 @@ def main():
     taxa3 = load_yaml(taxonomy_config_path)
     tour = load_yaml(args.tourmaline_metadata)
     project_id = args.project_id
-    assay_name = args.assay_name if args.assay_name else qaqc1['amplicon_name']
+    assay_name = args.assay_name if args.assay_name else qaqc1['assay_name']
     analysis_run_name = args.analysis_run_name if args.analysis_run_name else args.taxonomy_run_name
+    analysis_run_date = datetime.now().strftime("%Y-%m-%d")
 
     # MAPPINGS
     mappings = {
@@ -190,6 +206,7 @@ def main():
         'project_id': project_id,
         'assay_name': assay_name,
         'analysis_run_name': analysis_run_name,
+        'analysis_run_date': analysis_run_date,
         "sop_bioinformatics": tour['sop_bioinformatics'],
         "trim_method": trim_paramF(qaqc1,repseqs2,tour)[0],
         "trim_param": trim_paramF(qaqc1,repseqs2,tour)[1],
@@ -266,7 +283,7 @@ def main():
     # Save the combined data to the output TSV file
     try:
         # Generate output filename with analysis_run_name prefix
-        metadata_filename = f"{analysis_run_name}_metadata.tsv"
+        metadata_filename = f"{analysis_run_name}_analysisMetadata.tsv"
         metadata_path = os.path.join(args.output_folder, metadata_filename)
         dict_to_tsv(mappings, metadata_path)
         print(f"Successfully generated metadata file: {metadata_path}")
