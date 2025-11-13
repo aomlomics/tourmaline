@@ -25,7 +25,7 @@ nav:
     - 'Repseqs (ASV Generation)': 'steps/repseqs.md'
     - 'Taxonomy': 'steps/taxonomy.md'
   - 'External Data': 'external_data.md'
-  - 'Metadata': 'metadata.md'
+  - 'Analysis Metadata': 'metadata.md'
   - 'Troubleshooting': 'troubleshooting.md'
   - 'Citation & Legacy': 'citation_legacy.md'
 use_directory_urls: false
