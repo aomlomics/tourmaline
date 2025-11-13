@@ -1,111 +1,185 @@
 ## Configuration
 
-Tourmaline 2 uses three config files, one per step. Example names below reflect defaults; any filename is acceptable.
+Tourmaline 2 uses three config files, one per step. Example names below reflect defaults; any filename is acceptable. Templates for each file are in the Tourmaline folder.
 
-### 1. QA/QC configuration (config_01_qaqc.yaml)
+### 1. QA/QC configuration (Template: config_01_qaqc.yaml)
 
-Key parameters:
+The qaqc config defines how Tourmaline imports, trims, and summarizes raw reads.
+
+**Core run settings (required)**
 
 ```yaml
-run_name: your_run
-output_dir: /absolute/path/to/results
-raw_fastq_path: /abs/path/to/fastqs  # or use sample_manifest_file or trimmed_fastq_path
-paired_end: true
-to_trim: false
+run_name: my_run                 # unique identifier; used in output folders
+output_dir: /path/to/results     # absolute or relative directory for outputs
+paired_end: true                 # true for paired-end, false for single-end data
+to_trim: true                    # enable primer trimming with Cutadapt
+to_merge: false                  # enable vsearch merge (paired-end only)
+to_filter: false                # enable feature filtering steps
+assay_name: Bacteria-16S-V4V5-Parada  # for metadata reporting
+```
+Select assay name based on the [NOAA Omics metabarcoding assays](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/blob/main/assays.tsv) controlled vocabulary. If your assay is not available, please create an [issue](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/issues).
 
-# Trimming (if to_trim)
-fwd_primer: ATCG...
-rev_primer: ATCG...
-discard_untrimmed: false
-minimum_length: 100
+**Input data sources (choose one)**
+
+```yaml
+raw_fastq_path: /abs/path/to/raw_fastqs       # directory of raw FASTQ(.gz)
+trimmed_fastq_path: /abs/path/to/trimmed      # directory of already trimmed FASTQs
+sample_manifest_file: 00-data/manifest.tsv    # QIIME 2 manifest (TSV or CSV)
+preexisting_fastq_qza: 00-data/demux.qza      # existing demuxed artifact
 ```
 
-Input options (choose one):
+Provide only the fields relevant to your data source; leave others blank. Manifest formats are detailed in [steps/qaqc.md](steps/qaqc.md).
+
+**Primer trimming parameters (required when `to_trim: true`)**
 
 ```yaml
-raw_fastq_path: /abs/path/to/fastqs
-trimmed_fastq_path: /abs/path/to/trimmed
-sample_manifest_file: 00-data/manifest_pe.csv  # relative path allowed
+fwd_primer: GTGYCAGCMGCCGCGGTAA      # IUPAC supported
+rev_primer: GGACTACNVGGGTWTCTAAT
+discard_untrimmed: false             # discard reads without primer match
+minimum_length: 50                   # post-trimming minimum length (bp)
+trimming_threads: 5                  # threads for Cutadapt
 ```
 
-Manifest formats are documented in [steps/qaqc.md](steps/qaqc.md).
-
-### 2. Repseqs configuration (config_02_repseqs.yaml)
-
-Key parameters:
+**Merging + compute options (required when `to_merge: true`)**
 
 ```yaml
-run_name: your_run
-output_dir: /absolute/path/to/results
-asv_method: dada2pe  # one of: dada2pe, dada2se, deblur
+maxdiffs: 20                         # vsearch merge mismatches
+merge_stagger: --p-allowmergestagger # optional vsearch flag
+```
 
-# DADA2 (if dada2*)
-dada2_trunc_len_f: 0
-dada2pe_trunc_len_r: 0
-dada2_trim_left_f: 0
-dada2pe_trim_left_r: 0
+### 2. Repseqs configuration (Template: config_02_repseqs.yaml)
 
-# Filtering (optional)
-to_filter: false
+Controls ASV generation, filtering, and optional diversity plots.
+
+**Core run settings (required)**
+
+```yaml
+run_name: my_run
+output_dir: /path/to/results
+asv_method: dada2pe          # one of: dada2pe | dada2se | deblur
+asv_threads: 5               # threads passed to denoisers
+```
+
+**Input data sources (choose one, otherwise will default to** \[output_dir\]/\[my_run-qaqc\])
+
+```yaml
+qaqc_run_name: my_qaqc_run         # reuse QA/QC outputs from another run
+fastq_qza_file: /abs/path/demux.qza  # external demultiplexed sequences
+```
+
+If neither is supplied, the workflow expects demultiplexed reads from the QA/QC step with the same `run_name`.
+
+**Metadata + diversity options**
+
+```yaml
+sample_metadata_file: 00-data/metadata.tsv   # optional metadata for summaries/diversity
+plot_diversity: true                         # produce alpha/core metrics outputs
+alpha_max_depth: 500                         # required when plot_diversity is true
+core_sampling_depth: 500                     # required when plot_diversity is true
+```
+
+**DADA2 parameters (required when `asv_method` starts with dada2)**
+
+```yaml
+dada2_trunc_len_f: 245        # forward truncation length
+dada2pe_trunc_len_r: 190      # reverse truncation (paired-end only)
+dada2_trim_left_f: 0          # forward trim from left
+dada2pe_trim_left_r: 0        # reverse trim from left
+dada2_max_ee_f: 2             # forward max expected errors
+dada2pe_max_ee_r: 2           # reverse max expected errors
+dada2_trunc_q: 2              # truncate at quality score
+dada2_pooling_method: pseudo  # independent | pseudo | pooled
+dada2_chimera_method: consensus
+dada2_min_fold_parent_over_abundance: 1
+dada2_n_reads_learn: 1000000
+dada2_hashed_feature_ids: --p-hashed-feature-ids  # optional
+```
+
+**Deblur parameters (required when `asv_method: deblur`)**
+
+```yaml
+deblur_trim_length: 150       # final sequence length (bp)
+deblur_trim_left: 0
+deblur_mean_error: 0.005
+deblur_min_reads: 2
+deblur_min_size: 2
+deblur_indel_max: 3
+reference_seqs: 00-data/ref.qza  # required reference set
+```
+
+**Post-denoising filtering (required if `to_filter` is `True`)**
+
+```yaml
 repseq_min_length: 0
-repseq_max_length: 100000
-repseq_min_abundance: 0.0
-repseq_min_prevalence: 0.0
+repseq_max_length: 0
+repseq_min_abundance: 0
+repseq_min_prevalence: 0
+repseq_min_frequency: 0
+repseq_min_samples: 0
 ```
 
-Inputs can come from the QA/QC step by matching `run_name`/`output_dir`, or you can provide external `.qza` via:
+### 3. Taxonomy configuration (Template: config_03_taxonomy.yaml)
+
+Defines how representative sequences are assigned taxonomy and summarized.
+
+**Core run settings (required)**
 
 ```yaml
-sample_run_name: qa_run_name  # to reuse a different qaqc run name
-fastq_qza_file: /abs/path/to/fastq.qza  # external input
-```
-
-### 3. Taxonomy configuration (config_03_taxonomy.yaml)
-
-Key parameters:
-
-```yaml
-run_name: your_run
-output_dir: /absolute/path/to/results
-classify_method: naive-bayes  # or consensus-blast, consensus-vsearch, bt2-blca
-collapse_taxalevel: 0
-classify_threads: 4
-```
-
-Repseqs inputs can come from the Repseqs step or be provided externally:
-
-```yaml
-repseqs_run_name: repseqs_run  # to reuse a different repseqs run
-repseqs_qza_file: /abs/path/to/repseqs.qza
-table_qza_file: /abs/path/to/table.qza
-```
-
-Reference database parameters:
-
-```yaml
-database_name: PR2
-refseqs_file: 00-data/refseqs.fna
-taxa_file: 00-data/reftax.tsv
-pretrained_classifier: /abs/path/to/classifier.qza  # optional for naive-bayes
-bowtie_database: /abs/path/to/bt2/index/  # optional for bt2-blca
+run_name: my_run
+output_dir: /path/to/results
+classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
+collapse_taxalevel: 7             # taxonomy level for collapsed table
+classify_threads: 10
 ```
 
-Method-specific thresholds (examples):
+**Input data sources (choose one)**
 
 ```yaml
-# naive-bayes
-skl_confidence: 0.7
+repseqs_run_name: my_repseqs_run          # reuse outputs from another run
+repseqs_qza_file: /abs/path/repseqs.qza   # external representative sequences
+table_qza_file: /abs/path/table.qza       # external feature table
+```
 
-# consensus methods
+If no external inputs are supplied, the workflow uses artifacts produced by the Repseqs step with matching `run_name`.
+
+**Reference database parameters**
+
+```yaml
+database_name: silva-138_1
+refseqs_file: 00-data/silva-seqs.qza    # required unless using pretrained classifier
+taxa_file: 00-data/silva-tax.qza        # required unless using pretrained classifier
+sample_metadata_file: 00-data/metadata.tsv  # optional for barplots
+```
+
+**Naive Bayes options**
+
+```yaml
+pretrained_classifier: /abs/path/classifier.qza  # optional, overrides refseqs/taxa files
+skl_confidence: 0.7                              # confidence threshold
+```
+
+**Consensus BLAST/VSEARCH options**
+
+```yaml
 perc_identity: 0.8
 query_cov: 0.8
 min_consensus: 0.51
+```
 
-# bt2-blca
+**BT2-BLCA options**
+
+```yaml
+bowtie_database: /abs/path/bowtie2_index/   # optional; auto-built if omitted
 confidence_thres: 0.8
 ```
 
-See [Running](running.md) for multi-step invocation and [External Data](external_data.md) for conversions.
+**Additional classifier flags**
+
+```yaml
+classify_params: --verbose   # appended to the chosen classifier command
+```
+
+See [Running](running.md) for multi-step invocation and [External Data](external_data.md) for conversions and artifact preparation tips.
 
 

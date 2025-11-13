@@ -1,6 +1,6 @@
 ## External Data
 
-Tourmaline 2 can start steps from externally generated inputs.
+Tourmaline 2 can start steps from externally generated inputs when provided as QIIME 2 artifacts with the expected types.
 
 ### Repseqs step: external demultiplexed sequences
 
@@ -11,7 +11,7 @@ Provide a QIIME 2 artifact of demultiplexed sequences:
 fastq_qza_file: /abs/path/to/fastq.qza
 ```
 
-Or reuse QA/QC outputs by specifying `sample_run_name`.
+Or reuse QA/QC outputs by specifying `qaqc_run_name`.
 
 ### Taxonomy step: external repseqs and table
 

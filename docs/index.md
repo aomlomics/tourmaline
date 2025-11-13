@@ -2,7 +2,9 @@
 
 Tourmaline 2 is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline 2 manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
-**Tourmaline 2 uses [QIIME 2 2024.10](https://docs.qiime2.org/2024.10/install/) amplicon workflow.** To use the Legacy V1 version of Tourmaline, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository.
+**Tourmaline 2 uses [QIIME 2 2024.10](https://docs.qiime2.org/2024.10/install/) amplicon workflow.**  
+
+To use the Legacy V1 version of Tourmaline, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository.
 
 ## Why should I use Tourmaline?
 
@@ -11,16 +13,15 @@ Tourmaline has several features that enhance usability and interoperability:
 * **Portability.** Native support for Linux and macOS in addition to Docker containers.
 * **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) and [Deblur](https://github.com/biocore/deblur) packages, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
 * **Snakemake.** Managing the workflow with Snakemake provides several benefits: 
-  - **Configuration file** contains all parameters in one file, so you can see what your workflow is doing and make changes for a subsequent run.
-  - **Directory structure** is the same for every Tourmaline run, so you always know where your outputs are.
+  - **Configuration files** contains all parameters for each step in a separate file, so you can see what your workflow is doing, make changes for a subsequent run, and improve reproducibility.
   - **On-demand commands** mean that only the commands required for output files not yet generated are run, saving time and computation when re-running part of a workflow.
-* **Parameter optimization.** The configuration file and standard directory structure make it simple to test and compare different parameter sets to optimize your workflow. Included code helps choose read truncation parameters and identify outliers in representative sequences (ASVs).
+* **Parameter optimization.** The configuration files, custom run naming, and standard directory structure make it simple to test and compare different parameter sets to optimize your workflow. 
 * **Visualizations and reports.** Every Tourmaline run produces visualizations and summaries with links to web-viewable QIIME 2 visualization files.
 * **Downstream analysis.** Analyze the output of single or multiple Tourmaline runs programmatically, with qiime2R in R or the QIIME 2 Artifact API in Python, using the provided R and Python notebooks or your own code.
 
-## What QIIME 2 options does Tourmaline support?
+## What options does Tourmaline support?
 
-If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in the Snakefiles, and typical workflows are shown as directed acyclic graphs. The main analysis features and options supported by Tourmaline are as follows:
+If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in the Snakefiles. Tourmaline also supports taxonomic assignment by Bayesian Least Common Ancestor. The main analysis features and options supported by Tourmaline are as follows:
 
 * FASTQ sequence import using a manifest file, a folder of fastq.gz files, or use your pre-imported FASTQ .qza file
 * Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
@@ -58,6 +59,7 @@ Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding da
 * Processes raw fastq files (paired-end or single-end data).
 * Provides sequence quality plots for demultiplexed raw and/or trimmed reads.
 * Optionally trims primer sequences from raw reads.
+* Optionally merges paired end reads, such as for deblur
 * Creates a QIIME 2 sequence artifact.
 
 See [QA/QC Step](steps/qaqc.md) for details.
@@ -65,9 +67,10 @@ See [QA/QC Step](steps/qaqc.md) for details.
 ### Step 2. Representative sequences (denoising and ASV generation)
 
 * Called "repseqs" in Tourmaline 2 code.
-* Generates ASVs using the specified method (DADA2 or Deblur).
-* Optional filtering based on length, abundance, and prevalence.
+* Generates ASVs using the specified method (DADA2 paire-end or single-end, or Deblur).
 * Produces feature table and representative sequences.
+* Optional filtering based on length, abundance, and prevalence.
+* Optional diversity plots 
 
 See [Repseqs Step](steps/repseqs.md) for details.
 
@@ -88,47 +91,8 @@ See [Taxonomy Step](steps/taxonomy.md) for details.
 * Creates a file with metadata about the analysis using FAIR eDNA terms.
 * File can be read into the [NOAA Ocean DNA Explorer](https://www.ngi.msstate.edu/node).
 
-See [Metadata](metadata.md) for details.
+See [Analysis Metadata](metadata.md) for details.
 
-## Quick Start
-
-Tourmaline 2 provides a modular workflow for processing amplicon sequencing data. The pipeline consists of three main steps that can be run together or independently:
-
-1. **QA/QC** - Process raw FASTQ files, optional primer trimming, generate QIIME 2 artifact
-2. **Repseqs** - Generate ASVs using DADA2 or Deblur, optional filtering, produce feature table and representative sequences
-3. **Taxonomy** - Assign taxonomy using one of four methods, generate visualizations
-
-### Getting Started
-
-1. **Install and Setup**: See [Install and Setup](install.md) for requirements and environment setup.
-   - Install QIIME 2 (2024.10) amplicon workflow
-   - Create Snakemake conda environment
-   - Clone Tourmaline repository
-
-2. **Configuration**: See [Configuration](configuration.md) for setting up config files for each step.
-   - Create config files for each step you plan to run
-   - Configure parameters for your data type and analysis needs
-
-3. **Running**: See [Running](running.md) for how to use `tourmaline.sh` and examples.
-   - Run single steps or all steps together
-   - Use the `tourmaline.sh` script for easy execution
-
-### Example Workflow
-
-```bash
-# Activate environment
-conda activate snakemake-tour2
-
-# Run all steps
-./tourmaline.sh -s qaqc,repseqs,taxonomy \
-  -c config_01_qaqc.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml \
-  -n 6
-
-# Or run a single step
-./tourmaline.sh -s taxonomy -c config_03_taxonomy.yaml -n 6
-```
-
-For detailed instructions, see the [Install and Setup](install.md), [Configuration](configuration.md), and [Running](running.md) pages.
 
 ## Documentation Structure
 
@@ -136,11 +100,11 @@ For detailed instructions, see the [Install and Setup](install.md), [Configurati
 - **[Configuration](configuration.md)**: Config file parameters for all three steps
 - **[Running](running.md)**: Using `tourmaline.sh` script and examples
 - **[Steps](steps/qaqc.md)**: Detailed documentation for each pipeline step
-  - [QA/QC](steps/qaqc.md): Sequence quality control and trimming
-  - [Repseqs](steps/repseqs.md): ASV generation with DADA2 or Deblur
-  - [Taxonomy](steps/taxonomy.md): Taxonomic assignment methods
+    - [QA/QC](steps/qaqc.md): Sequence quality control and trimming
+    - [Repseqs](steps/repseqs.md): ASV generation with DADA2 or Deblur
+    - [Taxonomy](steps/taxonomy.md): Taxonomic assignment methods
 - **[External Data](external_data.md)**: Providing externally-generated inputs and conversions
-- **[Metadata](metadata.md)**: Generating bioinformatics metadata
+- **[Analysis Metadata](metadata.md)**: Generating bioinformatics metadata
 - **[Troubleshooting](troubleshooting.md)**: Common issues and tips
 - **[Citation & Legacy](citation_legacy.md)**: How to cite Tourmaline and v1 resources
 

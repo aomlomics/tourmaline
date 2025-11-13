@@ -30,6 +30,7 @@ to_merge: False
 
 ## --- ASSAY AND PRIMER DETAILS ---
 # Required when reporting assay name (reference: NOAA Omics assay catalog).
+# https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/blob/main/assays.tsv
 assay_name: Bacteria-16S-V4V5-Parada
 # Required when trimming: forward primer sequence (IUPAC supported).
 fwd_primer: GTGYCAGCMGCCGCGGTAA
