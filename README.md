@@ -423,7 +423,7 @@ options:
   -T TOURMALINE_METADATA, --tourmaline_metadata TOURMALINE_METADATA
                         Path to tourmaline metadata
   -o OUTPUT, --output OUTPUT
-                        Path to the output file
+                        Path to the output folder
             
 ```
 
