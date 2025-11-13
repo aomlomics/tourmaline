@@ -1,8 +1,10 @@
-## STILL NEED TO ADD some RULES FOR FILTERING SEQUENCES
+## Tourmaline repseqs Snakemake workflow.
+## Invoked via `tourmaline.sh --step repseqs`; denoises reads, optionally filters
+## features, optionally runs diversity statistics, and exports summaries/visualizations for representative sequences.
 
 import shutil
 
-## Snakefile for repseqs step of Tourmaline V2 pipeline
+## STILL NEED TO ADD some RULES FOR FILTERING SEQUENCES
 output_dir = config["output_dir"]+"/"
 
 # Copy config file to output directory
@@ -11,9 +13,9 @@ os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
 shutil.copy(workflow.configfiles[0], config_output_path)
 
 # set run name
-if config["sample_run_name"] != None:
-    sample_run_name=config["sample_run_name"]
-    input_fastq=output_dir+sample_run_name+"-qaqc/"+sample_run_name+"_fastq.qza"
+if config["qaqc_run_name"] != None:
+    qaqc_run_name=config["qaqc_run_name"]
+    input_fastq=output_dir+qaqc_run_name+"-qaqc/"+qaqc_run_name+"_fastq.qza"
 elif config["fastq_qza_file"] != None:
     input_fastq=config["fastq_qza_file"]
 else:
@@ -54,6 +56,7 @@ def get_required_inputs(config):
     return required
 
 
+# Aggregate rule: ensures denoising outputs plus requested visualizations exist.
 rule run_denoise:
     """Run denoising step"""
     input:
@@ -74,6 +77,7 @@ if config["sample_metadata_file"] != None:
         shell: "cp {input} {output}" 
 else:
     use_metadata="no"
+    # Generate minimal metadata when none is supplied by the user.
     rule autogenerate_metadata:
         input:
             input_fastq
@@ -91,6 +95,7 @@ else:
 
 if config["asv_method"] == "dada2pe":
     print(f"Running DADA2 paired-end.\n\n")
+    # Run paired-end DADA2 denoising with validation against read lengths.
     rule denoise_dada2_pe:
         input:
             input_fastq
@@ -169,6 +174,7 @@ if config["asv_method"] == "dada2pe":
             """
 elif config["asv_method"] == "dada2se":
     print(f"Running DADA2 single-end.\n\n")
+    # Run single-end DADA2 denoising using configured trimming and error params.
     rule denoise_dada2_se:
         input:
             input_fastq
@@ -210,6 +216,7 @@ elif config["asv_method"] == "dada2se":
             """
 elif config["asv_method"] == "deblur":
     print(f"Running Deblur.\n\n")
+    # Run Deblur workflow leveraging reference sequences for positive filtering.
     rule denoise_deblur:
         input:
             input_fastq,
@@ -255,6 +262,7 @@ else:
 # FILTER
 if config["to_filter"] == True:
     print(f"Filtering table and/or sequences.\n\n")
+    # Apply optional post-denoising length, abundance, and prevalence filters.
     rule filter_sequences:
         input:
             table=temp_table,
@@ -309,6 +317,7 @@ if config["to_filter"] == True:
 
 # RULES: SUMMARIZE FEATURE TABLE -----------------------------------------------
 
+# Summarize feature table statistics and optional sample metadata.
 rule summarize_feature_table:
     input:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
@@ -335,6 +344,7 @@ rule summarize_feature_table:
 # Summarize denoising stats (dada2 or deblur)
 if config["asv_method"] in ["dada2pe", "dada2se"]:
     stats_tsv = output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.tsv"
+    # Visualize DADA2 denoising stats as a QIIME2 tabulation.
     rule summarize_dada2_repseqs:
         input:
             stats=output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qza"
@@ -345,6 +355,7 @@ if config["asv_method"] in ["dada2pe", "dada2se"]:
         shell:
             "qiime metadata tabulate --m-input-file {input.stats} --o-visualization {output}"
     
+    # Export DADA2 stats visualization to a TSV for downstream inspection.
     rule export_dada2_summary_to_tsv:
         input:
             output_dir+config["run_name"]+"-repseqs/stats/dada2_stats.qzv"
@@ -359,6 +370,7 @@ if config["asv_method"] in ["dada2pe", "dada2se"]:
     
 elif config["asv_method"] == "deblur":
     stats_tsv = output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.tsv"
+    # Visualize Deblur stats in QIIME2.
     rule summarize_deblur_repseqs:
         input:
             stats=output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.qza"
@@ -369,6 +381,7 @@ elif config["asv_method"] == "deblur":
         shell:
             "qiime deblur visualize-stats --i-deblur-stats {input.stats} --o-visualization {output}"
     
+    # Export Deblur statistics to TSV format.
     rule export_deblur_summary_to_tsv:
         input:
             output_dir+config["run_name"]+"-repseqs/stats/deblur_stats.qza"
@@ -385,6 +398,7 @@ else:
     raise ValueError("Invalid ASV method specified for stats export")
 
 
+# Convert feature table to BIOM format for downstream utilities.
 rule export_table_to_biom:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza"
@@ -398,6 +412,7 @@ rule export_table_to_biom:
         "--output-path {output} "
         "--output-format BIOMV210Format"
 
+# Summarize sample depths from BIOM table.
 rule summarize_biom_samples:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
@@ -412,6 +427,7 @@ rule summarize_biom_samples:
         "cat {output} | sed 's/observation/feature/g' | sed 's/.000$//' > temp; "
         "mv temp {output}"
 
+# Summarize feature counts from BIOM table.
 rule summarize_biom_features:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
@@ -428,6 +444,7 @@ rule summarize_biom_features:
         "cat {output} | sed 's/observation/feature/g' | sed 's|Counts/sample|Counts/feature|g' | sed 's/.000$//' > temp; "
         "mv temp {output}"
 
+# Render representative sequences to an interactive QIIME2 visualization.
 rule visualize_repseqs:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
@@ -441,6 +458,7 @@ rule visualize_repseqs:
         "--i-data {input} "
         "--o-visualization {output}"
 
+# Export representative sequences to FASTA for external analysis.
 rule export_repseqs_to_fasta:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.qza"
@@ -455,6 +473,7 @@ rule export_repseqs_to_fasta:
         "--output-path {output} "
         "--output-format DNAFASTAFormat"
 
+# Calculate sequence length distribution for representative sequences.
 rule repseqs_lengths:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-repseqs.fasta"
@@ -466,6 +485,7 @@ rule repseqs_lengths:
     shell:
         "perl scripts/fastaLengths.pl {input} > {output}"
 
+# Summarize representative sequence length statistics.
 rule repseqs_lengths_describe:
     input:
         output_dir+config["run_name"]+"-repseqs/stats/repseqs_lengths.tsv"
@@ -477,6 +497,7 @@ rule repseqs_lengths_describe:
     shell:
         "python scripts/repseqs_lengths_describe.py {input} {output}"
 
+# Export feature table to TSV with Tourmaline-friendly header.
 rule export_biom_tsv:
     input:
         output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.biom"
@@ -492,6 +513,7 @@ rule export_biom_tsv:
         "&& cat TEMP.tsv | tail -n +2 | sed 's/^#OTU ID/featureid/' > {output} "
         "&& /bin/rm TEMP.tsv"
 
+# Generate alpha-rarefaction curves (optional).
 rule diversity_alpha_rarefaction:
     input:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",
@@ -523,6 +545,7 @@ rule diversity_alpha_rarefaction:
             --o-visualization {output}
         fi
         """
+# Run QIIME2 core-metrics workflow to produce rarefied tables and ordinations (optional).
 rule diversity_core_metrics:
     input:
         table=output_dir+config["run_name"]+"-repseqs/"+config["run_name"]+"-table.qza",

@@ -1,3 +1,21 @@
+"""Merge repseq and taxonomy QIIME artifacts into a TSV export for Ocean DNA Explorer (ODE) and edna2obis.
+
+Runs `qiime metadata merge` on supplied repseqs and taxonomy artifacts, exports
+their contents, renames key fields to match ODE conventions
+(`featureid`, `dna_sequence`, `taxonomy`), expands comma-separated taxonomy
+into rank columns, and writes a clean TSV suitable for downstream FAIR
+reporting.
+
+Run by Tourmaline during the taxonomy step.
+
+Usage (common):
+  python tourmaline/scripts/create_asv_seq_taxa_output.py \
+    --input_repseqs repseqs.qza \
+    --input_taxonomy taxonomy.qza \
+    --output asv_seq_taxa.tsv \
+    --taxaranks kingdom,phylum,class,order,family,genus,species
+"""
+
 import argparse
 import pandas as pd
 import numpy as np

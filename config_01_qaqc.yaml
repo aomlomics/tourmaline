@@ -1,28 +1,53 @@
+## Configuration for the Tourmaline QA/QC step.
+## `tourmaline.sh --step qaqc` hands these parameters to `qaqc_step.Snakefile`,
+## which imports FASTQs, optionally trims primers, merges reads, and summarizes
+## demultiplexing quality metrics for the run.
+
+## --- CORE RUN SETTINGS ---
+# Required: unique name for this QA/QC run; used in output paths.
 run_name: test_data
+# Required: relative or absolute directory where step outputs are written.
 output_dir: "../v2-results"
-raw_fastq_path: #00-data/fastq/ #path to raw fastq files 
+
+## --- INPUT DATA SOURCES (choose one approach) ---
+# Optional: directory containing raw FASTQ(.gz) files; leave blank if using manifest or preexisting_qza.
+raw_fastq_path: #00-data/fastq/
+# Optional: directory of already trimmed FASTQs (suffix `_R[1,2].fastq.gz`); leave blank unless skipping trimming.
 trimmed_fastq_path: #trimmed files must have suffix _R[1,2].fastq.gz
-sample_manifest_file: 00-data/manifest_pe.csv # if provided and trimming, then import to raw_fastq.qza, then trim into a new trimmed_fastq.qza. 
-preexisting_fastq_qza: #00-data/my_fastq.qza # Optional: path to a pre-existing fastq.qza file
-#if provided and not trimming, just import to fastq.qza
+# Optional: sample manifest CSV/TSV for QIIME import; provide when demultiplexing from manifest.
+sample_manifest_file: 00-data/manifest_pe.csv
+# Optional: existing demultiplexed FASTQ artifact (.qza); use when inputs already imported.
+preexisting_fastq_qza: #00-data/my_fastq.qza
+# If preexisting_fastq_qza is provided and trimming is disabled, import directly to fastq.qza.
 
-paired_end: True #Boolean
-to_trim: True #Boolean
-to_merge: False #Boolean
+## --- RUN MODE FLAGS ---
+# Required: True for paired-end reads; False for single-end.
+paired_end: True
+# Required: enable Cutadapt trimming when primers need removal.
+to_trim: True
+# Optional: run read merging with vsearch; set True for overlapping paired-end reads.
+to_merge: False
 
-# Get assay name from: https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/blob/main/assays.tsv
-assay_name: Bacteria-16S-V4V5-Parada 
-# cutadapt parameters
+## --- ASSAY AND PRIMER DETAILS ---
+# Required when reporting assay name (reference: NOAA Omics assay catalog).
+assay_name: Bacteria-16S-V4V5-Parada
+# Required when trimming: forward primer sequence (IUPAC supported).
 fwd_primer: GTGYCAGCMGCCGCGGTAA
+# Required when trimming: reverse primer sequence (IUPAC supported).
 rev_primer: GGACTACNVGGGTWTCTAAT
+# Optional: set True to discard reads lacking primer matches.
 discard_untrimmed: False
+# Optional: minimum read length (bp) retained after trimming.
 minimum_length: 50
 
-# vsearch merge parameters, if `to_merge` is True
-maxdiffs: 20 #default is 10
-merge_stagger: --p-allowmergestagger # default is --p-no-allowmergestagger
+## --- MERGING PARAMETERS (used when `to_merge` is True) ---
+# Optional: maximum mismatches allowed during vsearch merging.
+maxdiffs: 20
+# Optional: vsearch merge flag; use `--p-allowmergestagger` for staggered overlaps.
+merge_stagger: --p-allowmergestagger
 
-# threads
+## --- COMPUTE AND QUALITY SETTINGS ---
+# Optional: number of threads for trimming-related commands.
 trimming_threads: 5
-#quality parameters
-seq_quality_cutoff: 0.85 # not used  yet
+# Optional: quality cutoff passed to downstream QA utilities (currently informational).
+seq_quality_cutoff: 0.85 #not used yet

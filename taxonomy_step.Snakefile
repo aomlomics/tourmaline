@@ -1,4 +1,6 @@
-## Snakefile for taxonomy step of Tourmaline V2 pipeline
+## Tourmaline taxonomy Snakemake workflow.
+## Invoked via `tourmaline.sh --step taxonomy`; classifies representative
+## sequences, exports per-feature taxonomy tables, and produces visual summaries.
 import os
 import shutil
 
@@ -55,6 +57,7 @@ else:
 
 
 ## MASTER RULE
+# Aggregate rule: ensures completion of taxonomy tables and visual outputs.
 rule run_taxonomy:
     """Run taxonomy"""
     input:
@@ -68,6 +71,7 @@ rule run_taxonomy:
 if config["classify_method"] == "bt2-blca":
     if has_fa_suffix(input_repseqs, [".qza"]):
         fasta_repseqs=output_dir+config["run_name"]+"-taxonomy/"+change_suffix(input_repseqs, ".fasta")
+        # Export repseqs to FASTA for BLCA bowtie2 workflow.
         rule export_repseqs_to_fasta:
             input:
                 input_repseqs
@@ -89,6 +93,7 @@ if config["classify_method"] == "bt2-blca":
 if has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
     output_seq = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["refseqs_file"], ".qza")
     output_tax = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["taxa_file"], ".qza")
+    # Import reference sequences into QIIME2 artifact when FASTA inputs supplied.
     rule import_ref_seqs:
         input:
             config["refseqs_file"]
@@ -102,6 +107,7 @@ if has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_me
             "--input-path {input} "
             "--output-path {output}"
         
+    # Import reference taxonomy table into QIIME2 artifact from TSV.
     rule import_ref_tax:
         input:
             config["taxa_file"]
@@ -122,6 +128,7 @@ elif config["classify_method"] == "bt2-blca":
     if has_fa_suffix(config["refseqs_file"], [".qza"]):
         output_seq=output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["refseqs_file"], ".fasta")
         output_tax = output_dir+config["run_name"]+"-taxonomy/"+change_suffix(config["taxa_file"], ".txt")
+        # Export reference sequences for BLCA's bowtie2 requirements.
         rule export_refseqs_to_fasta:
             input:
                 config["refseqs_file"]
@@ -134,6 +141,7 @@ elif config["classify_method"] == "bt2-blca":
                 "--input-path {input} "
                 "--output-path {output} "
                 "--output-format DNAFASTAFormat"
+        # Export taxonomy reference to TSV for BLCA post-processing.
         rule export_ref_taxonomy_to_tsv:
             input:
                 config["taxa_file"]
@@ -160,6 +168,7 @@ else:
 
 if config["classify_method"] == "naive-bayes":
     if use_classifier != "yes":
+        # Train a naive Bayes classifier from provided reference sequences/taxonomy.
         rule fit_classifier:
             input:
                 refseq=output_seq,
@@ -175,6 +184,7 @@ if config["classify_method"] == "naive-bayes":
                 "--i-reference-taxonomy {input.reftax} "
                 "--o-classifier {output};"
     else:
+        # Symlink an existing pretrained classifier into run directory.
         rule import_classifier:
             input:
                 config["pretrained_classifier"]
@@ -184,6 +194,7 @@ if config["classify_method"] == "naive-bayes":
                 "qiime2-amplicon-2024.10"
             shell:
                 "ln -s {input} {output}" 
+    # Classify sequences using the naive Bayes classifier.
     rule feature_classifier_nb:
         input:
             repseqs=input_repseqs,
@@ -211,6 +222,7 @@ elif config["classify_method"] == "bt2-blca":
     ruleorder: bt2 > export_taxonomy_to_tsv
     bt2_index_path = output_dir+config["run_name"] + "-taxonomy/bowtie2_index/bowtie2_index.1.bt2"
     if not os.path.exists(bt2_index_path):
+        # Build bowtie2 index required for BLCA pipeline.
         rule bt2_index:
             input:
                 refseq=output_seq,
@@ -227,6 +239,7 @@ elif config["classify_method"] == "bt2-blca":
                 "--threads {threads} "
                 "-f {input.refseq} "
                 "{params.prefix}; "
+    # Run bowtie2 alignments and BLCA summarization workflow.
     rule bt2:
         input:
             repseqs=fasta_repseqs,
@@ -276,6 +289,7 @@ elif config["classify_method"] == "bt2-blca":
             fi
 
             """
+    # Import BLCA TSV output back into a QIIME2 taxonomy artifact.
     rule import_taxonomy_to_qza:
         input:
             output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.tsv",
@@ -291,6 +305,7 @@ elif config["classify_method"] == "bt2-blca":
             "--output-path {output}"
 
 elif config["classify_method"] == "consensus-blast":
+    # Classify sequences via consensus BLAST with configured thresholds.
     rule feature_classifier_cb:
         input:
             repseqs=input_repseqs,
@@ -321,6 +336,7 @@ elif config["classify_method"] == "consensus-blast":
             {params.classifyparams};
             """
 elif config["classify_method"] == "consensus-vsearch":
+    # Classify sequences via consensus VSEARCH with configured thresholds.
     rule feature_classifier_cv:
         input:
             repseqs=input_repseqs,
@@ -354,6 +370,7 @@ elif config["classify_method"] == "consensus-vsearch":
 else:
     print(f"ERROR: classify_method must be one of the following: naive-bayes, consensus-blast, consensus-vsearch.\n")
 
+# Collapse taxonomy to target level and export as TSV.
 rule export_taxa_biom:
     input:
         table=input_table,
@@ -380,6 +397,7 @@ rule export_taxa_biom:
         "&& cat TEMP.tsv | tail -n +2 | sed 's/^#OTU ID/taxonomy/' > {output.taxa_table} "
         "&& /bin/rm -r tempfile_collapsed.qza temp_export/ TEMP.tsv"
 
+# Generate combined ASV/taxonomy/sequence table using helper script.
 rule export_asv_taxa_features:
     input:
         taxonomy=output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza",
@@ -393,6 +411,7 @@ rule export_asv_taxa_features:
     shell:
         "python scripts/create_asv_seq_taxa_output.py --input_repseqs {input.repseqs} --input_taxonomy {input.taxonomy} --output {output} --taxaranks {params.taxaranks}"
 
+# Export taxonomy artifact to TSV for external use.
 rule export_taxonomy_to_tsv:
     input:
         output_dir+config["run_name"]+"-taxonomy/"+config["run_name"]+"-taxonomy.qza"
@@ -406,6 +425,7 @@ rule export_taxonomy_to_tsv:
         "--output-path {output} "
         "--output-format TSVTaxonomyFormat"
 
+# Render taxonomy barplot visualization (optional metadata stratification).
 rule taxa_barplot:
     input:
         table=input_table,

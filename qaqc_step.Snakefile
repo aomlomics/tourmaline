@@ -1,4 +1,6 @@
-## Unified Snakefile for qaqc step of Tourmaline V2 pipeline
+## Tourmaline QA/QC Snakemake workflow.
+## Invoked via `tourmaline.sh --step qaqc`; orchestrates read import, trimming,
+## merging, and demultiplexing quality summaries for single- or paired-end runs.
 ## Handles both single-end and paired-end reads
 
 from Bio.Seq import Seq
@@ -58,6 +60,7 @@ def get_required_inputs(config):
     return required
 
 
+# Aggregate rule: ensures all configured QA/QC outputs are generated.
 rule qaqc_all:
     input:
         get_required_inputs(config)
@@ -66,6 +69,7 @@ if config["sample_manifest_file"] != None:
     separator = check_file_separator(config["sample_manifest_file"])
     if TO_TRIM:
         print(f"Manifest provided, trimming {SEQUENCE_TYPE.lower()} reads\n")
+        # Import manifest-listed reads and trim paired/single files via Cutadapt.
         rule raw_fastq_demux:
             input:
                 config["sample_manifest_file"],
@@ -92,6 +96,7 @@ if config["sample_manifest_file"] != None:
         SAMPLES=['nothing']
     else:
         print(f"Manifest provided, not trimming {SEQUENCE_TYPE.lower()} reads\n")
+        # Import manifest-listed reads without trimming; skip Cutadapt.
         rule notrim_fastq_demux:
             input:
                 config["sample_manifest_file"],
@@ -128,6 +133,7 @@ else:
             SUF="other"
         
         if IS_PAIRED:
+            # Auto-generate paired-end manifest when only raw FASTQ directory is provided.
             rule make_raw_manifest_pe_path:
                 input:
                     fwdreads
@@ -151,6 +157,7 @@ else:
                     fi
                     """
         else:
+            # Auto-generate single-end manifest from FASTQ filenames.
             rule make_raw_manifest_se_path:
                 input:
                     fwdreads
@@ -165,6 +172,7 @@ else:
                         done
                     """
 
+        # Import auto-generated manifest into QIIME2 demultiplexed artifact.
         rule import_raw_fastq_demux:
             input:
                 output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_raw.manifest",
@@ -214,6 +222,7 @@ else:
 #    revcomp_primerF=Seq(config["fwd_primer"]).reverse_complement()
 #    revcomp_primerR=Seq(config["rev_primer"]).reverse_complement()
 
+# Summarize quality for raw (pre-trim) reads.
 rule raw_fastq_summary:
     input:
         output_dir+config["run_name"]+"-qaqc/raw_fastq.qza"
@@ -227,6 +236,7 @@ rule raw_fastq_summary:
         "--o-visualization {output}"
 
 if config.get("to_merge", True):
+    # Merge paired-end reads and capture merge diagnostics when requested.
     rule merge_paired_reads:
         input:
             #merge_input
@@ -253,6 +263,7 @@ if config.get("to_merge", True):
               --verbose 1> {output[2]}
             """
 
+    # Summarize quality of merged paired-end reads.
     rule merged_fastq_summary:
         input:
             output_dir+config["run_name"]+"-qaqc/merged_fastq.qza"
@@ -267,6 +278,7 @@ if config.get("to_merge", True):
               --o-visualization {output}
             """
 
+# Run Cutadapt to remove primers and optionally discard untrimmed reads.
 rule cutadapt:
     input:
         output_dir+config["run_name"]+"-qaqc/raw_fastq.qza"
@@ -361,6 +373,7 @@ rule cutadapt:
         rm {params.tempTrim}
         """
 
+# Build manifest from trimmed FASTQs for re-import into QIIME2.
 rule make_manifest:
     input:
         fwdreads=expand(output_dir+config["run_name"]+"-qaqc/trimmed/{sample}.1.fastq",sample=SAMPLES),
@@ -383,6 +396,7 @@ rule make_manifest:
         fi
         """
 
+# Copy user-supplied manifest into the expected location.
 rule make_manifest_file:
     input:
         output_dir+"create_manifest.txt"
@@ -399,6 +413,7 @@ rule make_manifest_file:
         rm {input}
         """
 
+# Re-import manifest-defined FASTQs to create the trimmed demultiplexed artifact.
 rule import_fastq_demux:
     input:
         output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_manifest"
@@ -413,6 +428,7 @@ rule import_fastq_demux:
         "--output-path {output} "
         f"--input-format {MANIFEST_FORMAT}"
 
+# Summarize quality metrics for the trimmed demultiplexed artifact.
 rule summarize_fastq_demux:
     input:
         output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
@@ -426,6 +442,7 @@ rule summarize_fastq_demux:
         "--o-visualization {output}"
         #"cp
 
+# Report positions where per-base quality drops below configured threshold.
 rule check_seq_qual_dropoff:
     input:
         R1=output_dir+config["run_name"]+"-qaqc/trimmed/fastqc_R1/multiqc_report_R1.html",

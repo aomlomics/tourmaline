@@ -1,69 +1,98 @@
-run_name: test_data
-output_dir: "../v2-results"
-sample_run_name: # if empty, will use run_name-samples/
-fastq_qza_file: # if empty, will use run_name-samples/ 
-sample_metadata_file: 00-data/metadata.tsv # optional, otherwise autogenerates metadata file for diversity plotting
-plot_diversity: True # plot alpha diversity plots
-alpha_max_depth: 500 # optional, max depth for alpha diversity plots 
-core_sampling_depth: 500 # optional, sampling depth for core diversity metrics
+## Configuration for the Tourmaline representative sequences (repseqs) step.
+## `tourmaline.sh --step repseqs` forwards these settings to `repseqs_step.Snakefile`
+## to choose the denoiser (DADA2 or Deblur), optional filtering, and produce
+## feature tables, stats, and optional diversity visualizations.
 
-# ASV STEP: Denoising and clustering, saves to [run_name]-repseqs folder
-asv_method: dada2pe # dada2pe, dada2se, deblur
+## --- CORE RUN SETTINGS ---
+# Required: unique name for the repseqs step (usually matches QA/QC run).
+run_name: test_data
+# Required: output directory (relative or absolute) for repseqs artifacts.
+output_dir: "../v2-results"
+
+## --- INPUT DATA SOURCES (choose one approach) ---
+# Optional: name of QA/QC run providing FASTQs; defaults to `run_name`.
+qaqc_run_name: # if empty, will use run_name-qaqc/
+# Optional: path to pre-existing demultiplexed FASTQ artifact (.qza).
+fastq_qza_file: # if empty, will use file in run_name-qaqc/
+# Optional: metadata TSV/CSV for summaries and diversity plots; if omitted, metadata is auto-generated.
+sample_metadata_file: 00-data/metadata.tsv
+# Optional: set False to skip diversity visualizations (alpha rarefaction + core metrics).
+plot_diversity: True
+# Maximum sequencing depth for alpha rarefaction curves. (required if plot_diversity: True)
+alpha_max_depth: 500
+# Optional: rarefaction depth for core metrics pipeline. (required if plot_diversity: True)
+core_sampling_depth: 500
+
+## --- DENOISING STRATEGY ---
+# Required: choose `dada2pe`, `dada2se`, or `deblur`.
+asv_method: dada2pe
+# Optional: number of threads used by denoising commands.
 asv_threads: 5
 
-# ASV METHODS
-# DADA2 PAIRED-END or SINGLE-END
-# For more info run: qiime dada2 denoise-paired --help
-
+## --- DADA2 PARAMETERS (used when `asv_method` is dada2pe or dada2se) ---
+# Required: truncate forward reads at this position (0 keeps full length).
 dada2_trunc_len_f: 245
+# Required if asv_method is dada2pe: truncate reverse reads at this position (paired-end only).
 dada2pe_trunc_len_r: 190
+# Required if asv_method is dada2pe or se: trim bases from start of forward reads.
 dada2_trim_left_f: 0
+# Optional: trim bases from start of reverse reads.
 dada2pe_trim_left_r: 0
+# Required if asv_method is dada2pe: maximum expected errors allowed in forward reads.
 dada2_max_ee_f: 2
+# Optional: maximum expected errors allowed in reverse reads (paired-end only).
 dada2pe_max_ee_r: 2
+# Optional: quality score at which reads are truncated.
 dada2_trunc_q: 2
+# Optional: pooling mode (`independent`, `pseudo`, `pooled`).
 dada2_pooling_method: pseudo
+# Optional: chimera removal method (`none`, `consensus`, `pooled`).
 dada2_chimera_method: consensus
+# Optional: minimum fold change for parent sequences during chimera filtering.
 dada2_min_fold_parent_over_abundance: 1
+# Optional: number of reads used to learn error rates.
 dada2_n_reads_learn: 1000000
+# Optional: include `--p-hashed-feature-ids` to anonymize feature IDs.
 dada2_hashed_feature_ids: --p-hashed-feature-ids
 
-# DEBLUR PARAMETERS
-# For more info run: qiime deblur denoise-other --help
-deblur_trim_length: 150  # integer, required
+## --- DEBLUR PARAMETERS (used when `asv_method` is deblur) ---
+# Required for Deblur: final trimmed sequence length (bp).
+deblur_trim_length: 150
+# Optional: bases trimmed from read start before Deblur.
 deblur_trim_left: 0
+# Optional: mean error rate supplied to Deblur.
 deblur_mean_error: 0.005
-deblur_min_reads: 2      # integer, default 10
+# Optional: minimum reads per sample retained (integer).
+deblur_min_reads: 2
+# Optional: minimum read abundance retained (integer).
 deblur_min_size: 2
-deblur_indel_max: 3 
-# Reference sequences for deblur positive filtering (required for deblur)
+# Optional: maximum indel length permitted.
+deblur_indel_max: 3
+# Required for Deblur: reference sequences artifact for positive filtering.
 reference_seqs:  # e.g., 00-data/some_reference_seqs.qza
 
-# FILTERING (OPTIONAL)
+## --- POST-DENOISING FILTERING ---
+# Optional: set True to enable feature filtering steps below.
 to_filter: False
 
-# FILTER SAMPLES BEFORE DENOISING
-
+## --- SAMPLE FILTERING (PRE-DENOISING) ---
+# Optional: file listing samples to remove before denoising (planned feature).
 samples_to_filter: # NOT DONE. file with samples to remove prior to denoising
+# Optional: minimum reads per sample before denoising (planned feature).
 min_sample_reads: 0 # NOT DONE. remove samples with fewer reads prior to denoising
 
-# FILTER FEATURES AFTER DENOISING
-# Set minimum and maximum sequence lengths to filter representative sequences by.
-# Limits are inclusive, ie, greater than or equal to minimum, less than or equal to maximum.
-# For more info run: qiime feature-table filter-seqs --help
-# TO SKIP FILTERING BY LENGTH: set values to extreme values, eg (0, 10000) 
-
+## --- FEATURE FILTERING (POST-DENOISING) ---
+# Optional: minimum representative sequence length to keep (inclusive).
 repseq_min_length: 0
+# Optional: maximum representative sequence length to keep (inclusive).
 repseq_max_length: 0
 
-# FILTER BY ABUNDANCE & PREVALENCE
-# Set minimum abundance/prevalence limits for filtering.
-# Values are floats range(0,1)
-# Limit is inclusive, ie, greater than or equal to minimum. Samples with frequency of 0 after filtering will also be removed.
-# For more info run: qiime feature-table filter-features-conditionally --help
-# TO SKIP FILTERING BY ABUNDANCE/PREVALENCE: set values to 0 or don't run filtering commands.
-
+## --- FEATURE ABUNDANCE/PREVALENCE FILTERS ---
+# Optional: minimum relative abundance threshold (0–1 range) for features.
 repseq_min_abundance: 0
+# Optional: minimum prevalence (0–1 range) across samples required for features.
 repseq_min_prevalence: 0
-repseq_min_frequency: 0 # The minimum total frequency that a feature must have to be retained.
-repseq_min_samples: 0 # Remove features that are not present in at least this many samples
+# Optional: minimum total frequency (absolute count) required for features.
+repseq_min_frequency: 0
+# Optional: minimum number of samples in which a feature must appear.
+repseq_min_samples: 0
