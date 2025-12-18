@@ -1,12 +1,14 @@
 <img src="png/tourmaline_banner.png" alt="png/tourmaline_banner" width="100%"/>
 
+[![DOI](https://zenodo.org/badge/125841708.svg)](https://zenodo.org/badge/latestdoi/125841708)
+
 # Tourmaline 2
 
 Tourmaline 2 is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline 2 manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
 ## Major changes in v2 vs. v1
 
-**To use the Legacy V1 version of Tourmaline**, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository!
+**To use the Legacy v1 version of Tourmaline**, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository!
 
 ### Run via tourmaline.sh script
 
