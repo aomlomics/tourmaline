@@ -8,16 +8,16 @@
 run_name: test_data-nb
 # Required: directory where taxonomy outputs and logs are stored.
 output_dir: "../v2-results"
+# Optional: sample metadata TSV/CSV for barplot visualization.
+sample_metadata_file: 00-data/metadata.tsv
 
-## --- INPUT DATA SOURCES (choose one approach) ---
+## --- INPUT DATA SOURCES (if run_name is different between steps) ---
 # Optional: repseqs run name that produced inputs; defaults to `run_name`.
 repseqs_run_name: test_data
 # Optional: path to externally generated representative sequences artifact (.qza).
 repseqs_qza_file: # if empty, will use file in run_name-repseqs/
 # Optional: path to externally generated feature table artifact (.qza)
 table_qza_file: # if empty, will use file in run_name-repseqs/
-# Optional: sample metadata TSV/CSV for barplot visualization.
-sample_metadata_file: 00-data/metadata.tsv
 
 ## --- DATABASE + CLASSIFICATION SETTINGS ---
 # Descriptive name for reference database; used in analysisMetadata outputs.
