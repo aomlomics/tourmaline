@@ -13,6 +13,8 @@ shutil.copy(workflow.configfiles[0], config_output_path)
 
 # Function to check if the file has a valid suffix
 def has_fa_suffix(file, suffixes):
+    if file is None or file == "":
+        return False
     return any(file.endswith(suffix) for suffix in suffixes)
 
 # Function to change the suffix of a file
