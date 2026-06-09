@@ -6,7 +6,7 @@ The main entrypoint is the `tourmaline.sh` script. Run from the `tourmaline` dir
 
 ```bash
 conda activate snakemake-tour2
-./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
+./tourmaline.sh --step [qaqc,repseqs,taxonomy,tax-credit] --configfile [config1,config2,...] --cores N
 ```
 
 Notes:
@@ -29,6 +29,12 @@ Run all steps with one command:
 ./tourmaline.sh -s qaqc,repseqs,taxonomy -c config_01_qaqc.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml -n 6
 ```
 
+Run tax-credit only (reference database benchmarking):
+
+```bash
+./tourmaline.sh -s tax-credit -c config_04_tax_credit.yaml -n 6
+```
+
 ### Tips
 
 - Use `--printshellcmds` and `--dryrun` when calling Snakemake directly to see planned commands and DAG.
@@ -39,9 +45,10 @@ Run all steps with one command:
 
 ```
 v2-results/
-├── [run_name]-samples/
+├── [run_name]-qaqc/
 ├── [run_name]-repseqs/
-└── [run_name]-taxonomy/
+├── [run_name]-taxonomy/
+└── [run_name]-tax-credit/
 ```
 
 See [Configuration](configuration.md) for parameters and [Steps](steps/qaqc.md) for per-step details.

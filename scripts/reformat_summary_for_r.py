@@ -14,11 +14,14 @@ def truncate_taxonomy(full_taxonomy, confidences, cutoff):
     confidences = confidences.rstrip(';')
     taxonomy = dict([level.split(':', 1) for level in full_taxonomy.split(';')])
     truncated_taxonomy = {}
+    truncated_confidence = None
     for level_info in confidences.split(';'):
         level_name, confidence_value = level_info.split(':')
         if float(confidence_value) >= cutoff:
             truncated_taxonomy[level_name] = taxonomy[level_name]
             truncated_confidence = float(confidence_value)
+    if truncated_confidence == None:
+        truncated_confidence = 0
     return truncated_taxonomy, truncated_confidence
 
 
@@ -37,11 +40,15 @@ def reformat_summary(summary_file_name, output_file_name, cutoff, output_levels)
         # a colon in the taxonomy means that something was found
         if ':' in fields[taxonomy_index]:
             taxonomy, confidence = truncate_taxonomy(fields[taxonomy_index], fields[confidence_index], cutoff)
-            output_taxonomy = [taxonomy.get(level, '') for level in output_levels]
-            fields_to_write = fields[:taxonomy_index] + [';'.join(output_taxonomy)] + [str(confidence)]
+            if not taxonomy:
+                output_taxonomy = 'Unassigned'
+                fields_to_write = fields[:taxonomy_index] + [output_taxonomy] + [str(0)]
+            else:
+                output_taxonomy = [taxonomy.get(level, '') for level in output_levels]
+                fields_to_write = fields[:taxonomy_index] + [';'.join(output_taxonomy)] + [str(confidence)]
         else:
             output_taxonomy = 'Unassigned'
-            fields_to_write = fields[:taxonomy_index] + [output_taxonomy] + [str(confidence)]
+            fields_to_write = fields[:taxonomy_index] + [output_taxonomy] + [str(0)]
         
         output.write('\t'.join(fields_to_write) + '\n')
 

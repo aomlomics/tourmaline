@@ -182,4 +182,84 @@ classify_params: --verbose   # appended to the chosen classifier command
 
 See [Running](running.md) for multi-step invocation and [External Data](external_data.md) for conversions and artifact preparation tips.
 
+### 4. Tax-credit configuration (Template: config_04_tax_credit.yaml)
+
+The tax-credit step benchmarks reference databases using [tax-credit](../tax-credit/) simulations and Tourmaline taxonomy assignment rules. It does not require outputs from the repseqs or taxonomy steps.
+
+**Core run settings**
+
+```yaml
+run_name: mifish_tax_credit
+output_dir: ../v2-results
+tax_credit_package_dir: ../tax-credit   # pip install -e this path in qiime2 env
+```
+
+**Reference databases (one or more)**
+
+```yaml
+reference_databases:
+  - id: my_database
+    refseqs_file: /path/to/sequences.fasta   # or .qza
+    taxa_file: /path/to/taxonomy.txt         # or .qza
+    fwd_primer: GCCGGTAAAACTCGTGCCAGC
+    rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
+    fwd_primer_id: MiFishF
+    rev_primer_id: MiFishR
+    read_length: 250            # required when truncate is true
+    min_read_length: 140
+    trim_primers: true          # false for pre-trimmed amplicon references (e.g. rCRUX)
+    truncate: true
+```
+
+**Evaluation methods (one or more)**
+
+```yaml
+evaluation_methods:
+  - cross-validated          # taxonomy-aware CV folds
+  - cross-validated-trad     # traditional KFold CV
+  - novel-taxa               # novel-taxa simulation
+  # - mock-community         # see mock_communities below
+```
+
+**Simulation parameters**
+
+```yaml
+iterations: 10
+novel_taxa_levels: [6, 5, 4, 3]
+cv_recall_min_level: 5
+novel_recall_min_level: 3
+force_regenerate: false
+```
+
+Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
+
+**Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
+
+```yaml
+classify_method: naive-bayes
+classify_threads: 5
+skl_confidence: 0.7
+confidence_values: [0.7]
+fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
+generate_plots: true
+```
+
+**Mock community** (when `mock-community` is listed in `evaluation_methods`)
+
+```yaml
+mock_communities:
+  - id: fuhrman_18Sv4
+    feature_table_biom: /path/to/feature_table.biom
+    rep_seqs_fasta: /path/to/rep_seqs.fna
+    references:
+      - id: pr2-ssu
+        expected_dir: /path/to/expected
+```
+
+Install tax-credit in the QIIME 2 amplicon environment before running:
+
+```bash
+pip install -e ../tax-credit
+```
+
 

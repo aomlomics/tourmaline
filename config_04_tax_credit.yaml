@@ -1,0 +1,84 @@
+## Configuration for the Tourmaline tax-credit step.
+## `tourmaline.sh --step tax-credit` evaluates reference databases using
+## tax-credit simulation and classification benchmarks.
+
+## --- CORE RUN SETTINGS ---
+run_name: silva_tax_credit
+output_dir: "../v2-results"
+tax_credit_package_dir: "../tax-credit"
+
+## --- REFERENCE DATABASES (one or more) ---
+reference_databases:
+  - id: silva
+    refseqs_file: 00-data/silva-138_1-99-515f_926r-uniq-seq.qza
+    taxa_file: 00-data/silva-138_1-99-515f_926r-uniq-tax.qza
+    fwd_primer: GTGYCAGCMGCCGCGGTAA
+    rev_primer: GGACTACNVGGGTWTCTAAT
+    fwd_primer_id: parada-f
+    rev_primer_id: parada-r
+    read_length: 450
+    min_read_length: 200
+    trim_primers: false
+    truncate: false
+
+## --- EVALUATION METHODS (one or more) ---
+# cross-validated | cross-validated-trad | novel-taxa | mock-community
+evaluation_methods:
+  - cross-validated
+  - novel-taxa
+
+## --- SIMULATION PARAMETERS ---
+iterations: 10
+novel_taxa_levels: [6, 5, 4, 3]
+cv_recall_min_level: 5
+novel_recall_min_level: 2
+force_regenerate: false
+format_reference_databases: false #not implemented yet
+
+## --- TAXONOMIC ASSIGNMENT (same keys as config_03_taxonomy.yaml) ---
+classify_method: naive-bayes
+classify_threads: 5
+skl_confidence: 0.7
+confidence_values: [0.7,0.9]
+classify_params: ""
+pretrained_classifier:
+
+perc_identity: 0.8
+query_cov: 0.8
+min_consensus: 0.51
+confidence_thres: 0.8
+
+fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
+
+## --- OUTPUT LAYOUT ---
+data_subdir: data
+results_tmp_subdir: assignment-tmp
+results_repo_subdir: self-results
+
+## --- PLOTTING ---
+generate_plots: true
+plots_subdir: plots
+plot_metrics:
+  - Precision
+  - Recall
+  - F-measure
+  - match_ratio
+  - underclassification_ratio
+  - overclassification_ratio
+  - misclassification_ratio
+
+## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
+mock_communities: []
+mock_dir:
+mock_taxonomy_level_range: [2, 3, 4, 5, 6]
+mock_per_seq_precision: false
+mock_force_eval: false
+
+## --- ADVANCED ---
+force_evaluation: false
+exclude_databases: []
+summary_filenames:
+  cross-validated: evaluate_classification_summary_CV.csv
+  novel-taxa: evaluate_classification_summary_novel.csv
+  cross-validated-trad: evaluate_classification_summary_CV_trad.csv
+  mock-community: mock_evaluation_summary.tsv

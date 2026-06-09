@@ -8,7 +8,7 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --step qaqc,repseqs,taxonomy --configfile config1,config2,... --cores N"
+    echo "Usage: $0 --step qaqc,repseqs,taxonomy,tax-credit --configfile config1,config2,... --cores N"
     exit 1
 }
 
@@ -60,6 +60,10 @@ for index in "${!step_array[@]}"; do
         taxonomy)
             echo "Running taxonomy step with configfile $CONFIG and cores $cores"
             snakemake --use-conda -s taxonomy_step.Snakefile --configfile $CONFIG --cores $cores  --latency-wait 15
+            ;;
+        tax-credit)
+            echo "Running tax-credit step with configfile $CONFIG and cores $cores"
+            snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit --configfile $CONFIG --cores $cores --latency-wait 15
             ;;
         *)
             echo "Unknown step: $step"
