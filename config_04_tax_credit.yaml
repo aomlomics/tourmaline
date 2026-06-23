@@ -71,6 +71,12 @@ results_subdir: results
 ## --- PLOTTING ---
 generate_plots: true
 plots_subdir: plots
+# Plot types to generate: boxplot | pointplot (line) | heatmap
+plot_types:
+  - boxplot
+  - pointplot
+  - heatmap
+# Metrics for boxplots, per-level line plots, and heatmaps
 plot_metrics:
   - Precision
   - Recall
@@ -79,6 +85,11 @@ plot_metrics:
   - underclassification_ratio
   - overclassification_ratio
   - misclassification_ratio
+# Optional: seaborn palette name or dict mapping Method -> color
+plot_color_palette:
+# Optional: heatmap row/column groupings (defaults match tax-credit notebooks)
+plot_heatmap_rows: [Method, Parameters]
+plot_heatmap_cols: [Dataset, level]
 
 ## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
 mock_communities: []

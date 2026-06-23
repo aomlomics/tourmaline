@@ -771,39 +771,202 @@ def evaluate(cfg: dict) -> None:
         )
 
 
+def _summary_has_per_level_lists(df: pd.DataFrame, column: str = "Precision") -> bool:
+    """True when summary metrics are stored as per-rank lists (CV-style)."""
+    if column not in df.columns or df.empty:
+        return False
+    sample = df[column].iloc[0]
+    if isinstance(sample, str):
+        return sample.strip().startswith("[")
+    return isinstance(sample, (list, tuple))
+
+
+def _prepare_plot_data(
+    df: pd.DataFrame,
+) -> tuple[pd.DataFrame | None, pd.DataFrame]:
+    """Return (per-rank summary, raw summary) for plotting."""
+    from tax_credit.novel_evaluation import extract_per_level_accuracy
+
+    if _summary_has_per_level_lists(df):
+        return extract_per_level_accuracy(df), df
+    return None, df
+
+
+def _metric_plot_df(
+    per_level: pd.DataFrame | None,
+    raw: pd.DataFrame,
+    metric: str,
+) -> pd.DataFrame | None:
+    """Pick the dataframe that contains *metric* for plotting."""
+    if per_level is not None and metric in per_level.columns:
+        return per_level
+    if metric in raw.columns:
+        return raw
+    return None
+
+
+def _plot_type_set(cfg: dict) -> set[str]:
+    """Normalize configured plot types (boxplot, pointplot, heatmap)."""
+    aliases = {
+        "boxplot": "boxplot",
+        "box": "boxplot",
+        "pointplot": "pointplot",
+        "point": "pointplot",
+        "line": "pointplot",
+        "lineplot": "pointplot",
+        "heatmap": "heatmap",
+    }
+    configured = cfg.get("plot_types") or ["boxplot", "pointplot", "heatmap"]
+    if isinstance(configured, str):
+        configured = [configured]
+    types = set()
+    for item in configured:
+        key = str(item).strip().lower()
+        if key not in aliases:
+            raise ValueError(
+                f"Unknown plot_types entry: {item!r}. "
+                f"Use one of: {sorted(set(aliases))}"
+            )
+        types.add(aliases[key])
+    return types
+
+
+def _eval_method_plot_label(eval_method: str) -> str:
+    if eval_method in ("cross-validated", "cross-validated-taxa"):
+        return "cross-validated"
+    if eval_method == "novel-taxa":
+        return "novel"
+    return eval_method
+
+
 def plot_results(cfg: dict) -> None:
     if not cfg.get("generate_plots", True):
         return
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
-    from tax_credit.novel_evaluation import extract_per_level_accuracy
-    from tax_credit.plotting_functions import boxplot_from_data_frame
+    from tax_credit.plotting_functions import (
+        boxplot_from_data_frame,
+        heatmap_from_data_frame,
+        pointplot_from_data_frame,
+    )
     import matplotlib.pyplot as plt
+    import seaborn as sns
 
     out = run_output_dir(cfg)
     plots_dir = join(out, cfg.get("plots_subdir", "plots"))
     os.makedirs(plots_dir, exist_ok=True)
     summaries_dir = join(out, "summaries")
+    summary_names = cfg.get("summary_filenames") or {}
+    plot_metrics = cfg.get(
+        "plot_metrics", ["Precision", "Recall", "F-measure"]
+    )
+    plot_types = _plot_type_set(cfg)
+    color_palette = cfg.get("plot_color_palette") or "tab10"
+    heatmap_rows = cfg.get("plot_heatmap_rows") or ["Method", "Parameters"]
+    heatmap_cols = cfg.get("plot_heatmap_cols") or ["Dataset", "level"]
+    default_summary = {
+        "cross-validated": "evaluate_classification_summary_CV.csv",
+        "cross-validated-taxa": "evaluate_classification_summary_CV.csv",
+        "novel-taxa": "evaluate_classification_summary_novel.csv",
+        "cross-validated-trad": "evaluate_classification_summary_CV_trad.csv",
+    }
 
     for eval_method in cfg.get("evaluation_methods", []):
         if eval_method == "mock-community":
             continue
+        plot_label = _eval_method_plot_label(eval_method)
+        method_plots_dir = join(plots_dir, eval_method)
+        os.makedirs(method_plots_dir, exist_ok=True)
         sub = analysis_data_subdir(eval_method)
-        for fp in glob(join(summaries_dir, f"*{sub}*")) + glob(join(summaries_dir, "*CV*")):
-            if not fp.endswith((".csv", ".tsv")):
+        candidates = [
+            join(summaries_dir, summary_names.get(
+                eval_method, default_summary.get(eval_method, f"evaluate_{sub}.csv")
+            ))
+        ]
+        candidates.extend(glob(join(summaries_dir, f"*{sub}*")))
+        if eval_method in ("cross-validated", "cross-validated-taxa"):
+            candidates.extend(glob(join(summaries_dir, "*CV*")))
+
+        seen = set()
+        for fp in candidates:
+            if fp in seen or not exists(fp) or not fp.endswith((".csv", ".tsv")):
                 continue
+            seen.add(fp)
             df = pd.read_csv(fp, index_col=0)
             if df.empty:
                 continue
-            per_level = extract_per_level_accuracy(df)
-            for metric in cfg.get("plot_metrics", ["Precision", "Recall", "F-measure"]):
-                if metric not in per_level.columns:
-                    continue
-                ax = boxplot_from_data_frame(
-                    per_level, group_by="Dataset", metric=metric, hue="Method"
-                )
-                base = Path(fp).stem
-                ax.figure.savefig(join(plots_dir, f"{base}-{metric}-boxplot.pdf"))
-                plt.close(ax.figure)
+            base = Path(fp).stem
+            per_level, raw = _prepare_plot_data(df)
+
+            if "boxplot" in plot_types:
+                for metric in plot_metrics:
+                    metric_df = _metric_plot_df(per_level, raw, metric)
+                    if metric_df is None:
+                        continue
+                    ax = boxplot_from_data_frame(
+                        metric_df,
+                        group_by="Dataset",
+                        metric=metric,
+                        hue="Method",
+                        color_palette=color_palette,
+                        plotf=sns.boxplot,
+                        title=f"{plot_label}: {metric}",
+                        show=False,
+                    )
+                    ax.figure.savefig(
+                        join(method_plots_dir, f"{base}-{metric}-boxplot.pdf"),
+                        bbox_inches="tight",
+                    )
+                    plt.close(ax.figure)
+
+            if "pointplot" in plot_types:
+                for metric in plot_metrics:
+                    metric_df = _metric_plot_df(per_level, raw, metric)
+                    if metric_df is None or not {
+                        "Dataset", "Method", "level"
+                    }.issubset(metric_df.columns):
+                        continue
+                    grid = pointplot_from_data_frame(
+                        metric_df,
+                        "level",
+                        [metric],
+                        group_by="Dataset",
+                        color_by="Method",
+                        color_palette=color_palette,
+                        title_prefix=plot_label,
+                        show=False,
+                    )
+                    for y_var, facet in grid.items():
+                        facet.savefig(
+                            join(
+                                method_plots_dir,
+                                f"{base}-{y_var}-pointplot.pdf",
+                            ),
+                            bbox_inches="tight",
+                        )
+                        plt.close(facet.fig)
+
+            if "heatmap" in plot_types:
+                for metric in plot_metrics:
+                    metric_df = _metric_plot_df(per_level, raw, metric)
+                    if metric_df is None or not all(
+                        c in metric_df.columns
+                        for c in heatmap_rows + heatmap_cols
+                    ):
+                        continue
+                    ax = heatmap_from_data_frame(
+                        metric_df,
+                        metric=metric,
+                        rows=heatmap_rows,
+                        cols=heatmap_cols,
+                        title=f"{plot_label}: {metric}",
+                        show=False,
+                    )
+                    ax.figure.savefig(
+                        join(method_plots_dir, f"{base}-{metric}-heatmap.pdf"),
+                        bbox_inches="tight",
+                    )
+                    plt.close(ax.figure)
+
     Path(join(plots_dir, ".done")).touch()
 
 
