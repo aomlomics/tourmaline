@@ -35,25 +35,38 @@ novel_recall_min_level: 2
 force_regenerate: false
 format_reference_databases: false #not implemented yet
 
-## --- TAXONOMIC ASSIGNMENT (same keys as config_03_taxonomy.yaml) ---
-classify_method: naive-bayes
+## --- TAXONOMIC ASSIGNMENT (shared) ---
+# One or more methods to benchmark: naive-bayes | consensus-blast | consensus-vsearch
+classify_methods:
+  - naive-bayes
+  - consensus-vsearch
 classify_threads: 5
+
+## --- NAIVE-BAYES OPTIONS ---
+# Optional: confidence threshold(s) for classify-sklearn; multiple values share one fitted classifier
+confidence_values: [0.7, 0.9]
+# Optional: default confidence when confidence_values is omitted
 skl_confidence: 0.7
-confidence_values: [0.7,0.9]
-classify_params: ""
+# Optional: extra parameters passed to fit-classifier-naive-bayes
+fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
+# Optional: extra parameters passed to classify-sklearn (naive-bayes only)
+naive_bayes_classify_params: ""
+# Optional: full path to pretrained classifier (.qza); not used by tax-credit simulation folds
 pretrained_classifier:
 
+## --- CONSENSUS BLAST/VSEARCH OPTIONS ---
+# Optional: minimum percent identity (0–1); single value or list to sweep
 perc_identity: 0.8
+# Optional: minimum query coverage (0–1); single value or list to sweep
 query_cov: 0.8
+# Optional: minimum consensus fraction (0–1); single value or list to sweep
 min_consensus: 0.51
-confidence_thres: 0.8
-
-fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
+# Optional: extra parameters passed to consensus-blast or consensus-vsearch
+consensus_classify_params: ""
 
 ## --- OUTPUT LAYOUT ---
 data_subdir: data
-results_tmp_subdir: assignment-tmp
-results_repo_subdir: self-results
+results_subdir: results
 
 ## --- PLOTTING ---
 generate_plots: true

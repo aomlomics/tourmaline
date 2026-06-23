@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import itertools
 import os
 import shutil
 import subprocess
@@ -44,6 +45,11 @@ def run_output_dir(cfg: dict) -> str:
 
 def data_dir(cfg: dict) -> str:
     return join(run_output_dir(cfg), cfg.get("data_subdir", "data"))
+
+
+def results_dir(cfg: dict) -> str:
+    """Directory for taxonomy assignment outputs (under data/)."""
+    return join(data_dir(cfg), cfg.get("results_subdir", "results"))
 
 
 _DB_SIMULATION_DEFAULTS = {
@@ -210,29 +216,145 @@ def analysis_data_subdir(evaluation_method: str) -> str:
     raise ValueError(evaluation_method)
 
 
-def param_id(cfg: dict, confidence: float) -> str:
-    method = cfg.get("classify_method", "naive-bayes")
-    fit_params = (cfg.get("fit_params") or "").strip()
+_SUPPORTED_CLASSIFY_METHODS = frozenset({
+    "naive-bayes",
+    "consensus-blast",
+    "consensus-vsearch",
+})
+
+
+def classify_methods(cfg: dict) -> list[str]:
+    """Return ordered list of taxonomy assignment methods to benchmark."""
+    methods = cfg.get("classify_methods")
+    if methods is None:
+        single = cfg.get("classify_method", "naive-bayes")
+        methods = [single] if isinstance(single, str) else list(single)
+    elif isinstance(methods, str):
+        methods = [methods]
+    else:
+        methods = list(methods)
+    if not methods:
+        raise ValueError("At least one classify method is required.")
+    unknown = set(methods) - _SUPPORTED_CLASSIFY_METHODS
+    if unknown:
+        raise ValueError(
+            f"Unsupported classify method(s): {sorted(unknown)}. "
+            f"Supported: {sorted(_SUPPORTED_CLASSIFY_METHODS)}"
+        )
+    return methods
+
+
+def _param_value_list(cfg: dict, key: str, default: float) -> list[float]:
+    val = cfg.get(key, default)
+    if isinstance(val, (list, tuple)):
+        return [float(v) for v in val]
+    return [float(val)]
+
+
+def consensus_param_combinations(cfg: dict) -> list[dict[str, float]]:
+    """Cartesian product of consensus classifier parameters from config."""
+    perc = _param_value_list(cfg, "perc_identity", 0.8)
+    qc = _param_value_list(cfg, "query_cov", 0.8)
+    mc = _param_value_list(cfg, "min_consensus", 0.51)
+    return [
+        {"perc_identity": pi, "query_cov": q, "min_consensus": m}
+        for pi, q, m in itertools.product(perc, qc, mc)
+    ]
+
+
+def _format_sweep_param(value: float) -> str:
+    return format(float(value), "g")
+
+
+def consensus_param_id(combo: dict[str, float]) -> str:
+    return (
+        f"pi{_format_sweep_param(combo['perc_identity'])}-"
+        f"qc{_format_sweep_param(combo['query_cov'])}-"
+        f"mc{_format_sweep_param(combo['min_consensus'])}"
+    )
+
+
+def method_settings(cfg: dict, method: str) -> dict:
+    """Per-method assignment settings derived from config."""
+    classify_params = cfg.get("classify_params") or ""
+    if method == "naive-bayes":
+        classify_params = cfg.get("naive_bayes_classify_params", classify_params)
+    elif method in ("consensus-blast", "consensus-vsearch"):
+        classify_params = cfg.get("consensus_classify_params", classify_params)
+    return {
+        "classify_method": method,
+        "classify_threads": cfg.get("classify_threads", 5),
+        "fit_params": cfg.get("fit_params") or "",
+        "classify_params": classify_params or "",
+        "perc_identity": cfg.get("perc_identity", 0.8),
+        "query_cov": cfg.get("query_cov", 0.8),
+        "min_consensus": cfg.get("min_consensus", 0.51),
+    }
+
+
+def confidences_for_method(cfg: dict, method: str) -> list[float]:
+    if method == "naive-bayes":
+        return cfg.get("confidence_values") or [cfg.get("skl_confidence", 0.7)]
+    return [cfg.get("skl_confidence", 0.7)]
+
+
+def param_id(
+    method: str,
+    method_cfg: dict,
+    confidence: float,
+    consensus_combo: dict[str, float] | None = None,
+) -> str:
+    if method in ("consensus-blast", "consensus-vsearch"):
+        if consensus_combo is None:
+            raise ValueError("consensus_combo is required for consensus methods")
+        return consensus_param_id(consensus_combo)
+    fit_params = (method_cfg.get("fit_params") or "").strip()
     if method == "naive-bayes" and fit_params:
         digest = hashlib.md5(fit_params.encode()).hexdigest()[:8]
         return f"nb-{digest}-conf{confidence}"
     return f"{method}-conf{confidence}"
 
 
-def fit_param_id(cfg: dict) -> str:
+def fit_param_id(method: str, method_cfg: dict) -> str:
     """Shared classifier directory name (confidence-independent)."""
-    method = cfg.get("classify_method", "naive-bayes")
-    fit_params = (cfg.get("fit_params") or "").strip()
+    fit_params = (method_cfg.get("fit_params") or "").strip()
     if method == "naive-bayes" and fit_params:
         digest = hashlib.md5(fit_params.encode()).hexdigest()[:8]
         return f"nb-{digest}"
     return method.replace("-", "_")
 
 
+def _manifest_assign_params(
+    method: str,
+    method_cfg: dict,
+    consensus_combo: dict[str, float] | None = None,
+) -> dict:
+    if method in ("consensus-blast", "consensus-vsearch"):
+        if consensus_combo is None:
+            raise ValueError("consensus_combo is required for consensus methods")
+        return {
+            "classify_method": method,
+            "fit_params": method_cfg.get("fit_params") or "",
+            "classify_params": method_cfg.get("classify_params") or "",
+            "perc_identity": float(consensus_combo["perc_identity"]),
+            "query_cov": float(consensus_combo["query_cov"]),
+            "min_consensus": float(consensus_combo["min_consensus"]),
+        }
+    return {
+        "classify_method": method,
+        "fit_params": method_cfg.get("fit_params") or "",
+        "classify_params": method_cfg.get("classify_params") or "",
+        "perc_identity": 0.8,
+        "query_cov": 0.8,
+        "min_consensus": 0.51,
+    }
+
+
 def _append_fold_assignment_rows(
     rows: list,
     *,
-    tmp_root: str,
+    cfg: dict,
+    results_root: str,
     subdir: str,
     dataset_id: str,
     reference_id: str,
@@ -240,19 +362,44 @@ def _append_fold_assignment_rows(
     ref_seqs: str,
     ref_taxa: str,
     eval_method: str,
-    cfg: dict,
+    method: str,
+    method_cfg: dict,
     confidences: list,
     job_id_prefix: str,
 ) -> None:
     """Add manifest rows for one simulated fold (or mock-community combo)."""
-    method = cfg.get("classify_method", "naive-bayes")
-    multi_conf_nb = method == "naive-bayes" and len(confidences) > 1
+    if method in ("consensus-blast", "consensus-vsearch"):
+        for combo in consensus_param_combinations(cfg):
+            assign_params = _manifest_assign_params(method, method_cfg, combo)
+            p = param_id(method, method_cfg, confidences[0], combo)
+            assign_dir = join(results_root, subdir, dataset_id, reference_id, method, p)
+            rows.append({
+                "job_id": f"{job_id_prefix}-{p}",
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": assign_dir,
+                "confidence": confidences[0],
+                "skip_fit": False,
+                "classifier_qza": "",
+                "trad_fit": False,
+                "fit_only": False,
+                "fit_job_id": "",
+                **assign_params,
+            })
+        return
+
+    assign_params = _manifest_assign_params(method, method_cfg)
+    multi_conf_nb = len(confidences) > 1
 
     if multi_conf_nb:
         classifier_dir = join(
-            tmp_root, subdir, dataset_id, reference_id, method, fit_param_id(cfg)
+            results_root, subdir, dataset_id, reference_id, method, fit_param_id(method, method_cfg)
         )
-        fit_job_id = f"{job_id_prefix}-nb-fit"
+        fit_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
         rows.append({
             "job_id": fit_job_id,
             "evaluation_method": eval_method,
@@ -268,12 +415,13 @@ def _append_fold_assignment_rows(
             "trad_fit": False,
             "fit_only": True,
             "fit_job_id": "",
+            **assign_params,
         })
         classifier_qza = join(classifier_dir, "classifier.qza")
         for conf in confidences:
-            p = param_id(cfg, conf)
+            p = param_id(method, method_cfg, conf)
             assign_dir = join(
-                tmp_root, subdir, dataset_id, reference_id, method, p
+                results_root, subdir, dataset_id, reference_id, method, p
             )
             rows.append({
                 "job_id": f"{job_id_prefix}-{p}",
@@ -290,12 +438,13 @@ def _append_fold_assignment_rows(
                 "trad_fit": False,
                 "fit_only": False,
                 "fit_job_id": fit_job_id,
+                **assign_params,
             })
         return
 
     for conf in confidences:
-        p = param_id(cfg, conf)
-        assign_dir = join(tmp_root, subdir, dataset_id, reference_id, method, p)
+        p = param_id(method, method_cfg, conf)
+        assign_dir = join(results_root, subdir, dataset_id, reference_id, method, p)
         rows.append({
             "job_id": f"{job_id_prefix}-{p}",
             "evaluation_method": eval_method,
@@ -311,6 +460,7 @@ def _append_fold_assignment_rows(
             "trad_fit": False,
             "fit_only": False,
             "fit_job_id": "",
+            **assign_params,
         })
 
 
@@ -379,159 +529,181 @@ def stage_mock_communities(cfg: dict) -> None:
 def prepare_manifest(cfg: dict) -> str:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.framework_functions import recall_simulated_taxa_dirs
-    from tax_credit.paths import QUERY_TAX_ASSIGNMENTS_TXT
 
     out = run_output_dir(cfg)
     manifest_fp = join(out, "assignment_manifest.tsv")
     rows = []
     ddir = data_dir(cfg)
-    tmp_root = join(out, cfg.get("results_tmp_subdir", "assignment-tmp"))
+    results_root = results_dir(cfg)
+    os.makedirs(results_root, exist_ok=True)
     db_ids = list(reference_dataframe(cfg).index)
-    confidences = cfg.get("confidence_values") or [cfg.get("skl_confidence", 0.7)]
-    method = cfg.get("classify_method", "naive-bayes")
-    pid = param_id(cfg, confidences[0])
 
-    for eval_method in cfg.get("evaluation_methods", []):
-        if eval_method == "mock-community":
-            mock_root = cfg.get("mock_dir") or join(ddir, "mock-community")
-            for mock in cfg.get("mock_communities") or []:
-                mock_id = mock["id"]
-                query = join(mock_root, mock_id, "rep_seqs.qza")
-                for ref in mock.get("references") or []:
-                    ref_id = ref["id"]
-                    _append_fold_assignment_rows(
-                        rows,
-                        tmp_root=tmp_root,
-                        subdir="mock-community",
-                        dataset_id=mock_id,
-                        reference_id=ref_id,
-                        query=query,
-                        ref_seqs=join(ddir, "ref_dbs", ref_id, "ref_seqs.qza"),
-                        ref_taxa=join(ddir, "ref_dbs", ref_id, "ref_taxa.qza"),
-                        eval_method=eval_method,
-                        cfg=cfg,
-                        confidences=confidences,
-                        job_id_prefix=f"mock-{mock_id}-{ref_id}",
-                    )
-            continue
+    for classify_method in classify_methods(cfg):
+        method_cfg = method_settings(cfg, classify_method)
+        confidences = confidences_for_method(cfg, classify_method)
 
-        subdir = analysis_data_subdir(eval_method)
-        sim_dir = join(ddir, subdir)
-        if eval_method in ("cross-validated", "cross-validated-taxa"):
-            combos, ref_dbs = recall_simulated_taxa_dirs(
-                sim_dir, db_ids, cfg["iterations"],
-                ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
-                max_level=6, min_level=cfg.get("cv_recall_min_level", 5),
-                multilevel=False,
-            )
-        elif eval_method == "novel-taxa":
-            combos, ref_dbs = recall_simulated_taxa_dirs(
-                sim_dir, db_ids, cfg["iterations"],
-                ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
-                max_level=6, min_level=cfg.get("novel_recall_min_level", 3),
-                multilevel=True,
-            )
-        elif eval_method == "cross-validated-trad":
-            from tax_credit.framework_functions import trad_cv_shared_reference_qzas
-            for db_id in db_ids:
-                ref_seqs, ref_taxa = trad_cv_shared_reference_qzas(ddir, db_id)
-                classifier_dir = join(
-                    tmp_root, "trad-fit", db_id, method, pid
+        for eval_method in cfg.get("evaluation_methods", []):
+            if eval_method == "mock-community":
+                mock_root = cfg.get("mock_dir") or join(ddir, "mock-community")
+                for mock in cfg.get("mock_communities") or []:
+                    mock_id = mock["id"]
+                    query = join(mock_root, mock_id, "rep_seqs.qza")
+                    for ref in mock.get("references") or []:
+                        ref_id = ref["id"]
+                        _append_fold_assignment_rows(
+                            rows,
+                            cfg=cfg,
+                            results_root=results_root,
+                            subdir="mock-community",
+                            dataset_id=mock_id,
+                            reference_id=ref_id,
+                            query=query,
+                            ref_seqs=join(ddir, "ref_dbs", ref_id, "ref_seqs.qza"),
+                            ref_taxa=join(ddir, "ref_dbs", ref_id, "ref_taxa.qza"),
+                            eval_method=eval_method,
+                            method=classify_method,
+                            method_cfg=method_cfg,
+                            confidences=confidences,
+                            job_id_prefix=f"mock-{mock_id}-{ref_id}-{classify_method}",
+                        )
+                continue
+
+            subdir = analysis_data_subdir(eval_method)
+            sim_dir = join(ddir, subdir)
+            if eval_method in ("cross-validated", "cross-validated-taxa"):
+                combos, ref_dbs = recall_simulated_taxa_dirs(
+                    sim_dir, db_ids, cfg["iterations"],
+                    ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
+                    max_level=6, min_level=cfg.get("cv_recall_min_level", 5),
+                    multilevel=False,
                 )
-                classifier_qza = join(classifier_dir, "classifier.qza")
-                rows.append({
-                    "job_id": f"trad-fit-{db_id}-{pid}",
-                    "evaluation_method": eval_method,
-                    "dataset_id": db_id,
-                    "reference_id": db_id,
-                    "query_qza": "",
-                    "ref_seqs": ref_seqs,
-                    "ref_taxa": ref_taxa,
-                    "output_dir": classifier_dir,
-                    "confidence": confidences[0],
-                    "skip_fit": False,
-                    "classifier_qza": "",
-                    "trad_fit": True,
-                    "fit_only": False,
-                    "fit_job_id": "",
-                })
-            combos, ref_dbs = recall_simulated_taxa_dirs(
-                sim_dir, db_ids, cfg["iterations"],
-                ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
-                max_level=6, min_level=cfg.get("cv_recall_min_level", 5),
-                multilevel=False,
-            )
+            elif eval_method == "novel-taxa":
+                combos, ref_dbs = recall_simulated_taxa_dirs(
+                    sim_dir, db_ids, cfg["iterations"],
+                    ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
+                    max_level=6, min_level=cfg.get("novel_recall_min_level", 3),
+                    multilevel=True,
+                )
+            elif eval_method == "cross-validated-trad":
+                from tax_credit.framework_functions import trad_cv_shared_reference_qzas
+
+                combos, ref_dbs = recall_simulated_taxa_dirs(
+                    sim_dir, db_ids, cfg["iterations"],
+                    ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
+                    max_level=6, min_level=cfg.get("cv_recall_min_level", 5),
+                    multilevel=False,
+                )
+                fit_id = fit_param_id(classify_method, method_cfg)
+
+                if classify_method == "naive-bayes":
+                    assign_params = _manifest_assign_params(classify_method, method_cfg)
+                    for db_id in db_ids:
+                        ref_seqs, ref_taxa = trad_cv_shared_reference_qzas(ddir, db_id)
+                        classifier_dir = join(
+                            results_root, "trad-fit", db_id, classify_method, fit_id
+                        )
+                        rows.append({
+                            "job_id": f"trad-fit-{db_id}-{classify_method}-{fit_id}",
+                            "evaluation_method": eval_method,
+                            "dataset_id": db_id,
+                            "reference_id": db_id,
+                            "query_qza": "",
+                            "ref_seqs": ref_seqs,
+                            "ref_taxa": ref_taxa,
+                            "output_dir": classifier_dir,
+                            "confidence": confidences[0],
+                            "skip_fit": False,
+                            "classifier_qza": "",
+                            "trad_fit": True,
+                            "fit_only": False,
+                            "fit_job_id": "",
+                            **assign_params,
+                        })
+                    for dataset_id, reference_id in combos:
+                        fold_dir = join(sim_dir, dataset_id)
+                        query = join(fold_dir, "query.qza")
+                        classifier_qza = join(
+                            results_root,
+                            "trad-fit",
+                            reference_id,
+                            classify_method,
+                            fit_id,
+                            "classifier.qza",
+                        )
+                        for conf in confidences:
+                            p = param_id(classify_method, method_cfg, conf)
+                            assign_dir = join(
+                                results_root,
+                                subdir,
+                                dataset_id,
+                                reference_id,
+                                classify_method,
+                                p,
+                            )
+                            rows.append({
+                                "job_id": f"trad-{dataset_id}-{classify_method}-{p}",
+                                "evaluation_method": eval_method,
+                                "dataset_id": dataset_id,
+                                "reference_id": reference_id,
+                                "query_qza": query,
+                                "ref_seqs": ref_dbs[dataset_id][0],
+                                "ref_taxa": ref_dbs[dataset_id][1],
+                                "output_dir": assign_dir,
+                                "confidence": conf,
+                                "skip_fit": True,
+                                "classifier_qza": classifier_qza,
+                                "trad_fit": False,
+                                "fit_only": False,
+                                "fit_job_id": "",
+                                **assign_params,
+                            })
+                else:
+                    for dataset_id, reference_id in combos:
+                        ref_seqs, ref_taxa = ref_dbs[dataset_id]
+                        query = join(sim_dir, dataset_id, "query.qza")
+                        _append_fold_assignment_rows(
+                            rows,
+                            cfg=cfg,
+                            results_root=results_root,
+                            subdir=subdir,
+                            dataset_id=dataset_id,
+                            reference_id=reference_id,
+                            query=query,
+                            ref_seqs=ref_seqs,
+                            ref_taxa=ref_taxa,
+                            eval_method=eval_method,
+                            method=classify_method,
+                            method_cfg=method_cfg,
+                            confidences=confidences,
+                            job_id_prefix=f"trad-{dataset_id}-{classify_method}",
+                        )
+                continue
+            else:
+                raise ValueError(f"Unknown evaluation_method: {eval_method}")
+
             for dataset_id, reference_id in combos:
-                fold_dir = join(sim_dir, dataset_id)
-                query = join(fold_dir, "query.qza")
-                classifier_qza = join(
-                    tmp_root, "trad-fit", reference_id, method, pid, "classifier.qza"
+                ref_seqs, ref_taxa = ref_dbs[dataset_id]
+                query = join(sim_dir, dataset_id, "query.qza")
+                _append_fold_assignment_rows(
+                    rows,
+                    cfg=cfg,
+                    results_root=results_root,
+                    subdir=subdir,
+                    dataset_id=dataset_id,
+                    reference_id=reference_id,
+                    query=query,
+                    ref_seqs=ref_seqs,
+                    ref_taxa=ref_taxa,
+                    eval_method=eval_method,
+                    method=classify_method,
+                    method_cfg=method_cfg,
+                    confidences=confidences,
+                    job_id_prefix=f"{subdir}-{dataset_id}-{classify_method}",
                 )
-                for conf in confidences:
-                    p = param_id(cfg, conf)
-                    assign_dir = join(
-                        tmp_root, subdir, dataset_id, reference_id, method, p
-                    )
-                    rows.append({
-                        "job_id": f"trad-{dataset_id}-{p}",
-                        "evaluation_method": eval_method,
-                        "dataset_id": dataset_id,
-                        "reference_id": reference_id,
-                        "query_qza": query,
-                        "ref_seqs": ref_dbs[dataset_id][0],
-                        "ref_taxa": ref_dbs[dataset_id][1],
-                        "output_dir": assign_dir,
-                        "confidence": conf,
-                        "skip_fit": True,
-                        "classifier_qza": classifier_qza,
-                        "trad_fit": False,
-                        "fit_only": False,
-                        "fit_job_id": "",
-                    })
-            continue
-        else:
-            raise ValueError(f"Unknown evaluation_method: {eval_method}")
-
-        for dataset_id, reference_id in combos:
-            ref_seqs, ref_taxa = ref_dbs[dataset_id]
-            query = join(sim_dir, dataset_id, "query.qza")
-            _append_fold_assignment_rows(
-                rows,
-                tmp_root=tmp_root,
-                subdir=subdir,
-                dataset_id=dataset_id,
-                reference_id=reference_id,
-                query=query,
-                ref_seqs=ref_seqs,
-                ref_taxa=ref_taxa,
-                eval_method=eval_method,
-                cfg=cfg,
-                confidences=confidences,
-                job_id_prefix=f"{subdir}-{dataset_id}",
-            )
 
     manifest = pd.DataFrame(rows)
     manifest.to_csv(manifest_fp, sep="\t", index=False)
     return manifest_fp
-
-
-def collect_results(cfg: dict) -> None:
-    from tax_credit.framework_functions import move_results_to_repository
-    from tax_credit.paths import list_assignment_result_dirs
-
-    out = run_output_dir(cfg)
-    tmp_root = join(out, cfg.get("results_tmp_subdir", "assignment-tmp"))
-    repo = join(data_dir(cfg), cfg.get("results_repo_subdir", "self-results"))
-
-    for eval_method in cfg.get("evaluation_methods", []):
-        if eval_method == "mock-community":
-            continue
-        sub = analysis_data_subdir(eval_method)
-        method_dirs = list_assignment_result_dirs(join(tmp_root, sub))
-        dest = join(repo, sub)
-        os.makedirs(dest, exist_ok=True)
-        if method_dirs:
-            move_results_to_repository(method_dirs, dest)
 
 
 def evaluate(cfg: dict) -> None:
@@ -544,16 +716,15 @@ def evaluate(cfg: dict) -> None:
     summaries_dir = join(out, "summaries")
     os.makedirs(summaries_dir, exist_ok=True)
     ddir = data_dir(cfg)
-    repo = join(ddir, cfg.get("results_repo_subdir", "self-results"))
+    results_root = results_dir(cfg)
     force = cfg.get("force_evaluation", False)
     summary_names = cfg.get("summary_filenames") or {}
 
     for eval_method in cfg.get("evaluation_methods", []):
         if eval_method == "mock-community":
             mock_root = cfg.get("mock_dir") or join(ddir, "mock-community")
-            tmp_root = join(out, cfg.get("results_tmp_subdir", "assignment-tmp"))
             results_dirs = list_assignment_result_dirs(
-                join(tmp_root, "mock-community")
+                join(results_root, "mock-community")
             )
             summary_fp = join(
                 summaries_dir,
@@ -571,7 +742,7 @@ def evaluate(cfg: dict) -> None:
             continue
 
         sub = analysis_data_subdir(eval_method)
-        computed = join(repo, sub)
+        computed = join(results_root, sub)
         expected = join(ddir, sub)
         results_dirs = list_assignment_result_dirs(computed)
         if not results_dirs:
@@ -641,7 +812,7 @@ def main() -> int:
     parser.add_argument("--config", required=True, help="Path to config_04_tax_credit.yaml")
     parser.add_argument(
         "--phase",
-        choices=["datasets", "manifest", "collect", "evaluate", "plot", "post-assign"],
+        choices=["datasets", "manifest", "evaluate", "plot", "post-assign"],
         default="datasets",
     )
     args = parser.parse_args()
@@ -651,14 +822,11 @@ def main() -> int:
         prepare_datasets(cfg)
     elif args.phase == "manifest":
         prepare_manifest(cfg)
-    elif args.phase == "collect":
-        collect_results(cfg)
     elif args.phase == "evaluate":
         evaluate(cfg)
     elif args.phase == "plot":
         plot_results(cfg)
     elif args.phase == "post-assign":
-        collect_results(cfg)
         evaluate(cfg)
         plot_results(cfg)
     return 0

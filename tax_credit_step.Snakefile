@@ -19,8 +19,46 @@ config_output_path = run_output + config["run_name"] + "-tax-credit_config.yaml"
 shutil.copy(workflow.configfiles[0], config_output_path)
 
 CONFIGFILE = workflow.configfiles[0]
-fit_params = config.get("fit_params", "") or ""
-classify_params = config.get("classify_params", "") or ""
+
+
+def _row_str(row, field, default=""):
+    val = row.get(field, default)
+    if pd.isna(val):
+        return default
+    return str(val)
+
+
+def _config_float(key, default):
+    val = config.get(key, default)
+    if isinstance(val, (list, tuple)):
+        return float(val[0])
+    return float(val)
+
+
+def _row_float(row, field, default):
+    val = row.get(field, default)
+    if pd.isna(val):
+        return _config_float(field, default)
+    return float(val)
+
+
+def _assign_params(wildcards):
+    row = _manifest_row(wildcards.job_id)
+    default_method = config.get("classify_methods") or config.get(
+        "classify_method", "naive-bayes"
+    )
+    if isinstance(default_method, list):
+        default_method = default_method[0]
+    return {
+        "classify_method": _row_str(row, "classify_method", default_method),
+        "fit_params": _row_str(row, "fit_params", config.get("fit_params", "") or ""),
+        "classify_params": _row_str(
+            row, "classify_params", config.get("classify_params", "") or ""
+        ),
+        "perc_identity": _row_float(row, "perc_identity", 0.8),
+        "query_cov": _row_float(row, "query_cov", 0.8),
+        "min_consensus": _row_float(row, "min_consensus", 0.51),
+    }
 
 
 def _summary_targets():
@@ -82,7 +120,6 @@ rule run_tax_credit:
         datasets_done,
         manifest_fp,
         _assignment_done_inputs,
-        run_output + ".collected.done",
         expand(
             summaries_dir + "{summary}",
             summary=_summary_targets(),
@@ -123,6 +160,7 @@ rule tax_credit_assign_fold:
         touch(assign_done_dir + "{job_id}.done"),
     params:
         row=lambda wildcards: _manifest_row(wildcards.job_id),
+        assign=lambda wildcards: _assign_params(wildcards),
     conda:
         "qiime2-amplicon-2024.10"
     threads: config["classify_threads"]
@@ -159,37 +197,23 @@ rule tax_credit_assign_fold:
             --ref-seqs "$ROW_REFS" \
             --ref-taxa "$ROW_REFT" \
             --output-dir "$ROW_OUT" \
-            --classify-method {config[classify_method]} \
+            --classify-method {params.assign[classify_method]} \
             --confidence "$ROW_CONF" \
-            --fit-params '{fit_params}' \
-            --classify-params '{classify_params}' \
+            --fit-params '{params.assign[fit_params]}' \
+            --classify-params '{params.assign[classify_params]}' \
             --classify-threads {threads} \
-            --perc-identity {config[perc_identity]} \
-            --query-cov {config[query_cov]} \
-            --min-consensus {config[min_consensus]} \
+            --perc-identity {params.assign[perc_identity]} \
+            --query-cov {params.assign[query_cov]} \
+            --min-consensus {params.assign[min_consensus]} \
             $SKIP_FLAG $EXTRA_CLS $FIT_ONLY
 
         touch {output}
         """
 
 
-rule tax_credit_collect_results:
-    input:
-        _assignment_done_inputs,
-    output:
-        touch(run_output + ".collected.done"),
-    params:
-        cfg=CONFIGFILE,
-    conda:
-        "qiime2-amplicon-2024.10"
-    shell:
-        "python scripts/run_tax_credit.py --config {params.cfg} --phase collect && "
-        "touch {output}"
-
-
 rule tax_credit_evaluate:
     input:
-        run_output + ".collected.done",
+        _assignment_done_inputs,
     output:
         expand(
             summaries_dir + "{summary}",
