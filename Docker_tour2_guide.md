@@ -1,4 +1,6 @@
-## Docker
+## Docker (not fully supported yet)
+
+This currently requires generating a docker image with the provided Dockerfile, but is still in development. 
 
 To load the image on a computer with Docker installed:
 
