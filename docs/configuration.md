@@ -227,12 +227,12 @@ evaluation_methods:
 ```yaml
 iterations: 10
 novel_taxa_levels: [6, 5, 4, 3]
-cv_recall_min_level: 5
+cv_recall_max_level: 6
 novel_recall_min_level: 3
 force_regenerate: false
 ```
 
-Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
+`cv_recall_max_level` controls cross-validated assignment manifest generation (default `6`; `min_level` is always `max_level - 1` so each CV fold is listed once). Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
 
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
 

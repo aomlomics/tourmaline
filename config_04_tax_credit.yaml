@@ -30,7 +30,7 @@ evaluation_methods:
 ## --- SIMULATION PARAMETERS ---
 iterations: 10
 novel_taxa_levels: [6, 5, 4, 3]
-cv_recall_min_level: 5
+cv_recall_max_level: 6
 novel_recall_min_level: 2
 force_regenerate: false
 format_reference_databases: false #not implemented yet

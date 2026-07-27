@@ -218,6 +218,14 @@ def analysis_data_subdir(evaluation_method: str) -> str:
     raise ValueError(evaluation_method)
 
 
+def _cv_recall_levels(cfg: dict) -> tuple[int, int]:
+    """Cross-validated manifest levels: one pass at max_level (min = max - 1)."""
+    max_level = cfg.get("cv_recall_max_level", 6)
+    if max_level < 1:
+        raise ValueError("cv_recall_max_level must be >= 1")
+    return max_level, max_level - 1
+
+
 _SUPPORTED_CLASSIFY_METHODS = frozenset({
     "naive-bayes",
     "consensus-blast",
@@ -593,6 +601,7 @@ def prepare_manifest(cfg: dict) -> str:
     results_root = results_dir(cfg)
     os.makedirs(results_root, exist_ok=True)
     db_ids = list(reference_dataframe(cfg).index)
+    cv_max_level, cv_min_level = _cv_recall_levels(cfg)
 
     for classify_method in classify_methods(cfg):
         method_cfg = method_settings(cfg, classify_method)
@@ -630,7 +639,7 @@ def prepare_manifest(cfg: dict) -> str:
                 combos, ref_dbs = recall_simulated_taxa_dirs(
                     sim_dir, db_ids, cfg["iterations"],
                     ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
-                    max_level=6, min_level=cfg.get("cv_recall_min_level", 5),
+                    max_level=cv_max_level, min_level=cv_min_level,
                     multilevel=False,
                 )
             elif eval_method == "novel-taxa":
@@ -646,7 +655,7 @@ def prepare_manifest(cfg: dict) -> str:
                 combos, ref_dbs = recall_simulated_taxa_dirs(
                     sim_dir, db_ids, cfg["iterations"],
                     ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
-                    max_level=6, min_level=cfg.get("cv_recall_min_level", 5),
+                    max_level=cv_max_level, min_level=cv_min_level,
                     multilevel=False,
                 )
                 fit_id = fit_param_id(classify_method, method_cfg)
