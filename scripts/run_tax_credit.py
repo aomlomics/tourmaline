@@ -201,7 +201,7 @@ def simulation_methods_for_eval(evaluation_methods: list) -> list:
     for m in evaluation_methods:
         if m in mapping:
             methods.append(mapping[m])
-        elif m != "mock-community":
+        elif m not in ("mock-community", "self-validated"):
             raise ValueError(f"Unknown evaluation_method: {m}")
     return list(dict.fromkeys(methods))
 
@@ -213,6 +213,8 @@ def analysis_data_subdir(evaluation_method: str) -> str:
         return "cross-validated-trad"
     if evaluation_method == "novel-taxa":
         return "novel-taxa-simulations"
+    if evaluation_method == "self-validated":
+        return "self-validated"
     raise ValueError(evaluation_method)
 
 
@@ -220,7 +222,10 @@ _SUPPORTED_CLASSIFY_METHODS = frozenset({
     "naive-bayes",
     "consensus-blast",
     "consensus-vsearch",
+    "bt2-blca",
 })
+
+_SHARED_FIT_METHODS = frozenset({"naive-bayes", "bt2-blca"})
 
 
 def classify_methods(cfg: dict) -> list[str]:
@@ -281,7 +286,7 @@ def method_settings(cfg: dict, method: str) -> dict:
         classify_params = cfg.get("naive_bayes_classify_params", classify_params)
     elif method in ("consensus-blast", "consensus-vsearch"):
         classify_params = cfg.get("consensus_classify_params", classify_params)
-    return {
+    settings = {
         "classify_method": method,
         "classify_threads": cfg.get("classify_threads", 5),
         "fit_params": cfg.get("fit_params") or "",
@@ -290,11 +295,18 @@ def method_settings(cfg: dict, method: str) -> dict:
         "query_cov": cfg.get("query_cov", 0.8),
         "min_consensus": cfg.get("min_consensus", 0.51),
     }
+    if method == "bt2-blca":
+        settings["taxa_ranks"] = cfg.get(
+            "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
+        )
+    return settings
 
 
 def confidences_for_method(cfg: dict, method: str) -> list[float]:
     if method == "naive-bayes":
         return cfg.get("confidence_values") or [cfg.get("skl_confidence", 0.7)]
+    if method == "bt2-blca":
+        return cfg.get("confidence_values") or [cfg.get("confidence_thres", 0.8)]
     return [cfg.get("skl_confidence", 0.7)]
 
 
@@ -339,14 +351,28 @@ def _manifest_assign_params(
             "perc_identity": float(consensus_combo["perc_identity"]),
             "query_cov": float(consensus_combo["query_cov"]),
             "min_consensus": float(consensus_combo["min_consensus"]),
+            "taxa_ranks": "",
         }
-    return {
+    params = {
         "classify_method": method,
         "fit_params": method_cfg.get("fit_params") or "",
         "classify_params": method_cfg.get("classify_params") or "",
-        "perc_identity": 0.8,
-        "query_cov": 0.8,
-        "min_consensus": 0.51,
+        "perc_identity": float(method_cfg.get("perc_identity", 0.8)),
+        "query_cov": float(method_cfg.get("query_cov", 0.8)),
+        "min_consensus": float(method_cfg.get("min_consensus", 0.51)),
+        "taxa_ranks": "",
+    }
+    if method == "bt2-blca":
+        params["taxa_ranks"] = method_cfg.get(
+            "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
+        )
+    return params
+
+
+def _empty_manifest_artifact_fields() -> dict:
+    return {
+        "classifier_qza": "",
+        "bowtie_index_dir": "",
     }
 
 
@@ -384,19 +410,19 @@ def _append_fold_assignment_rows(
                 "output_dir": assign_dir,
                 "confidence": confidences[0],
                 "skip_fit": False,
-                "classifier_qza": "",
                 "trad_fit": False,
                 "fit_only": False,
                 "fit_job_id": "",
+                **_empty_manifest_artifact_fields(),
                 **assign_params,
             })
         return
 
     assign_params = _manifest_assign_params(method, method_cfg)
-    multi_conf_nb = len(confidences) > 1
+    multi_conf_shared = method in _SHARED_FIT_METHODS and len(confidences) > 1
 
-    if multi_conf_nb:
-        classifier_dir = join(
+    if multi_conf_shared:
+        shared_dir = join(
             results_root, subdir, dataset_id, reference_id, method, fit_param_id(method, method_cfg)
         )
         fit_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
@@ -408,16 +434,20 @@ def _append_fold_assignment_rows(
             "query_qza": query,
             "ref_seqs": ref_seqs,
             "ref_taxa": ref_taxa,
-            "output_dir": classifier_dir,
+            "output_dir": shared_dir,
             "confidence": confidences[0],
             "skip_fit": False,
-            "classifier_qza": "",
             "trad_fit": False,
             "fit_only": True,
             "fit_job_id": "",
+            **_empty_manifest_artifact_fields(),
             **assign_params,
         })
-        classifier_qza = join(classifier_dir, "classifier.qza")
+        shared_artifacts = _empty_manifest_artifact_fields()
+        if method == "naive-bayes":
+            shared_artifacts["classifier_qza"] = join(shared_dir, "classifier.qza")
+        else:
+            shared_artifacts["bowtie_index_dir"] = join(shared_dir, "bowtie2_index")
         for conf in confidences:
             p = param_id(method, method_cfg, conf)
             assign_dir = join(
@@ -434,10 +464,10 @@ def _append_fold_assignment_rows(
                 "output_dir": assign_dir,
                 "confidence": conf,
                 "skip_fit": True,
-                "classifier_qza": classifier_qza,
                 "trad_fit": False,
                 "fit_only": False,
                 "fit_job_id": fit_job_id,
+                **shared_artifacts,
                 **assign_params,
             })
         return
@@ -456,17 +486,20 @@ def _append_fold_assignment_rows(
             "output_dir": assign_dir,
             "confidence": conf,
             "skip_fit": False,
-            "classifier_qza": "",
             "trad_fit": False,
             "fit_only": False,
             "fit_job_id": "",
+            **_empty_manifest_artifact_fields(),
             **assign_params,
         })
 
 
 def prepare_datasets(cfg: dict) -> None:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
-    from tax_credit.framework_functions import generate_simulated_datasets
+    from tax_credit.framework_functions import (
+        generate_self_validated_datasets,
+        generate_simulated_datasets,
+    )
 
     out = run_output_dir(cfg)
     os.makedirs(out, exist_ok=True)
@@ -477,7 +510,12 @@ def prepare_datasets(cfg: dict) -> None:
     eval_methods = cfg.get("evaluation_methods", [])
     sim_methods = simulation_methods_for_eval(eval_methods)
 
-    if not sim_methods and "mock-community" not in eval_methods:
+    needs_generation = (
+        bool(sim_methods)
+        or "self-validated" in eval_methods
+        or "mock-community" in eval_methods
+    )
+    if not needs_generation:
         raise ValueError("No evaluation_methods require dataset generation.")
 
     if sim_methods:
@@ -496,6 +534,21 @@ def prepare_datasets(cfg: dict) -> None:
                 levelrange=levelrange,
                 force=force,
                 simulation_method=sim_methods,
+                **sim_params,
+            )
+
+    if "self-validated" in eval_methods:
+        force = cfg.get("force_regenerate", False)
+        exclude = set(cfg.get("exclude_databases") or [])
+        for db in cfg.get("reference_databases", []):
+            db_id = db["id"]
+            if db_id in exclude or db_id not in df.index:
+                continue
+            sim_params = _db_simulation_params(db)
+            generate_self_validated_datasets(
+                df.loc[[db_id]],
+                ddir,
+                force=force,
                 **sim_params,
             )
 
@@ -528,7 +581,10 @@ def stage_mock_communities(cfg: dict) -> None:
 
 def prepare_manifest(cfg: dict) -> str:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
-    from tax_credit.framework_functions import recall_simulated_taxa_dirs
+    from tax_credit.framework_functions import (
+        recall_self_validated_dirs,
+        recall_simulated_taxa_dirs,
+    )
 
     out = run_output_dir(cfg)
     manifest_fp = join(out, "assignment_manifest.tsv")
@@ -595,11 +651,11 @@ def prepare_manifest(cfg: dict) -> str:
                 )
                 fit_id = fit_param_id(classify_method, method_cfg)
 
-                if classify_method == "naive-bayes":
+                if classify_method in _SHARED_FIT_METHODS:
                     assign_params = _manifest_assign_params(classify_method, method_cfg)
                     for db_id in db_ids:
                         ref_seqs, ref_taxa = trad_cv_shared_reference_qzas(ddir, db_id)
-                        classifier_dir = join(
+                        shared_dir = join(
                             results_root, "trad-fit", db_id, classify_method, fit_id
                         )
                         rows.append({
@@ -610,26 +666,37 @@ def prepare_manifest(cfg: dict) -> str:
                             "query_qza": "",
                             "ref_seqs": ref_seqs,
                             "ref_taxa": ref_taxa,
-                            "output_dir": classifier_dir,
+                            "output_dir": shared_dir,
                             "confidence": confidences[0],
                             "skip_fit": False,
-                            "classifier_qza": "",
                             "trad_fit": True,
                             "fit_only": False,
                             "fit_job_id": "",
+                            **_empty_manifest_artifact_fields(),
                             **assign_params,
                         })
                     for dataset_id, reference_id in combos:
                         fold_dir = join(sim_dir, dataset_id)
                         query = join(fold_dir, "query.qza")
-                        classifier_qza = join(
-                            results_root,
-                            "trad-fit",
-                            reference_id,
-                            classify_method,
-                            fit_id,
-                            "classifier.qza",
-                        )
+                        shared_artifacts = _empty_manifest_artifact_fields()
+                        if classify_method == "naive-bayes":
+                            shared_artifacts["classifier_qza"] = join(
+                                results_root,
+                                "trad-fit",
+                                reference_id,
+                                classify_method,
+                                fit_id,
+                                "classifier.qza",
+                            )
+                        else:
+                            shared_artifacts["bowtie_index_dir"] = join(
+                                results_root,
+                                "trad-fit",
+                                reference_id,
+                                classify_method,
+                                fit_id,
+                                "bowtie2_index",
+                            )
                         for conf in confidences:
                             p = param_id(classify_method, method_cfg, conf)
                             assign_dir = join(
@@ -651,10 +718,10 @@ def prepare_manifest(cfg: dict) -> str:
                                 "output_dir": assign_dir,
                                 "confidence": conf,
                                 "skip_fit": True,
-                                "classifier_qza": classifier_qza,
                                 "trad_fit": False,
                                 "fit_only": False,
                                 "fit_job_id": "",
+                                **shared_artifacts,
                                 **assign_params,
                             })
                 else:
@@ -678,6 +745,11 @@ def prepare_manifest(cfg: dict) -> str:
                             job_id_prefix=f"trad-{dataset_id}-{classify_method}",
                         )
                 continue
+            elif eval_method == "self-validated":
+                combos, ref_dbs = recall_self_validated_dirs(
+                    sim_dir, db_ids,
+                    ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
+                )
             else:
                 raise ValueError(f"Unknown evaluation_method: {eval_method}")
 
@@ -754,6 +826,7 @@ def evaluate(cfg: dict) -> None:
             "cross-validated-taxa": "evaluate_classification_summary_CV.csv",
             "novel-taxa": "evaluate_classification_summary_novel.csv",
             "cross-validated-trad": "evaluate_classification_summary_CV_trad.csv",
+            "self-validated": "evaluate_classification_summary_self_validated.csv",
         }.get(eval_method, f"evaluate_{sub}.csv")
         summary_fp = join(summaries_dir, summary_names.get(eval_method, default_name))
 
@@ -762,6 +835,8 @@ def evaluate(cfg: dict) -> None:
             test_type = "cross-validated"
         elif eval_method == "cross-validated-trad":
             test_type = "cross-validated-trad"
+        elif eval_method == "self-validated":
+            test_type = "self-validated"
 
         novel_taxa_classification_evaluation(
             results_dirs,
@@ -806,7 +881,7 @@ def _metric_plot_df(
 
 
 def _plot_type_set(cfg: dict) -> set[str]:
-    """Normalize configured plot types (boxplot, pointplot, heatmap)."""
+    """Normalize configured plot types (boxplot, pointplot, heatmap, stacked_bar)."""
     aliases = {
         "boxplot": "boxplot",
         "box": "boxplot",
@@ -815,6 +890,11 @@ def _plot_type_set(cfg: dict) -> set[str]:
         "line": "pointplot",
         "lineplot": "pointplot",
         "heatmap": "heatmap",
+        "stacked_bar": "stacked_bar",
+        "stacked-bar": "stacked_bar",
+        "stackedbar": "stacked_bar",
+        "stacked_barplot": "stacked_bar",
+        "stacked-barplot": "stacked_bar",
     }
     configured = cfg.get("plot_types") or ["boxplot", "pointplot", "heatmap"]
     if isinstance(configured, str):
@@ -839,6 +919,113 @@ def _eval_method_plot_label(eval_method: str) -> str:
     return eval_method
 
 
+def _log_analysis_ranks(cfg: dict) -> list[str]:
+    ranks = cfg.get("log_analysis_ranks")
+    if ranks is None:
+        return [cfg.get("log_analysis_rank", "species")]
+    if isinstance(ranks, str):
+        return [ranks]
+    return [str(rank) for rank in ranks]
+
+
+def analyze_log_results(cfg: dict) -> None:
+    if not cfg.get("generate_log_analysis", True):
+        return
+    _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
+    from tax_credit.log_analysis import (
+        load_classification_accuracy_logs,
+        summarize_confusion_pairs,
+        summarize_cross_fold_stability,
+        summarize_method_parameter_sensitivity,
+        summarize_taxon_errors,
+        select_top_sensitivity_taxa,
+    )
+    from tax_credit.paths import list_assignment_result_dirs
+    from tax_credit.log_plotting import (
+        method_parameter_sensitivity_heatmap_from_data_frame,
+    )
+    import matplotlib.pyplot as plt
+
+    rank = cfg.get("log_analysis_rank", "species")
+    ranks = _log_analysis_ranks(cfg)
+    min_obvs = int(
+        cfg.get("log_analysis_min_obvs", cfg.get("log_analysis_min_reads", 3))
+    )
+    top_n = int(cfg.get("log_analysis_top_n", 25))
+    out = run_output_dir(cfg)
+    summaries_root = join(out, "summaries", "log_analysis")
+    plots_dir = join(out, cfg.get("plots_subdir", "plots"))
+
+    for eval_method in cfg.get("evaluation_methods", []):
+        if eval_method == "mock-community":
+            continue
+        plot_label = _eval_method_plot_label(eval_method)
+        sub = analysis_data_subdir(eval_method)
+        computed = join(results_dir(cfg), sub)
+        assignment_dirs = list_assignment_result_dirs(computed)
+        log_df = load_classification_accuracy_logs(assignment_dirs)
+        if log_df.empty:
+            continue
+
+        method_summary_dir = join(summaries_root, eval_method)
+        method_plots_dir = join(plots_dir, eval_method)
+        os.makedirs(method_summary_dir, exist_ok=True)
+        os.makedirs(method_plots_dir, exist_ok=True)
+
+        taxon_summary = summarize_taxon_errors(
+            log_df, rank=rank, min_obvs=min_obvs,
+        )
+        taxon_summary.to_csv(
+            join(method_summary_dir, "taxon_error_profiles.csv"), index=False,
+        )
+
+        confusion_pairs = summarize_confusion_pairs(log_df, rank=rank)
+        confusion_pairs.to_csv(
+            join(method_summary_dir, "confusion_pairs.csv"), index=False,
+        )
+
+        cross_fold = summarize_cross_fold_stability(
+            log_df, rank=rank, min_obvs=min_obvs,
+        )
+        if not cross_fold.empty:
+            cross_fold.to_csv(
+                join(method_summary_dir, "cross_fold_stability.csv"), index=False,
+            )
+
+        for sensitivity_rank in ranks:
+            sensitivity = summarize_method_parameter_sensitivity(
+                log_df,
+                rank=sensitivity_rank,
+                min_obvs=min_obvs,
+                metric="pct_mis",
+            )
+            if sensitivity.empty:
+                continue
+            sensitivity.to_csv(
+                join(
+                    method_summary_dir,
+                    f"method_parameter_sensitivity-{sensitivity_rank}.csv",
+                ),
+            )
+            plot_pivot = select_top_sensitivity_taxa(sensitivity, top_n=top_n)
+            ax = method_parameter_sensitivity_heatmap_from_data_frame(
+                plot_pivot,
+                title=(
+                    f"{plot_label}: misclassification by taxon and run "
+                    f"({sensitivity_rank})"
+                ),
+                show=False,
+            )
+            ax.figure.savefig(
+                join(
+                    method_plots_dir,
+                    f"method-parameter-sensitivity-{sensitivity_rank}.pdf",
+                ),
+                bbox_inches="tight",
+            )
+            plt.close(ax.figure)
+
+
 def plot_results(cfg: dict) -> None:
     if not cfg.get("generate_plots", True):
         return
@@ -847,7 +1034,10 @@ def plot_results(cfg: dict) -> None:
         boxplot_from_data_frame,
         heatmap_from_data_frame,
         pointplot_from_data_frame,
+        stacked_classification_barplot_from_data_frame,
     )
+    from tax_credit.novel_evaluation import extract_per_level_classification_ratios
+    from tax_credit.paths import list_assignment_result_dirs
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -868,6 +1058,7 @@ def plot_results(cfg: dict) -> None:
         "cross-validated-taxa": "evaluate_classification_summary_CV.csv",
         "novel-taxa": "evaluate_classification_summary_novel.csv",
         "cross-validated-trad": "evaluate_classification_summary_CV_trad.csv",
+        "self-validated": "evaluate_classification_summary_self_validated.csv",
     }
 
     for eval_method in cfg.get("evaluation_methods", []):
@@ -877,6 +1068,26 @@ def plot_results(cfg: dict) -> None:
         method_plots_dir = join(plots_dir, eval_method)
         os.makedirs(method_plots_dir, exist_ok=True)
         sub = analysis_data_subdir(eval_method)
+
+        if "stacked_bar" in plot_types:
+            computed = join(results_dir(cfg), sub)
+            assignment_dirs = list_assignment_result_dirs(computed)
+            stacked_df = extract_per_level_classification_ratios(assignment_dirs)
+            if not stacked_df.empty:
+                ax = stacked_classification_barplot_from_data_frame(
+                    stacked_df,
+                    title=f"{plot_label}: classification ratios by level",
+                    show=False,
+                )
+                ax.figure.savefig(
+                    join(
+                        method_plots_dir,
+                        "classification-ratios-stacked-barplot.pdf",
+                    ),
+                    bbox_inches="tight",
+                )
+                plt.close(ax.figure)
+
         candidates = [
             join(summaries_dir, summary_names.get(
                 eval_method, default_summary.get(eval_method, f"evaluate_{sub}.csv")
@@ -967,6 +1178,7 @@ def plot_results(cfg: dict) -> None:
                     )
                     plt.close(ax.figure)
 
+    analyze_log_results(cfg)
     Path(join(plots_dir, ".done")).touch()
 
 

@@ -218,6 +218,7 @@ evaluation_methods:
   - cross-validated          # taxonomy-aware CV folds
   - cross-validated-trad     # traditional KFold CV
   - novel-taxa               # novel-taxa simulation
+  - self-validated           # full database classified against itself
   # - mock-community         # see mock_communities below
 ```
 

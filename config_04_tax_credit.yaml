@@ -22,7 +22,7 @@ reference_databases:
     truncate: false
 
 ## --- EVALUATION METHODS (one or more) ---
-# cross-validated | cross-validated-trad | novel-taxa | mock-community
+# cross-validated | cross-validated-trad | novel-taxa | self-validated | mock-community
 evaluation_methods:
   - cross-validated
   - novel-taxa
@@ -36,16 +36,19 @@ force_regenerate: false
 format_reference_databases: false #not implemented yet
 
 ## --- TAXONOMIC ASSIGNMENT (shared) ---
-# One or more methods to benchmark: naive-bayes | consensus-blast | consensus-vsearch
+# One or more methods to benchmark: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca
 classify_methods:
   - naive-bayes
   - consensus-vsearch
+  - bt2-blca
 classify_threads: 5
+# Taxonomy ranks for bt2-blca output (comma-separated, no spaces)
+taxa_ranks: kingdom,phylum,class,order,family,genus,species
 
 ## --- NAIVE-BAYES OPTIONS ---
 # Optional: confidence threshold(s) for classify-sklearn; multiple values share one fitted classifier
 confidence_values: [0.7, 0.9]
-# Optional: default confidence when confidence_values is omitted
+# Optional: default confidence when confidence_values is omitted (naive-bayes only)
 skl_confidence: 0.7
 # Optional: extra parameters passed to fit-classifier-naive-bayes
 fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
@@ -55,14 +58,23 @@ naive_bayes_classify_params: ""
 pretrained_classifier:
 
 ## --- CONSENSUS BLAST/VSEARCH OPTIONS ---
-# Optional: minimum percent identity (0–1); single value or list to sweep
+# Optional: minimum percent identity (0–1); single value or list to sweep (consensus methods)
+# Also used by bt2-blca for BLCA percent-identity cutoff (-b)
 perc_identity: 0.8
-# Optional: minimum query coverage (0–1); single value or list to sweep
+# Optional: minimum query coverage (0–1); single value or list to sweep (consensus methods)
+# Also used by bt2-blca for BLCA query-coverage cutoff (-l)
 query_cov: 0.8
 # Optional: minimum consensus fraction (0–1); single value or list to sweep
 min_consensus: 0.51
 # Optional: extra parameters passed to consensus-blast or consensus-vsearch
 consensus_classify_params: ""
+
+## --- BT2-BLCA OPTIONS ---
+# Optional: confidence threshold(s) for reformat_summary_for_r.py; multiple values share one
+# Bowtie2 index per fold (same sharing pattern as naive-bayes classifiers)
+# When confidence_values is omitted, confidence_thres is used instead
+confidence_thres: 0.8
+# Requires the bt2-blca conda environment (bowtie2, muscle); see docs/install.md
 
 ## --- OUTPUT LAYOUT ---
 data_subdir: data
@@ -71,11 +83,12 @@ results_subdir: results
 ## --- PLOTTING ---
 generate_plots: true
 plots_subdir: plots
-# Plot types to generate: boxplot | pointplot (line) | heatmap
+# Plot types to generate: boxplot | pointplot (line) | heatmap | stacked_bar
 plot_types:
   - boxplot
   - pointplot
   - heatmap
+  - stacked_bar
 # Metrics for boxplots, per-level line plots, and heatmaps
 plot_metrics:
   - Precision
@@ -91,6 +104,13 @@ plot_color_palette:
 plot_heatmap_rows: [Method, Parameters]
 plot_heatmap_cols: [Dataset, level]
 
+## --- LOG ANALYSIS (per-read classification_accuracy_log.tsv) ---
+generate_log_analysis: true
+log_analysis_rank: species   # rank for summary CSV tables
+log_analysis_ranks: [species, genus, family]   # ranks for sensitivity plots/CSVs
+log_analysis_min_obvs: 3   # minimum log observations per expected taxon
+log_analysis_top_n: 25
+
 ## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
 mock_communities: []
 mock_dir:
@@ -105,4 +125,5 @@ summary_filenames:
   cross-validated: evaluate_classification_summary_CV.csv
   novel-taxa: evaluate_classification_summary_novel.csv
   cross-validated-trad: evaluate_classification_summary_CV_trad.csv
+  self-validated: evaluate_classification_summary_self_validated.csv
   mock-community: mock_evaluation_summary.tsv

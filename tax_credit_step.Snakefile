@@ -58,6 +58,12 @@ def _assign_params(wildcards):
         "perc_identity": _row_float(row, "perc_identity", 0.8),
         "query_cov": _row_float(row, "query_cov", 0.8),
         "min_consensus": _row_float(row, "min_consensus", 0.51),
+        "taxa_ranks": _row_str(
+            row,
+            "taxa_ranks",
+            config.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species"),
+        ),
+        "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
     }
 
 
@@ -82,6 +88,13 @@ def _summary_targets():
                 summary_cfg.get(
                     "cross-validated-trad",
                     "evaluate_classification_summary_CV_trad.csv",
+                )
+            )
+        elif method == "self-validated":
+            names.append(
+                summary_cfg.get(
+                    "self-validated",
+                    "evaluate_classification_summary_self_validated.csv",
                 )
             )
     return names
@@ -174,6 +187,7 @@ rule tax_credit_assign_fold:
         ROW_CONF=$(echo "{params.row.confidence}" | tr -d '"')
         ROW_SKIP=$(echo "{params.row.skip_fit}" | tr -d '"')
         ROW_CLS=$(echo "{params.row.classifier_qza}" | tr -d '"')
+        ROW_BT2=$(echo "{params.assign[bowtie_index_dir]}" | tr -d '"')
         TRAD_FIT=$(echo "{params.row.trad_fit}" | tr -d '"')
         ROW_FIT_ONLY=$(echo "{params.row.fit_only}" | tr -d '"')
 
@@ -181,6 +195,10 @@ rule tax_credit_assign_fold:
         EXTRA_CLS=""
         if [ -n "$ROW_CLS" ] && [ "$ROW_CLS" != "nan" ] && [ "$ROW_CLS" != "" ]; then
             EXTRA_CLS="--classifier-qza $ROW_CLS"
+        fi
+        EXTRA_BT2=""
+        if [ -n "$ROW_BT2" ] && [ "$ROW_BT2" != "nan" ] && [ "$ROW_BT2" != "" ]; then
+            EXTRA_BT2="--bowtie-index-dir $ROW_BT2"
         fi
         SKIP_FLAG=""
         if [ "$ROW_SKIP" = "True" ] || [ "$ROW_SKIP" = "true" ]; then
@@ -205,7 +223,8 @@ rule tax_credit_assign_fold:
             --perc-identity {params.assign[perc_identity]} \
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
-            $SKIP_FLAG $EXTRA_CLS $FIT_ONLY
+            --taxa-ranks '{params.assign[taxa_ranks]}' \
+            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $FIT_ONLY
 
         touch {output}
         """

@@ -198,6 +198,28 @@ def get_dic_from_aln(aln):
     return alndic
 
 
+def build_muscle_fasta(query_name, query_seq, hit_names, reference_sequences):
+    """Build MUSCLE input with short IDs; CLUSTAL output truncates long names."""
+    alias_to_name = {}
+    lines = []
+    for i, hit in enumerate(hit_names):
+        alias = f"r{i}"
+        alias_to_name[alias] = hit
+        lines.append(f">{alias}\n{reference_sequences[hit]}\n")
+    query_alias = "q"
+    alias_to_name[query_alias] = query_name
+    lines.append(f">{query_alias}\n{query_seq}\n")
+    return "".join(lines), alias_to_name
+
+
+def remap_alndic_aliases(alndic, alias_to_name):
+    """Restore original sequence names after MUSCLE alignment."""
+    remapped = {}
+    for alias, seq in alndic.items():
+        remapped[alias_to_name.get(alias, alias)] = seq
+    return remapped
+
+
 def pairwise_score(alndic, query, match, mismatch, ngap):
     '''Calculate pairwise alignment score given a query'''
     nt = ["A", "C", "T", "G", "g", "a", "c", "t"]
@@ -360,14 +382,23 @@ for seqn, info in input_sequences.items():
 
     ### Get all the hits list belong to the same query ###
     ### Add query fasta sequence to extracted hit fasta ###
-    fifsa = []
+    valid_hits = []
+    seen_hits = set()
     for hit in info.hits:
         if hit not in reference_sequences:
             print("Missing reference sequence for " + hit)
             continue
-        fifsa.append(">{}\n{}\n".format(hit, reference_sequences[hit]))
-    fifsa.append(">" + seqn + "\n" + info.seq)
-    fifsa = "\n".join(fifsa)
+        if hit in seen_hits:
+            continue
+        seen_hits.add(hit)
+        valid_hits.append(hit)
+    if not valid_hits:
+        outfile.write(seqn + "\tUnclassified\n")
+        continue
+
+    fifsa, alias_to_name = build_muscle_fasta(
+        seqn, info.seq, valid_hits, reference_sequences
+    )
     # Write the content to a file
     # with open("hitdb.fsa", "w") as fifsa_file:
     #     fifsa_file.write(fifsa)
@@ -384,7 +415,14 @@ for seqn, info in input_sequences.items():
     #print errs
     # print StringIO.StringIO(outs)
     #alndic = get_dic_from_aln("hitdb.aln")
-    alndic = get_dic_from_aln(StringIO(outs.decode('utf-8')))
+    alndic = remap_alndic_aliases(
+        get_dic_from_aln(StringIO(outs.decode('utf-8'))),
+        alias_to_name,
+    )
+    if seqn not in alndic:
+        print(f"[WARNING] Query {seqn} missing from MUSCLE alignment; skipping.")
+        outfile.write(seqn + "\tUnclassified\n")
+        continue
     #os.system("rm hitdb.aln")
     #os.system("rm hitdb.fsa")
     #    	print "Processing:",k1
