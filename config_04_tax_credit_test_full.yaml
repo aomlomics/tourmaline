@@ -1,0 +1,151 @@
+## Tourmaline tax-credit SMOKE TEST config (full evaluation matrix).
+## `tourmaline.sh --step tax-credit -c <this file> -n 6`
+##
+## Reference databases are the small subsampled TEST databases in
+## 00-data/tax-credit-test/, built by scripts/subsample_reference_db.py
+## (seed 20260910). They are NOT the production MiFish databases -- do not use
+## this config to produce real benchmarking results.
+##
+## Mirrors the full production matrix (3 iterations, novel levels 6/5/4,
+## confidence and percent-identity sweeps). Slower; use
+## config_04_tax_credit_test.yaml for routine smoke tests.
+
+
+## --- CORE RUN SETTINGS ---
+run_name: tax_credit_test_full
+output_dir: "../v2-results"
+tax_credit_package_dir: "../tax-credit"
+
+## --- REFERENCE DATABASES (one or more) ---
+reference_databases:
+  - id: mifishGom-test
+    refseqs_file: 00-data/tax-credit-test/mifishGom-test-seqs.qza
+    taxa_file: 00-data/tax-credit-test/mifishGom-test-taxa.qza
+    fwd_primer: GCCGGTAAAACTCGTGCCAGC
+    rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
+    fwd_primer_id: MiFishF
+    rev_primer_id: MiFishR
+    read_length: 180
+    min_read_length: 100
+    trim_primers: false
+    truncate: false
+  - id: addJ-test
+    refseqs_file: 00-data/tax-credit-test/addJ-test-seqs.qza
+    taxa_file: 00-data/tax-credit-test/addJ-test-taxa.qza
+    fwd_primer: GCCGGTAAAACTCGTGCCAGC
+    rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
+    fwd_primer_id: MiFishF
+    rev_primer_id: MiFishR
+    read_length: 180
+    min_read_length: 100
+    trim_primers: false
+    truncate: false
+
+## --- EVALUATION METHODS (one or more) ---
+# cross-validated | cross-validated-trad | novel-taxa | self-validated | mock-community
+evaluation_methods:
+  - self-validated
+  - novel-taxa
+  - cross-validated
+
+## --- SIMULATION PARAMETERS ---
+iterations: 3
+novel_taxa_levels: [6, 5, 4]
+cv_recall_max_level: 6
+novel_recall_min_level: 3
+force_regenerate: false
+format_reference_databases: false #not implemented yet
+
+## --- TAXONOMIC ASSIGNMENT (shared) ---
+# One or more methods to benchmark: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca
+classify_methods:
+  - naive-bayes
+  - consensus-vsearch
+  - bt2-blca
+classify_threads: 4
+
+## --- NAIVE-BAYES OPTIONS ---
+# Optional: confidence threshold(s) for classify-sklearn; multiple values share one fitted classifier
+nb_confidence_values: [0.7, 0.9]
+# Optional: default when nb_confidence_values is omitted (naive-bayes only)
+skl_confidence: 0.7
+# Optional: extra parameters passed to fit-classifier-naive-bayes
+fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
+# Optional: extra parameters passed to classify-sklearn (naive-bayes only)
+naive_bayes_classify_params: ""
+# Optional: full path to pretrained classifier (.qza); not used by tax-credit simulation folds
+pretrained_classifier:
+
+## --- CONSENSUS BLAST/VSEARCH OPTIONS ---
+# Optional: minimum percent identity (0–1); single value or list to sweep (consensus methods)
+# Also used by bt2-blca for BLCA percent-identity cutoff (-b)
+perc_identity: [0.8, 0.9]
+# Optional: minimum query coverage (0–1); single value or list to sweep (consensus methods)
+# Also used by bt2-blca for BLCA query-coverage cutoff (-l)
+query_cov: 0.8
+# Optional: minimum consensus fraction (0–1); single value or list to sweep
+min_consensus: 0.51
+# Optional: extra parameters passed to consensus-blast or consensus-vsearch
+consensus_classify_params: ""
+
+## --- BT2-BLCA OPTIONS ---
+# Optional: confidence threshold(s) for reformat_summary_for_r.py; multiple values share one
+# Bowtie2 index per fold (same sharing pattern as naive-bayes classifiers)
+# When blca_confidence_values is omitted, confidence_thres is used instead
+blca_confidence_values: [0.8]
+# confidence_thres: 0.8
+# Taxonomy ranks for bt2-blca output (comma-separated, no spaces)
+taxa_ranks: kingdom,phylum,class,order,family,genus,species
+# Requires the bt2-blca conda environment (bowtie2, muscle); see docs/install.md
+
+## --- OUTPUT LAYOUT ---
+data_subdir: data
+results_subdir: results
+
+## --- PLOTTING ---
+generate_plots: true
+plots_subdir: plots
+# Plot types to generate: boxplot | pointplot (line) | heatmap | stacked_bar
+plot_types:
+  - boxplot
+  - pointplot
+  - heatmap
+  - stacked_bar
+# Metrics for boxplots, per-level line plots, and heatmaps
+plot_metrics:
+  - Precision
+  - Recall
+  - F-measure
+  - match_ratio
+  - underclassification_ratio
+  - overclassification_ratio
+  - misclassification_ratio
+# Optional: seaborn palette name or dict mapping Method -> color
+plot_color_palette:
+# Optional: heatmap row/column groupings (defaults match tax-credit notebooks)
+plot_heatmap_rows: [Method, Parameters]
+plot_heatmap_cols: [Dataset, level]
+
+## --- LOG ANALYSIS (per-read classification_accuracy_log.tsv) ---
+generate_log_analysis: true
+log_analysis_rank: species   # rank for summary CSV tables
+log_analysis_ranks: [species, genus, family]   # ranks for sensitivity plots/CSVs
+log_analysis_min_obvs: 1   # minimum log observations per expected taxon
+log_analysis_top_n: 25
+
+## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
+mock_communities: []
+mock_dir:
+mock_taxonomy_level_range: [2, 3, 4, 5, 6]
+mock_per_seq_precision: false
+mock_force_eval: false
+
+## --- ADVANCED ---
+force_evaluation: false
+exclude_databases: []
+summary_filenames:
+  cross-validated: evaluate_classification_summary_CV.csv
+  novel-taxa: evaluate_classification_summary_novel.csv
+  cross-validated-trad: evaluate_classification_summary_CV_trad.csv
+  self-validated: evaluate_classification_summary_self_validated.csv
+  mock-community: mock_evaluation_summary.tsv
