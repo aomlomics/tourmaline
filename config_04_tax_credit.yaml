@@ -47,8 +47,8 @@ taxa_ranks: kingdom,phylum,class,order,family,genus,species
 
 ## --- NAIVE-BAYES OPTIONS ---
 # Optional: confidence threshold(s) for classify-sklearn; multiple values share one fitted classifier
-confidence_values: [0.7, 0.9]
-# Optional: default confidence when confidence_values is omitted (naive-bayes only)
+nb_confidence_values: [0.7, 0.9]
+# Optional: default when nb_confidence_values is omitted (naive-bayes only)
 skl_confidence: 0.7
 # Optional: extra parameters passed to fit-classifier-naive-bayes
 fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
@@ -72,7 +72,8 @@ consensus_classify_params: ""
 ## --- BT2-BLCA OPTIONS ---
 # Optional: confidence threshold(s) for reformat_summary_for_r.py; multiple values share one
 # Bowtie2 index per fold (same sharing pattern as naive-bayes classifiers)
-# When confidence_values is omitted, confidence_thres is used instead
+# When blca_confidence_values is omitted, confidence_thres is used instead
+blca_confidence_values: [0.8]
 confidence_thres: 0.8
 # Requires the bt2-blca conda environment (bowtie2, muscle); see docs/install.md
 

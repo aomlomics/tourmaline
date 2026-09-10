@@ -25,20 +25,26 @@ def _row_str(row, field, default=""):
     val = row.get(field, default)
     if pd.isna(val):
         return default
-    return str(val)
+    s = str(val).strip()
+    if s.lower() in ("", "nan", "na"):
+        return default
+    return s
+
+
+def _row_optional_float(row, field):
+    val = row.get(field)
+    if pd.isna(val):
+        return None
+    s = str(val).strip()
+    if s.lower() in ("", "nan", "na"):
+        return None
+    return float(s)
 
 
 def _config_float(key, default):
     val = config.get(key, default)
     if isinstance(val, (list, tuple)):
         return float(val[0])
-    return float(val)
-
-
-def _row_float(row, field, default):
-    val = row.get(field, default)
-    if pd.isna(val):
-        return _config_float(field, default)
     return float(val)
 
 
@@ -49,22 +55,37 @@ def _assign_params(wildcards):
     )
     if isinstance(default_method, list):
         default_method = default_method[0]
-    return {
-        "classify_method": _row_str(row, "classify_method", default_method),
-        "fit_params": _row_str(row, "fit_params", config.get("fit_params", "") or ""),
-        "classify_params": _row_str(
-            row, "classify_params", config.get("classify_params", "") or ""
-        ),
-        "perc_identity": _row_float(row, "perc_identity", 0.8),
-        "query_cov": _row_float(row, "query_cov", 0.8),
-        "min_consensus": _row_float(row, "min_consensus", 0.51),
-        "taxa_ranks": _row_str(
+    method = _row_str(row, "classify_method", default_method)
+    params = {
+        "classify_method": method,
+        "fit_params": _row_str(row, "fit_params", ""),
+        "classify_params": _row_str(row, "classify_params", ""),
+        "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
+        "confidence": _row_str(row, "confidence", ""),
+    }
+    if method in ("consensus-blast", "consensus-vsearch"):
+        params["perc_identity"] = _row_optional_float(row, "perc_identity")
+        params["query_cov"] = _row_optional_float(row, "query_cov")
+        params["min_consensus"] = _row_optional_float(row, "min_consensus")
+        params["taxa_ranks"] = ""
+    elif method == "bt2-blca":
+        params["perc_identity"] = _row_optional_float(row, "perc_identity")
+        params["query_cov"] = _row_optional_float(row, "query_cov")
+        params["min_consensus"] = 0.51
+        params["taxa_ranks"] = _row_str(
             row,
             "taxa_ranks",
             config.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species"),
-        ),
-        "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
-    }
+        )
+    else:
+        params["perc_identity"] = 0.8
+        params["query_cov"] = 0.8
+        params["min_consensus"] = 0.51
+        params["taxa_ranks"] = ""
+    for field in ("perc_identity", "query_cov", "min_consensus"):
+        if params.get(field) is None:
+            params[field] = _config_float(field, 0.8 if field != "min_consensus" else 0.51)
+    return params
 
 
 def _summary_targets():
@@ -200,6 +221,10 @@ rule tax_credit_assign_fold:
         if [ -n "$ROW_BT2" ] && [ "$ROW_BT2" != "nan" ] && [ "$ROW_BT2" != "" ]; then
             EXTRA_BT2="--bowtie-index-dir $ROW_BT2"
         fi
+        CONF_FLAG=""
+        if [ -n "$ROW_CONF" ] && [ "$ROW_CONF" != "nan" ] && [ "$ROW_CONF" != "NA" ]; then
+            CONF_FLAG="--confidence $ROW_CONF"
+        fi
         SKIP_FLAG=""
         if [ "$ROW_SKIP" = "True" ] || [ "$ROW_SKIP" = "true" ]; then
             SKIP_FLAG="--skip-fit"
@@ -216,7 +241,7 @@ rule tax_credit_assign_fold:
             --ref-taxa "$ROW_REFT" \
             --output-dir "$ROW_OUT" \
             --classify-method {params.assign[classify_method]} \
-            --confidence "$ROW_CONF" \
+            $CONF_FLAG \
             --fit-params '{params.assign[fit_params]}' \
             --classify-params '{params.assign[classify_params]}' \
             --classify-threads {threads} \

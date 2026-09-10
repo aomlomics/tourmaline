@@ -264,6 +264,31 @@ def _param_value_list(cfg: dict, key: str, default: float) -> list[float]:
     return [float(val)]
 
 
+def _confidence_value_list(cfg: dict, method: str) -> list[float]:
+    """Return confidence thresholds to sweep for naive-bayes or bt2-blca."""
+    if method == "naive-bayes":
+        keys = ("nb_confidence_values", "confidence_values")
+        fallback = cfg.get("skl_confidence", 0.7)
+    elif method == "bt2-blca":
+        keys = ("blca_confidence_values", "confidence_values")
+        fallback = cfg.get("confidence_thres", 0.8)
+    else:
+        return []
+    for key in keys:
+        val = cfg.get(key)
+        if val is None:
+            continue
+        if isinstance(val, (list, tuple)):
+            return [float(v) for v in val]
+        return [float(val)]
+    return [float(fallback)]
+
+
+def _manifest_na() -> str:
+    """Placeholder for manifest fields not used by a job."""
+    return ""
+
+
 def consensus_param_combinations(cfg: dict) -> list[dict[str, float]]:
     """Cartesian product of consensus classifier parameters from config."""
     perc = _param_value_list(cfg, "perc_identity", 0.8)
@@ -272,6 +297,16 @@ def consensus_param_combinations(cfg: dict) -> list[dict[str, float]]:
     return [
         {"perc_identity": pi, "query_cov": q, "min_consensus": m}
         for pi, q, m in itertools.product(perc, qc, mc)
+    ]
+
+
+def bt2_param_combinations(cfg: dict) -> list[dict[str, float]]:
+    """Cartesian product of bt2-blca BLCA cutoff parameters from config."""
+    perc = _param_value_list(cfg, "perc_identity", 0.8)
+    qc = _param_value_list(cfg, "query_cov", 0.8)
+    return [
+        {"perc_identity": pi, "query_cov": q}
+        for pi, q in itertools.product(perc, qc)
     ]
 
 
@@ -287,6 +322,13 @@ def consensus_param_id(combo: dict[str, float]) -> str:
     )
 
 
+def bt2_param_id(combo: dict[str, float]) -> str:
+    return (
+        f"pi{_format_sweep_param(combo['perc_identity'])}-"
+        f"qc{_format_sweep_param(combo['query_cov'])}"
+    )
+
+
 def method_settings(cfg: dict, method: str) -> dict:
     """Per-method assignment settings derived from config."""
     classify_params = cfg.get("classify_params") or ""
@@ -299,23 +341,18 @@ def method_settings(cfg: dict, method: str) -> dict:
         "classify_threads": cfg.get("classify_threads", 5),
         "fit_params": cfg.get("fit_params") or "",
         "classify_params": classify_params or "",
-        "perc_identity": cfg.get("perc_identity", 0.8),
-        "query_cov": cfg.get("query_cov", 0.8),
-        "min_consensus": cfg.get("min_consensus", 0.51),
     }
     if method == "bt2-blca":
         settings["taxa_ranks"] = cfg.get(
             "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
         )
+        settings["perc_identity"] = cfg.get("perc_identity", 0.8)
+        settings["query_cov"] = cfg.get("query_cov", 0.8)
     return settings
 
 
 def confidences_for_method(cfg: dict, method: str) -> list[float]:
-    if method == "naive-bayes":
-        return cfg.get("confidence_values") or [cfg.get("skl_confidence", 0.7)]
-    if method == "bt2-blca":
-        return cfg.get("confidence_values") or [cfg.get("confidence_thres", 0.8)]
-    return [cfg.get("skl_confidence", 0.7)]
+    return _confidence_value_list(cfg, method)
 
 
 def param_id(
@@ -323,11 +360,17 @@ def param_id(
     method_cfg: dict,
     confidence: float,
     consensus_combo: dict[str, float] | None = None,
+    bt2_combo: dict[str, float] | None = None,
 ) -> str:
     if method in ("consensus-blast", "consensus-vsearch"):
         if consensus_combo is None:
             raise ValueError("consensus_combo is required for consensus methods")
         return consensus_param_id(consensus_combo)
+    if method == "bt2-blca":
+        if bt2_combo is None:
+            raise ValueError("bt2_combo is required for bt2-blca sweeps")
+        base = bt2_param_id(bt2_combo)
+        return f"{base}-conf{confidence}"
     fit_params = (method_cfg.get("fit_params") or "").strip()
     if method == "naive-bayes" and fit_params:
         digest = hashlib.md5(fit_params.encode()).hexdigest()[:8]
@@ -348,32 +391,38 @@ def _manifest_assign_params(
     method: str,
     method_cfg: dict,
     consensus_combo: dict[str, float] | None = None,
+    bt2_combo: dict[str, float] | None = None,
 ) -> dict:
-    if method in ("consensus-blast", "consensus-vsearch"):
-        if consensus_combo is None:
-            raise ValueError("consensus_combo is required for consensus methods")
-        return {
-            "classify_method": method,
-            "fit_params": method_cfg.get("fit_params") or "",
-            "classify_params": method_cfg.get("classify_params") or "",
-            "perc_identity": float(consensus_combo["perc_identity"]),
-            "query_cov": float(consensus_combo["query_cov"]),
-            "min_consensus": float(consensus_combo["min_consensus"]),
-            "taxa_ranks": "",
-        }
+    na = _manifest_na()
     params = {
         "classify_method": method,
-        "fit_params": method_cfg.get("fit_params") or "",
-        "classify_params": method_cfg.get("classify_params") or "",
-        "perc_identity": float(method_cfg.get("perc_identity", 0.8)),
-        "query_cov": float(method_cfg.get("query_cov", 0.8)),
-        "min_consensus": float(method_cfg.get("min_consensus", 0.51)),
-        "taxa_ranks": "",
+        "fit_params": na,
+        "classify_params": na,
+        "perc_identity": na,
+        "query_cov": na,
+        "min_consensus": na,
+        "taxa_ranks": na,
     }
-    if method == "bt2-blca":
+    if method == "naive-bayes":
+        params["fit_params"] = method_cfg.get("fit_params") or na
+        params["classify_params"] = method_cfg.get("classify_params") or na
+    elif method in ("consensus-blast", "consensus-vsearch"):
+        if consensus_combo is None:
+            raise ValueError("consensus_combo is required for consensus methods")
+        params["classify_params"] = method_cfg.get("classify_params") or na
+        params["perc_identity"] = float(consensus_combo["perc_identity"])
+        params["query_cov"] = float(consensus_combo["query_cov"])
+        params["min_consensus"] = float(consensus_combo["min_consensus"])
+    elif method == "bt2-blca":
+        if bt2_combo is None:
+            return params
         params["taxa_ranks"] = method_cfg.get(
             "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
         )
+        params["perc_identity"] = float(bt2_combo["perc_identity"])
+        params["query_cov"] = float(bt2_combo["query_cov"])
+    else:
+        raise ValueError(f"Unsupported classify method for manifest: {method}")
     return params
 
 
@@ -382,6 +431,13 @@ def _empty_manifest_artifact_fields() -> dict:
         "classifier_qza": "",
         "bowtie_index_dir": "",
     }
+
+
+def _manifest_confidence(method: str, confidence: float | None) -> str | float:
+    """Return confidence for manifest rows; blank when not used by the method."""
+    if method in _SHARED_FIT_METHODS and confidence is not None:
+        return confidence
+    return _manifest_na()
 
 
 def _append_fold_assignment_rows(
@@ -405,7 +461,7 @@ def _append_fold_assignment_rows(
     if method in ("consensus-blast", "consensus-vsearch"):
         for combo in consensus_param_combinations(cfg):
             assign_params = _manifest_assign_params(method, method_cfg, combo)
-            p = param_id(method, method_cfg, confidences[0], combo)
+            p = param_id(method, method_cfg, 0.0, combo)
             assign_dir = join(results_root, subdir, dataset_id, reference_id, method, p)
             rows.append({
                 "job_id": f"{job_id_prefix}-{p}",
@@ -416,7 +472,85 @@ def _append_fold_assignment_rows(
                 "ref_seqs": ref_seqs,
                 "ref_taxa": ref_taxa,
                 "output_dir": assign_dir,
-                "confidence": confidences[0],
+                "confidence": _manifest_na(),
+                "skip_fit": False,
+                "trad_fit": False,
+                "fit_only": False,
+                "fit_job_id": "",
+                **_empty_manifest_artifact_fields(),
+                **assign_params,
+            })
+        return
+
+    if method == "bt2-blca":
+        bt2_combos = bt2_param_combinations(cfg)
+        multi_shared = len(confidences) > 1 or len(bt2_combos) > 1
+        if multi_shared:
+            shared_dir = join(
+                results_root, subdir, dataset_id, reference_id, method,
+                fit_param_id(method, method_cfg),
+            )
+            fit_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
+            rows.append({
+                "job_id": fit_job_id,
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": shared_dir,
+                "confidence": _manifest_na(),
+                "skip_fit": False,
+                "trad_fit": False,
+                "fit_only": True,
+                "fit_job_id": "",
+                **_empty_manifest_artifact_fields(),
+                **_manifest_assign_params(method, method_cfg),
+            })
+            shared_artifacts = {
+                **_empty_manifest_artifact_fields(),
+                "bowtie_index_dir": join(shared_dir, "bowtie2_index"),
+            }
+            for combo in bt2_combos:
+                for conf in confidences:
+                    p = param_id(method, method_cfg, conf, bt2_combo=combo)
+                    assign_dir = join(
+                        results_root, subdir, dataset_id, reference_id, method, p
+                    )
+                    rows.append({
+                        "job_id": f"{job_id_prefix}-{p}",
+                        "evaluation_method": eval_method,
+                        "dataset_id": dataset_id,
+                        "reference_id": reference_id,
+                        "query_qza": query,
+                        "ref_seqs": ref_seqs,
+                        "ref_taxa": ref_taxa,
+                        "output_dir": assign_dir,
+                        "confidence": _manifest_confidence(method, conf),
+                        "skip_fit": True,
+                        "trad_fit": False,
+                        "fit_only": False,
+                        "fit_job_id": fit_job_id,
+                        **shared_artifacts,
+                        **_manifest_assign_params(method, method_cfg, bt2_combo=combo),
+                    })
+            return
+        combo = bt2_combos[0]
+        assign_params = _manifest_assign_params(method, method_cfg, bt2_combo=combo)
+        for conf in confidences:
+            p = param_id(method, method_cfg, conf, bt2_combo=combo)
+            assign_dir = join(results_root, subdir, dataset_id, reference_id, method, p)
+            rows.append({
+                "job_id": f"{job_id_prefix}-{p}",
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": assign_dir,
+                "confidence": _manifest_confidence(method, conf),
                 "skip_fit": False,
                 "trad_fit": False,
                 "fit_only": False,
@@ -443,7 +577,7 @@ def _append_fold_assignment_rows(
             "ref_seqs": ref_seqs,
             "ref_taxa": ref_taxa,
             "output_dir": shared_dir,
-            "confidence": confidences[0],
+            "confidence": _manifest_na(),
             "skip_fit": False,
             "trad_fit": False,
             "fit_only": True,
@@ -470,7 +604,7 @@ def _append_fold_assignment_rows(
                 "ref_seqs": ref_seqs,
                 "ref_taxa": ref_taxa,
                 "output_dir": assign_dir,
-                "confidence": conf,
+                "confidence": _manifest_confidence(method, conf),
                 "skip_fit": True,
                 "trad_fit": False,
                 "fit_only": False,
@@ -492,7 +626,7 @@ def _append_fold_assignment_rows(
             "ref_seqs": ref_seqs,
             "ref_taxa": ref_taxa,
             "output_dir": assign_dir,
-            "confidence": conf,
+            "confidence": _manifest_confidence(method, conf),
             "skip_fit": False,
             "trad_fit": False,
             "fit_only": False,
@@ -676,7 +810,7 @@ def prepare_manifest(cfg: dict) -> str:
                             "ref_seqs": ref_seqs,
                             "ref_taxa": ref_taxa,
                             "output_dir": shared_dir,
-                            "confidence": confidences[0],
+                            "confidence": _manifest_na(),
                             "skip_fit": False,
                             "trad_fit": True,
                             "fit_only": False,
@@ -725,7 +859,7 @@ def prepare_manifest(cfg: dict) -> str:
                                 "ref_seqs": ref_dbs[dataset_id][0],
                                 "ref_taxa": ref_dbs[dataset_id][1],
                                 "output_dir": assign_dir,
-                                "confidence": conf,
+                                "confidence": _manifest_confidence(classify_method, conf),
                                 "skip_fit": True,
                                 "trad_fit": False,
                                 "fit_only": False,

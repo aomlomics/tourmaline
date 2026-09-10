@@ -239,11 +239,15 @@ force_regenerate: false
 ```yaml
 classify_method: naive-bayes
 classify_threads: 5
+nb_confidence_values: [0.7]
+blca_confidence_values: [0.8]
 skl_confidence: 0.7
-confidence_values: [0.7]
+confidence_thres: 0.8
 fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
 generate_plots: true
 ```
+
+Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, and `min_consensus` expand into parameter sweeps for consensus methods (and `perc_identity` / `query_cov` for bt2-blca).
 
 **Mock community** (when `mock-community` is listed in `evaluation_methods`)
 
