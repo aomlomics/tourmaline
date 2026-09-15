@@ -199,7 +199,15 @@ def get_dic_from_aln(aln):
 
 
 def build_muscle_fasta(query_name, query_seq, hit_names, reference_sequences):
-    """Build MUSCLE input with short IDs; CLUSTAL output truncates long names."""
+    """Build MUSCLE input with short IDs; CLUSTAL output truncates long names.
+
+    Aliases (``r0``..``rN`` for hits, ``q`` for the query) are what make the
+    query distinguishable from a reference hit that carries the *same* name --
+    which is the normal case for self-validation, where the query set is the
+    reference set. Scoring therefore stays in alias space and only resolves
+    names for the taxonomy lookup; mapping back to names any earlier would
+    collapse the query and its own reference record into one entry.
+    """
     alias_to_name = {}
     lines = []
     for i, hit in enumerate(hit_names):
@@ -209,15 +217,7 @@ def build_muscle_fasta(query_name, query_seq, hit_names, reference_sequences):
     query_alias = "q"
     alias_to_name[query_alias] = query_name
     lines.append(f">{query_alias}\n{query_seq}\n")
-    return "".join(lines), alias_to_name
-
-
-def remap_alndic_aliases(alndic, alias_to_name):
-    """Restore original sequence names after MUSCLE alignment."""
-    remapped = {}
-    for alias, seq in alndic.items():
-        remapped[alias_to_name.get(alias, alias)] = seq
-    return remapped
+    return "".join(lines), alias_to_name, query_alias
 
 
 def pairwise_score(alndic, query, match, mismatch, ngap):
@@ -369,16 +369,21 @@ for seqn, info in input_sequences.items():
 print("> 3 > Read in bowtie2 output!")
 
 count = 0
+self_id_queries = 0
 outfile = open(outfile_name, 'w')
 outfile.write("featureid\ttaxonomy\ttaxonomy_confidence\taccessions\n")
 for seqn, info in input_sequences.items():
     count += 1
 
-    if seqn in acc2tax:
-        print("[WARNING] Your sequence " + seqn + " has the same ID as the reference database! Please correct it!")
-        print("...Skipping sequence " + seqn + " ......")
-        outfile.write(seqn + "\tSkipped\n")
-        continue
+    # A query whose ID is also a reference ID is expected for self-validation
+    # (the query set IS the reference set), so it is counted and reported once
+    # at the end rather than skipped. The query is still distinguishable from
+    # its own reference record during scoring because MUSCLE aliases are kept.
+    # NB: acc2tax keys are truncated at the first dot by read_tax_acc, so the
+    # query ID must be truncated the same way or this never matches an
+    # accession like "MT901437.1".
+    if seqn.split(".")[0] in acc2tax:
+        self_id_queries += 1
 
     ### Get all the hits list belong to the same query ###
     ### Add query fasta sequence to extracted hit fasta ###
@@ -396,7 +401,7 @@ for seqn, info in input_sequences.items():
         outfile.write(seqn + "\tUnclassified\n")
         continue
 
-    fifsa, alias_to_name = build_muscle_fasta(
+    fifsa, alias_to_name, query_alias = build_muscle_fasta(
         seqn, info.seq, valid_hits, reference_sequences
     )
     # Write the content to a file
@@ -415,11 +420,10 @@ for seqn, info in input_sequences.items():
     #print errs
     # print StringIO.StringIO(outs)
     #alndic = get_dic_from_aln("hitdb.aln")
-    alndic = remap_alndic_aliases(
-        get_dic_from_aln(StringIO(outs.decode('utf-8'))),
-        alias_to_name,
-    )
-    if seqn not in alndic:
+    # Keep MUSCLE's aliases: scoring must be able to tell the query apart from a
+    # reference hit with an identical name (see build_muscle_fasta).
+    alndic = get_dic_from_aln(StringIO(outs.decode('utf-8')))
+    if query_alias not in alndic:
         print(f"[WARNING] Query {seqn} missing from MUSCLE alignment; skipping.")
         outfile.write(seqn + "\tUnclassified\n")
         continue
@@ -427,16 +431,20 @@ for seqn, info in input_sequences.items():
     #os.system("rm hitdb.fsa")
     #    	print "Processing:",k1
     ### get gap position and truncate the alignment###
-    start, end = get_gap_pos(seqn, alndic)
+    start, end = get_gap_pos(query_alias, alndic)
     trunc_alndic = cut_gap(alndic, start, end)
-    orgscore = pairwise_score(trunc_alndic, seqn, match, mismatch, ngap)
+    orgscore = pairwise_score(trunc_alndic, query_alias, match, mismatch, ngap)
+    if not orgscore:
+        # Only reachable if MUSCLE dropped every reference row; valid_hits is
+        # non-empty by this point, so the alignment normally has >= 2 rows.
+        print(f"[WARNING] No scoreable hits for {seqn} after alignment; skipping.")
+        outfile.write(seqn + "\tUnclassified\n")
+        continue
     ### start bootstrap ###
-    perdict = {}  # record alignmet score for each iteration
     pervote = {}  # record vote after nper bootstrap
 
     for j in range(nper):
-        random_scores = random_aln_score(trunc_alndic, seqn, match, mismatch, ngap)
-        perdict[j] = random_scores
+        random_scores = random_aln_score(trunc_alndic, query_alias, match, mismatch, ngap)
         max_score = max(random_scores.values())
         hits_with_max_score = [k3 for k3, v3 in random_scores.items() if v3 == max_score]
         vote_share = 1.0 / len(hits_with_max_score)
@@ -457,8 +465,11 @@ for seqn, info in input_sequences.items():
     for level in levels:
         votes_by_level[level] = defaultdict(int)
 
-    for hit in orgscore.keys():
-        short_hit_name = hit.split(".")[0]
+    for hit_alias in orgscore.keys():
+        # orgscore/pervote are keyed by MUSCLE alias; resolve to the real
+        # accession only here, where the taxonomy lookup needs it.
+        hit_name = alias_to_name.get(hit_alias, hit_alias)
+        short_hit_name = hit_name.split(".")[0]
         if short_hit_name not in acc2tax:
             print("Missing taxonomy info for ", short_hit_name)
             continue
@@ -468,10 +479,7 @@ for seqn, info in input_sequences.items():
             if level not in hit_taxonomy:
                 hit_taxonomy[level] = na_handler.encode_if_na("NA")
 
-            if hit in pervote:
-                votes_by_level[level][hit_taxonomy[level]] += pervote[hit]
-            else:
-                votes_by_level[level][hit_taxonomy[level]] += 0
+            votes_by_level[level][hit_taxonomy[level]] += pervote.get(hit_alias, 0)
 
     outfile.write(seqn + "\t")
     for level in levels:
@@ -487,5 +495,14 @@ for seqn, info in input_sequences.items():
 
 for seqn in rejects:
     outfile.write(seqn + "\tUnclassified\n")
+
+if self_id_queries:
+    print(
+        f"> Note: {self_id_queries} of {count} queries share an ID with the "
+        "reference database. This is expected for self-validation; each query "
+        "was still scored against its own reference record. If you did not "
+        "intend to classify reference sequences against themselves, check that "
+        "your query IDs are distinct from the reference accessions."
+    )
 
 outfile.close()

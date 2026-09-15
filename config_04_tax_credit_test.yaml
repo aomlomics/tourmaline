@@ -43,18 +43,14 @@ reference_databases:
 
 ## --- EVALUATION METHODS (one or more) ---
 # cross-validated | cross-validated-trad | novel-taxa | self-validated | mock-community
-## NOTE: `self-validated` is deliberately omitted here. Self-validation makes the
-## query set identical to the reference set, which triggers a latent crash in
-## scripts/blca_from_bowtie.py (unguarded `max()` in random_aln_score when a
-## query's only bowtie2 hit is itself). Add it back only if bt2-blca is dropped
-## from classify_methods, or once that guard is added.
 evaluation_methods:
+  - self-validated
   - novel-taxa
   - cross-validated
 
 ## --- SIMULATION PARAMETERS ---
 iterations: 2
-novel_taxa_levels: [6]
+novel_taxa_levels: [5,6]
 cv_recall_max_level: 6
 ## NOTE: novel-taxa levels are controlled by TWO keys that must agree.
 ## Dataset generation uses `novel_taxa_levels`; the assignment manifest
@@ -62,7 +58,7 @@ cv_recall_max_level: 6
 ## check that those fold directories exist. Keep them in sync or the run fails
 ## with "ref_seqs.qza does not exist". For novel_taxa_levels: [6], the matching
 ## value here is 5.
-novel_recall_min_level: 5
+novel_recall_min_level: 4
 force_regenerate: false
 format_reference_databases: false #not implemented yet
 
@@ -78,7 +74,7 @@ classify_threads: 2
 
 ## --- NAIVE-BAYES OPTIONS ---
 # Optional: confidence threshold(s) for classify-sklearn; multiple values share one fitted classifier
-nb_confidence_values: [0.7]
+nb_confidence_values: [0.7,0.8]
 # Optional: default when nb_confidence_values is omitted (naive-bayes only)
 skl_confidence: 0.7
 # Optional: extra parameters passed to fit-classifier-naive-bayes
@@ -91,7 +87,7 @@ pretrained_classifier:
 ## --- CONSENSUS BLAST/VSEARCH OPTIONS ---
 # Optional: minimum percent identity (0–1); single value or list to sweep (consensus methods)
 # Also used by bt2-blca for BLCA percent-identity cutoff (-b)
-perc_identity: 0.8
+perc_identity: [0.8,0.9]
 # Optional: minimum query coverage (0–1); single value or list to sweep (consensus methods)
 # Also used by bt2-blca for BLCA query-coverage cutoff (-l)
 query_cov: 0.8
@@ -104,7 +100,7 @@ consensus_classify_params: ""
 # Optional: confidence threshold(s) for reformat_summary_for_r.py; multiple values share one
 # Bowtie2 index per fold (same sharing pattern as naive-bayes classifiers)
 # When blca_confidence_values is omitted, confidence_thres is used instead
-blca_confidence_values: [0.8]
+blca_confidence_values: [0.8,0.95]
 # confidence_thres: 0.8
 # Taxonomy ranks for bt2-blca output (comma-separated, no spaces)
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
