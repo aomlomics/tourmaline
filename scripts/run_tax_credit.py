@@ -33,7 +33,31 @@ def _ensure_tax_credit(package_dir: str) -> None:
 def load_config(path: str) -> dict:
     with open(path) as fh:
         cfg = yaml.safe_load(fh)
+    validate_blca_config(cfg)
     return cfg
+
+
+_BLCA_CUTOFF_KEYS = ("blca_perc_identity", "blca_query_cov")
+
+
+def validate_blca_config(cfg: dict) -> None:
+    """Require bt2-blca's own cutoffs whenever bt2-blca is benchmarked.
+
+    Older configs shared ``perc_identity`` / ``query_cov`` between the consensus
+    methods and bt2-blca. Refuse them rather than silently running BLCA with
+    different cutoffs than the config appears to request.
+    """
+    if "bt2-blca" not in classify_methods(cfg):
+        return
+    missing = [key for key in _BLCA_CUTOFF_KEYS if cfg.get(key) is None]
+    if missing:
+        raise ValueError(
+            f"bt2-blca is in classify_methods but {', '.join(missing)} is not set. "
+            "bt2-blca no longer reads perc_identity / query_cov (those are for "
+            "consensus-blast / consensus-vsearch only). Add blca_perc_identity and "
+            "blca_query_cov to the BT2-BLCA OPTIONS section of the config; see "
+            "config_04_tax_credit.yaml."
+        )
 
 
 def run_output_dir(cfg: dict) -> str:
@@ -257,8 +281,10 @@ def classify_methods(cfg: dict) -> list[str]:
     return methods
 
 
-def _param_value_list(cfg: dict, key: str, default: float) -> list[float]:
+def _param_value_list(cfg: dict, key: str, default: float | None = None) -> list[float]:
     val = cfg.get(key, default)
+    if val is None:
+        raise ValueError(f"Config key {key!r} is required and has no value.")
     if isinstance(val, (list, tuple)):
         return [float(v) for v in val]
     return [float(val)]
@@ -301,9 +327,14 @@ def consensus_param_combinations(cfg: dict) -> list[dict[str, float]]:
 
 
 def bt2_param_combinations(cfg: dict) -> list[dict[str, float]]:
-    """Cartesian product of bt2-blca BLCA cutoff parameters from config."""
-    perc = _param_value_list(cfg, "perc_identity", 0.8)
-    qc = _param_value_list(cfg, "query_cov", 0.8)
+    """Cartesian product of bt2-blca BLCA cutoff parameters from config.
+
+    Read from ``blca_perc_identity`` / ``blca_query_cov``, separate from the
+    consensus-method ``perc_identity`` / ``query_cov`` keys. Both are required.
+    """
+    validate_blca_config(cfg)
+    perc = _param_value_list(cfg, "blca_perc_identity")
+    qc = _param_value_list(cfg, "blca_query_cov")
     return [
         {"perc_identity": pi, "query_cov": q}
         for pi, q in itertools.product(perc, qc)
@@ -346,8 +377,8 @@ def method_settings(cfg: dict, method: str) -> dict:
         settings["taxa_ranks"] = cfg.get(
             "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
         )
-        settings["perc_identity"] = cfg.get("perc_identity", 0.8)
-        settings["query_cov"] = cfg.get("query_cov", 0.8)
+        settings["perc_identity"] = cfg["blca_perc_identity"]
+        settings["query_cov"] = cfg["blca_query_cov"]
     return settings
 
 
@@ -999,32 +1030,184 @@ def _summary_has_per_level_lists(df: pd.DataFrame, column: str = "Precision") ->
     return isinstance(sample, (list, tuple))
 
 
-def _prepare_plot_data(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame | None, pd.DataFrame]:
-    """Return (per-rank summary, raw summary) for plotting."""
-    from tax_credit.novel_evaluation import extract_per_level_accuracy
+def _rank_name(level: int) -> str:
+    from tax_credit.log_analysis import RANK_NAMES
 
-    if _summary_has_per_level_lists(df):
-        return extract_per_level_accuracy(df), df
-    return None, df
+    return RANK_NAMES[int(level)]
 
 
-def _metric_plot_df(
-    per_level: pd.DataFrame | None,
-    raw: pd.DataFrame,
-    metric: str,
-) -> pd.DataFrame | None:
-    """Pick the dataframe that contains *metric* for plotting."""
-    if per_level is not None and metric in per_level.columns:
-        return per_level
-    if metric in raw.columns:
-        return raw
-    return None
+def _per_level_plot_table(
+    summary_df: pd.DataFrame, assignment_dirs: list[str],
+) -> pd.DataFrame:
+    """One row per Dataset / iteration / Method / Parameters / level.
+
+    Precision, Recall and F-measure come from the summary's per-level lists; the
+    four classification ratios come from the per-read logs. Every metric is
+    therefore reported for the same fold and taxonomic level.
+    """
+    from tax_credit.novel_evaluation import (
+        extract_per_level_accuracy,
+        extract_per_level_classification_ratios_by_fold,
+    )
+
+    keys = ["Dataset", "iteration", "Method", "Parameters", "level"]
+    table = extract_per_level_accuracy(
+        summary_df, columns=["Precision", "Recall", "F-measure"],
+    )
+    table["iteration"] = table["iteration"].astype(str)
+    table["level"] = table["level"].astype(int)
+    ratios = extract_per_level_classification_ratios_by_fold(assignment_dirs)
+    if not ratios.empty:
+        ratios = ratios.drop(columns="novel_level")
+        ratios["iteration"] = ratios["iteration"].astype(str)
+        ratios["level"] = ratios["level"].astype(int)
+        table = table.merge(ratios, on=keys, how="left")
+    table["rank"] = table["level"].map(_rank_name)
+    return table
+
+
+def _novel_plot_table(summary_df: pd.DataFrame) -> pd.DataFrame:
+    """One row per novel-taxa fold; ``novel_level`` labels the simulation (L5, L6, ...)."""
+    table = summary_df.drop(columns=["mismatch_level_list"], errors="ignore").copy()
+    table["novel_level"] = "L" + table["level"].astype(int).astype(str)
+    return table
+
+
+def _plot_ranks(cfg: dict) -> list[str]:
+    """Ranks for per-rank boxplots (config ``plot_ranks``)."""
+    from tax_credit.log_analysis import RANK_TO_LEVEL
+
+    ranks = cfg.get("plot_ranks") or ["genus", "species"]
+    if isinstance(ranks, str):
+        ranks = [ranks]
+    ranks = [str(rank).strip().lower() for rank in ranks]
+    unknown = [rank for rank in ranks if rank not in RANK_TO_LEVEL]
+    if unknown:
+        raise ValueError(
+            f"Unknown plot_ranks entries: {unknown}. Use one of: {list(RANK_TO_LEVEL)}"
+        )
+    return ranks
+
+
+def _best_run_rank(cfg: dict) -> str:
+    """Rank at which best_run_stacked_bar compares runs (config ``best_run_rank``)."""
+    from tax_credit.log_analysis import RANK_TO_LEVEL
+
+    rank = str(cfg.get("best_run_rank") or "species").strip().lower()
+    if rank not in RANK_TO_LEVEL:
+        raise ValueError(
+            f"Unknown best_run_rank: {rank!r}. Use one of: {list(RANK_TO_LEVEL)}"
+        )
+    return rank
+
+
+def _metric_label(metric: str) -> str:
+    """Readable metric name, e.g. ``misclassification_ratio`` -> ``misclassification``."""
+    return metric.replace("_ratio", "").replace("_", " ")
+
+
+def _plot_best_runs(
+    table: pd.DataFrame,
+    ratio_df: pd.DataFrame,
+    level_col: str,
+    metrics: list[str],
+    best_run_rank: str,
+    plot_label: str,
+    base: str,
+    plots_out: str,
+    csv_out: str,
+    rank_labels: dict,
+    rank_axis_label: str,
+) -> None:
+    """Plot classification ratios for the best method + parameters per metric.
+
+    For each database, picks the best run for every metric (averaged over
+    folds) and draws its ratios by rank. One figure holds every database in the
+    evaluation method: databases (and novel levels) are rows, metrics columns.
+    Cross-validated and self-validated runs are compared at *best_run_rank*;
+    novel-taxa runs are compared per novel level. Selections are written to
+    *csv_out*.
+    """
+    from tax_credit.log_analysis import RANK_TO_LEVEL
+    from tax_credit.novel_evaluation import select_best_runs
+    from tax_credit.plotting_functions import (
+        stacked_classification_panels_from_data_frames,
+    )
+    import matplotlib.pyplot as plt
+
+    novel = level_col == "novel_level"
+    if novel:
+        group_cols = ["Dataset", "novel_level"]
+        select_df = table
+    else:
+        group_cols = ["Dataset"]
+        select_df = table[table["level"] == RANK_TO_LEVEL[best_run_rank]]
+    best = select_best_runs(select_df, metrics, group_cols=group_cols)
+    if best.empty or ratio_df.empty:
+        return
+    if not novel:
+        best.insert(1, "rank", best_run_rank)
+    os.makedirs(dirname(csv_out), exist_ok=True)
+    best.to_csv(csv_out, index=False)
+
+    # one row per database (per novel level), one column per metric
+    panels = []
+    row_labels = []
+    for group_key, picks in best.groupby(group_cols, sort=True):
+        if not isinstance(group_key, tuple):
+            group_key = (group_key,)
+        dataset = group_key[0]
+        runs = ratio_df[ratio_df["Dataset"] == dataset]
+        if novel:
+            novel_level = int(group_key[1][1:])
+            # only ranks above the novel rank have a meaningful expected taxonomy
+            runs = runs[(runs["novel_level"] == novel_level) & (runs["level"] < novel_level)]
+            row_labels.append(f"{dataset}\nL{novel_level}")
+        else:
+            row_labels.append(dataset)
+
+        picked = {pick.metric: pick for pick in picks.itertuples(index=False)}
+        for metric in metrics:
+            pick = picked.get(metric)
+            if pick is None:
+                panels.append((f"{_metric_label(metric)}: no data", None))
+                continue
+            run = runs[(runs["Method"] == pick.Method) & (runs["Parameters"] == pick.Parameters)]
+            others = pick.n_tied - 1
+            ties = f"\n(tied with {others} other run{'s' if others > 1 else ''})" if others else ""
+            panels.append((
+                f"best {_metric_label(pick.metric)} ({pick.direction}): {pick.value:.3f}\n"
+                f"{pick.Method}\n{pick.Parameters}{ties}",
+                run,
+            ))
+
+    if not panels:
+        return
+    selected_at = (
+        "each novel level's scores" if novel else f"{best_run_rank} rank"
+    )
+    fig = stacked_classification_panels_from_data_frames(
+        panels,
+        level_labels=rank_labels,
+        level_axis_label=rank_axis_label,
+        ncols=max(len(metrics), 1),
+        row_labels=row_labels,
+        title=(
+            f"{plot_label}: best method and parameters per metric "
+            f"(selected at {selected_at})"
+        ),
+        show=False,
+    )
+    fig.savefig(
+        join(plots_out, f"{base}-best-run-stacked-barplot.pdf"),
+        bbox_inches="tight",
+    )
+    plt.close(fig)
 
 
 def _plot_type_set(cfg: dict) -> set[str]:
-    """Normalize configured plot types (boxplot, pointplot, heatmap, stacked_bar)."""
+    """Normalize configured plot types (boxplot, pointplot, heatmap, stacked_bar,
+    best_run_stacked_bar)."""
     aliases = {
         "boxplot": "boxplot",
         "box": "boxplot",
@@ -1038,6 +1221,8 @@ def _plot_type_set(cfg: dict) -> set[str]:
         "stackedbar": "stacked_bar",
         "stacked_barplot": "stacked_bar",
         "stacked-barplot": "stacked_bar",
+        "best_run_stacked_bar": "best_run_stacked_bar",
+        "best-run-stacked-bar": "best_run_stacked_bar",
     }
     configured = cfg.get("plot_types") or ["boxplot", "pointplot", "heatmap"]
     if isinstance(configured, str):
@@ -1076,6 +1261,9 @@ def analyze_log_results(cfg: dict) -> None:
         return
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.log_analysis import (
+        RANK_NAMES,
+        RANK_TO_LEVEL,
+        filter_sensitivity_to_rank,
         load_classification_accuracy_logs,
         summarize_confusion_pairs,
         summarize_cross_fold_stability,
@@ -1135,35 +1323,65 @@ def analyze_log_results(cfg: dict) -> None:
                 join(method_summary_dir, "cross_fold_stability.csv"), index=False,
             )
 
-        for sensitivity_rank in ranks:
+        # (rank, log rows, title label, file suffix) for each sensitivity table
+        if eval_method == "novel-taxa":
+            # Expected taxonomies stop above the novel rank, so each novel level
+            # is analysed at the deepest rank its expected taxonomy reaches.
+            panels = []
+            for novel_level in sorted(log_df["level"].dropna().astype(int).unique()):
+                parent_rank = RANK_NAMES[novel_level - 1]
+                if parent_rank not in RANK_TO_LEVEL:
+                    print(
+                        f"WARNING: no sensitivity analysis for {plot_label} "
+                        f"L{novel_level}: {parent_rank} rank is not supported",
+                        file=sys.stderr,
+                    )
+                    continue
+                panels.append((
+                    parent_rank,
+                    log_df[log_df["level"] == novel_level],
+                    f"{plot_label} L{novel_level}",
+                    f"L{novel_level}-{parent_rank}",
+                ))
+        else:
+            panels = [(rank_, log_df, plot_label, rank_) for rank_ in ranks]
+
+        for sensitivity_rank, panel_df, label, suffix in panels:
             sensitivity = summarize_method_parameter_sensitivity(
-                log_df,
+                panel_df,
                 rank=sensitivity_rank,
                 min_obvs=min_obvs,
                 metric="pct_mis",
             )
             if sensitivity.empty:
+                print(
+                    f"WARNING: no {sensitivity_rank}-rank sensitivity data for {label}",
+                    file=sys.stderr,
+                )
                 continue
             sensitivity.to_csv(
-                join(
-                    method_summary_dir,
-                    f"method_parameter_sensitivity-{sensitivity_rank}.csv",
-                ),
+                join(method_summary_dir, f"method_parameter_sensitivity-{suffix}.csv"),
             )
-            plot_pivot = select_top_sensitivity_taxa(sensitivity, top_n=top_n)
+            at_rank, n_excluded = filter_sensitivity_to_rank(sensitivity, sensitivity_rank)
+            if at_rank.empty:
+                print(
+                    f"WARNING: no expected taxa resolved to {sensitivity_rank} rank "
+                    f"for {label}; skipping sensitivity plot",
+                    file=sys.stderr,
+                )
+                continue
+            plot_pivot = select_top_sensitivity_taxa(at_rank, top_n=top_n)
+            title = (
+                f"{label}: fraction of reads misclassified at {sensitivity_rank} "
+                f"rank (top {len(plot_pivot)} taxa)"
+            )
+            if n_excluded:
+                title += f"\n{n_excluded} taxa not resolved to {sensitivity_rank} excluded"
             ax = method_parameter_sensitivity_heatmap_from_data_frame(
-                plot_pivot,
-                title=(
-                    f"{plot_label}: misclassification by taxon and run "
-                    f"({sensitivity_rank})"
-                ),
-                show=False,
+                plot_pivot, title=title, show=False,
             )
             ax.figure.savefig(
-                join(
-                    method_plots_dir,
-                    f"method-parameter-sensitivity-{sensitivity_rank}.pdf",
-                ),
+                join(method_plots_dir, f"method-parameter-sensitivity-{suffix}.pdf"),
                 bbox_inches="tight",
             )
             plt.close(ax.figure)
@@ -1174,7 +1392,7 @@ def plot_results(cfg: dict) -> None:
         return
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.plotting_functions import (
-        boxplot_from_data_frame,
+        faceted_boxplot_from_data_frame,
         heatmap_from_data_frame,
         pointplot_from_data_frame,
         stacked_classification_barplot_from_data_frame,
@@ -1182,7 +1400,6 @@ def plot_results(cfg: dict) -> None:
     from tax_credit.novel_evaluation import extract_per_level_classification_ratios
     from tax_credit.paths import list_assignment_result_dirs
     import matplotlib.pyplot as plt
-    import seaborn as sns
 
     out = run_output_dir(cfg)
     plots_dir = join(out, cfg.get("plots_subdir", "plots"))
@@ -1196,6 +1413,13 @@ def plot_results(cfg: dict) -> None:
     color_palette = cfg.get("plot_color_palette") or "tab10"
     heatmap_rows = cfg.get("plot_heatmap_rows") or ["Method", "Parameters"]
     heatmap_cols = cfg.get("plot_heatmap_cols") or ["Dataset", "level"]
+    plot_ranks = _plot_ranks(cfg)
+    best_run_rank = _best_run_rank(cfg)
+    # stacked bars are narrow, so label them with rank initials
+    stacked_rank_labels = {level: _rank_name(level)[0].upper() for level in range(1, 7)}
+    stacked_rank_axis_label = "rank (" + ", ".join(
+        f"{_rank_name(level)[0].upper()} = {_rank_name(level)}" for level in range(1, 7)
+    ) + ")"
     default_summary = {
         "cross-validated": "evaluate_classification_summary_CV.csv",
         "cross-validated-taxa": "evaluate_classification_summary_CV.csv",
@@ -1211,25 +1435,49 @@ def plot_results(cfg: dict) -> None:
         method_plots_dir = join(plots_dir, eval_method)
         os.makedirs(method_plots_dir, exist_ok=True)
         sub = analysis_data_subdir(eval_method)
+        assignment_dirs = list_assignment_result_dirs(join(results_dir(cfg), sub))
+
+        ratio_df = pd.DataFrame()
+        if plot_types & {"stacked_bar", "best_run_stacked_bar"}:
+            ratio_df = extract_per_level_classification_ratios(assignment_dirs)
 
         if "stacked_bar" in plot_types:
-            computed = join(results_dir(cfg), sub)
-            assignment_dirs = list_assignment_result_dirs(computed)
-            stacked_df = extract_per_level_classification_ratios(assignment_dirs)
+            stacked_df = ratio_df
             if not stacked_df.empty:
-                ax = stacked_classification_barplot_from_data_frame(
-                    stacked_df,
-                    title=f"{plot_label}: classification ratios by level",
-                    show=False,
-                )
-                ax.figure.savefig(
-                    join(
-                        method_plots_dir,
-                        "classification-ratios-stacked-barplot.pdf",
-                    ),
-                    bbox_inches="tight",
-                )
-                plt.close(ax.figure)
+                novel_levels = sorted(stacked_df["novel_level"].dropna().unique())
+                if novel_levels:
+                    # one plot per novel level, only ranks above the novel rank
+                    panels = [
+                        (
+                            f"{plot_label} L{novel_level}",
+                            f"-L{novel_level}",
+                            stacked_df[
+                                (stacked_df["novel_level"] == novel_level)
+                                & (stacked_df["level"] < novel_level)
+                            ],
+                        )
+                        for novel_level in novel_levels
+                    ]
+                else:
+                    panels = [(plot_label, "", stacked_df)]
+                for label, suffix, panel_df in panels:
+                    if panel_df.empty:
+                        continue
+                    ax = stacked_classification_barplot_from_data_frame(
+                        panel_df,
+                        title=f"{label}: classification ratios by rank",
+                        level_labels=stacked_rank_labels,
+                        level_axis_label=stacked_rank_axis_label,
+                        show=False,
+                    )
+                    ax.figure.savefig(
+                        join(
+                            method_plots_dir,
+                            f"classification-ratios-stacked-barplot{suffix}.pdf",
+                        ),
+                        bbox_inches="tight",
+                    )
+                    plt.close(ax.figure)
 
         candidates = [
             join(summaries_dir, summary_names.get(
@@ -1249,44 +1497,61 @@ def plot_results(cfg: dict) -> None:
             if df.empty:
                 continue
             base = Path(fp).stem
-            per_level, raw = _prepare_plot_data(df)
+            if _summary_has_per_level_lists(df):
+                # cross-validated / self-validated: metrics per fold and rank
+                table = _per_level_plot_table(df, assignment_dirs)
+                level_col = "rank"
+                level_order = [
+                    _rank_name(level) for level in sorted(table["level"].unique())
+                ]
+                box_panels = [rank_ for rank_ in plot_ranks if rank_ in level_order]
+            else:
+                # novel-taxa: metrics per fold and novel level
+                table = _novel_plot_table(df)
+                level_col = "novel_level"
+                level_order = sorted(
+                    table["novel_level"].unique(), key=lambda v: int(v[1:])
+                )
+                box_panels = level_order
 
-            if "boxplot" in plot_types:
+            def _has_metric(metric):
+                return metric in table.columns and table[metric].notna().any()
+
+            if "boxplot" in plot_types and box_panels:
+                box_df = table[table[level_col].isin(box_panels)]
                 for metric in plot_metrics:
-                    metric_df = _metric_plot_df(per_level, raw, metric)
-                    if metric_df is None:
+                    if not _has_metric(metric):
                         continue
-                    ax = boxplot_from_data_frame(
-                        metric_df,
-                        group_by="Dataset",
+                    grid = faceted_boxplot_from_data_frame(
+                        box_df,
+                        x="Dataset",
                         metric=metric,
                         hue="Method",
+                        col=level_col,
+                        col_order=box_panels,
                         color_palette=color_palette,
-                        plotf=sns.boxplot,
                         title=f"{plot_label}: {metric}",
                         show=False,
                     )
-                    ax.figure.savefig(
+                    grid.savefig(
                         join(method_plots_dir, f"{base}-{metric}-boxplot.pdf"),
                         bbox_inches="tight",
                     )
-                    plt.close(ax.figure)
+                    plt.close(grid.figure)
 
             if "pointplot" in plot_types:
                 for metric in plot_metrics:
-                    metric_df = _metric_plot_df(per_level, raw, metric)
-                    if metric_df is None or not {
-                        "Dataset", "Method", "level"
-                    }.issubset(metric_df.columns):
+                    if not _has_metric(metric):
                         continue
                     grid = pointplot_from_data_frame(
-                        metric_df,
-                        "level",
+                        table,
+                        level_col,
                         [metric],
                         group_by="Dataset",
                         color_by="Method",
                         color_palette=color_palette,
                         title_prefix=plot_label,
+                        x_order=level_order,
                         show=False,
                     )
                     for y_var, facet in grid.items():
@@ -1300,18 +1565,22 @@ def plot_results(cfg: dict) -> None:
                         plt.close(facet.fig)
 
             if "heatmap" in plot_types:
+                # config "level" means rank (or novel level); keep it in order
+                heat_cols = [level_col if c == "level" else c for c in heatmap_cols]
+                heat_df = table.copy()
+                heat_df[level_col] = pd.Categorical(
+                    heat_df[level_col], categories=level_order, ordered=True,
+                )
                 for metric in plot_metrics:
-                    metric_df = _metric_plot_df(per_level, raw, metric)
-                    if metric_df is None or not all(
-                        c in metric_df.columns
-                        for c in heatmap_rows + heatmap_cols
+                    if not _has_metric(metric) or not all(
+                        c in heat_df.columns for c in heatmap_rows + heat_cols
                     ):
                         continue
                     ax = heatmap_from_data_frame(
-                        metric_df,
+                        heat_df,
                         metric=metric,
                         rows=heatmap_rows,
-                        cols=heatmap_cols,
+                        cols=heat_cols,
                         title=f"{plot_label}: {metric}",
                         show=False,
                     )
@@ -1320,6 +1589,21 @@ def plot_results(cfg: dict) -> None:
                         bbox_inches="tight",
                     )
                     plt.close(ax.figure)
+
+            if "best_run_stacked_bar" in plot_types:
+                _plot_best_runs(
+                    table,
+                    ratio_df,
+                    level_col,
+                    [metric for metric in plot_metrics if _has_metric(metric)],
+                    best_run_rank,
+                    plot_label,
+                    base,
+                    method_plots_dir,
+                    join(summaries_dir, "best_runs", eval_method, f"{base}.csv"),
+                    stacked_rank_labels,
+                    stacked_rank_axis_label,
+                )
 
     analyze_log_results(cfg)
     Path(join(plots_dir, ".done")).touch()

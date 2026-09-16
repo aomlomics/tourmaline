@@ -241,13 +241,35 @@ classify_method: naive-bayes
 classify_threads: 5
 nb_confidence_values: [0.7]
 blca_confidence_values: [0.8]
+blca_perc_identity: 0.8
+blca_query_cov: 0.8
 skl_confidence: 0.7
 confidence_thres: 0.8
 fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
 generate_plots: true
 ```
 
-Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, and `min_consensus` expand into parameter sweeps for consensus methods (and `perc_identity` / `query_cov` for bt2-blca).
+Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, and `min_consensus` expand into parameter sweeps for consensus methods. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
+
+**Plotting and log analysis**
+
+```yaml
+generate_plots: true
+plot_types: [boxplot, pointplot, heatmap, stacked_bar, best_run_stacked_bar]
+plot_metrics: [Precision, Recall, F-measure, match_ratio, underclassification_ratio, overclassification_ratio, misclassification_ratio]
+plot_ranks: [genus, species]
+best_run_rank: species
+generate_log_analysis: true
+log_analysis_ranks: [species, genus, family]
+```
+
+Cross-validated and self-validated metrics are plotted per fold and per taxonomic rank. Precision, Recall and F-measure come from the evaluation summary; the four classification ratios are recomputed from each fold's `classification_accuracy_log.tsv`. Pointplots show each metric across ranks, boxplots show the spread with one panel per rank in `plot_ranks` (optional, default `[genus, species]`). Both group by dataset and method, pooling all folds and parameter sets of a method; heatmaps show parameter sets separately. CSVs keep numeric levels (1 = phylum … 6 = species); plot axes use rank names.
+
+`best_run_stacked_bar` picks, for each reference database and each metric in `plot_metrics`, the method + parameter combination with the best score averaged over folds (lowest for the mis-, over- and underclassification ratios, highest otherwise; ties go to the first run alphabetically). Cross-validated and self-validated runs are compared at `best_run_rank` (optional, default `species`); novel-taxa runs are compared within each novel level. It writes one figure per evaluation method, `<summary>-best-run-stacked-barplot.pdf`, holding every database in that evaluation: databases (and novel levels) are rows, metrics are columns, and each panel is a stacked barplot of classification ratios by rank for that metric's winning run. It lists the selections (score, fold count, number of tied runs) in `summaries/best_runs/<evaluation method>/<summary>.csv`.
+
+Novel-taxa results are split by novel level (`L5`, `L6`, …). Stacked barplots are written per level (`classification-ratios-stacked-barplot-L6.pdf`) and show only ranks above the novel rank. Method/parameter sensitivity is computed at the rank just above the novel rank (`method-parameter-sensitivity-L6-genus.pdf`) instead of `log_analysis_ranks`.
+
+Log-analysis tables (`taxon_error_profiles.csv`, `confusion_pairs.csv`, `cross_fold_stability.csv`, `method_parameter_sensitivity-*.csv`) include an `expected_rank` column: the deepest rank named in the expected taxonomy. It is shallower than the analysis rank when the reference lacks that rank or, in cross-validated folds, when the taxon's lower ranks are absent from the training fold. Sensitivity heatmaps show only taxa whose `expected_rank` is the plotted rank.
 
 **Mock community** (when `mock-community` is listed in `evaluation_methods`)
 

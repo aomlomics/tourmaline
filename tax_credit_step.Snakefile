@@ -14,6 +14,26 @@ summaries_dir = run_output + "summaries/"
 evaluate_done = summaries_dir + ".evaluate.done"
 plots_done = run_output + config.get("plots_subdir", "plots") + "/.done"
 
+# bt2-blca has its own cutoffs; refuse older configs that shared perc_identity /
+# query_cov with the consensus methods (checked before anything is written).
+_classify_methods = config.get("classify_methods") or config.get(
+    "classify_method", "naive-bayes"
+)
+if isinstance(_classify_methods, str):
+    _classify_methods = [_classify_methods]
+if "bt2-blca" in _classify_methods:
+    _missing_blca = [
+        key for key in ("blca_perc_identity", "blca_query_cov") if config.get(key) is None
+    ]
+    if _missing_blca:
+        raise ValueError(
+            f"bt2-blca is in classify_methods but {', '.join(_missing_blca)} is not set. "
+            "bt2-blca no longer reads perc_identity / query_cov (those are for "
+            "consensus-blast / consensus-vsearch only). Add blca_perc_identity and "
+            "blca_query_cov to the BT2-BLCA OPTIONS section of the config; see "
+            "config_04_tax_credit.yaml."
+        )
+
 os.makedirs(run_output, exist_ok=True)
 config_output_path = run_output + config["run_name"] + "-tax-credit_config.yaml"
 shutil.copy(workflow.configfiles[0], config_output_path)
@@ -69,8 +89,13 @@ def _assign_params(wildcards):
         params["min_consensus"] = _row_optional_float(row, "min_consensus")
         params["taxa_ranks"] = ""
     elif method == "bt2-blca":
+        # manifest columns are shared; config fallbacks are the required blca_* keys
         params["perc_identity"] = _row_optional_float(row, "perc_identity")
+        if params["perc_identity"] is None:
+            params["perc_identity"] = _config_float("blca_perc_identity", None)
         params["query_cov"] = _row_optional_float(row, "query_cov")
+        if params["query_cov"] is None:
+            params["query_cov"] = _config_float("blca_query_cov", None)
         params["min_consensus"] = 0.51
         params["taxa_ranks"] = _row_str(
             row,

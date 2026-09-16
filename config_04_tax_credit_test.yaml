@@ -86,10 +86,8 @@ pretrained_classifier:
 
 ## --- CONSENSUS BLAST/VSEARCH OPTIONS ---
 # Optional: minimum percent identity (0–1); single value or list to sweep (consensus methods)
-# Also used by bt2-blca for BLCA percent-identity cutoff (-b)
-perc_identity: [0.8,0.9]
+perc_identity: 0.9
 # Optional: minimum query coverage (0–1); single value or list to sweep (consensus methods)
-# Also used by bt2-blca for BLCA query-coverage cutoff (-l)
 query_cov: 0.8
 # Optional: minimum consensus fraction (0–1); single value or list to sweep
 min_consensus: 0.51
@@ -97,6 +95,10 @@ min_consensus: 0.51
 consensus_classify_params: ""
 
 ## --- BT2-BLCA OPTIONS ---
+# Optional: minimum percent identity (0–1) for BLCA hits (-b); single value or list to sweep
+blca_perc_identity: 0.8
+# Optional: minimum hit length relative to query (0–1) for BLCA hits (-l); single value or list to sweep
+blca_query_cov: 0.8
 # Optional: confidence threshold(s) for reformat_summary_for_r.py; multiple values share one
 # Bowtie2 index per fold (same sharing pattern as naive-bayes classifiers)
 # When blca_confidence_values is omitted, confidence_thres is used instead
@@ -113,16 +115,17 @@ results_subdir: results
 ## --- PLOTTING ---
 generate_plots: true
 plots_subdir: plots
-# Plot types to generate: boxplot | pointplot (line) | heatmap | stacked_bar
+# Plot types to generate: boxplot | pointplot (line) | heatmap | stacked_bar | best_run_stacked_bar
 plot_types:
   - boxplot
   - pointplot
   - heatmap
   - stacked_bar
+  - best_run_stacked_bar
 # Metrics for boxplots, per-level line plots, and heatmaps
 plot_metrics:
   - Precision
-  - Recall
+  #- Recall
   - F-measure
   - match_ratio
   - underclassification_ratio
@@ -133,6 +136,10 @@ plot_color_palette:
 # Optional: heatmap row/column groupings (defaults match tax-credit notebooks)
 plot_heatmap_rows: [Method, Parameters]
 plot_heatmap_cols: [Dataset, level]
+# Optional: ranks for boxplots, one panel each (phylum | class | order | family | genus | species)
+plot_ranks: [genus, species]
+# Optional: rank at which best_run_stacked_bar picks the best method + parameters per metric
+best_run_rank: species
 
 ## --- LOG ANALYSIS (per-read classification_accuracy_log.tsv) ---
 generate_log_analysis: true
