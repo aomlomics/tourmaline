@@ -131,7 +131,7 @@ plot_metrics:
   - underclassification_ratio
   - overclassification_ratio
   - misclassification_ratio
-# Optional: seaborn palette name or dict mapping Method -> color
+# Optional: seaborn palette name or dict mapping Method -> color (default: fixed colourblind-safe colour per method)
 plot_color_palette:
 # Optional: heatmap row/column groupings (defaults match tax-credit notebooks)
 plot_heatmap_rows: [Method, Parameters]
@@ -146,7 +146,7 @@ generate_log_analysis: true
 log_analysis_rank: species   # rank for summary CSV tables
 log_analysis_ranks: [species, genus, family]   # ranks for sensitivity plots/CSVs
 log_analysis_min_obvs: 1   # minimum log observations per expected taxon
-log_analysis_top_n: 25
+log_analysis_top_n: 25   # taxa per reference database in sensitivity heatmaps
 
 ## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
 mock_communities: []
