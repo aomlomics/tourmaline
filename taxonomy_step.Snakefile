@@ -16,6 +16,8 @@ os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
 shutil.copy(workflow.configfiles[0], config_output_path)
 
 def has_fa_suffix(file, suffixes):
+    if file == None:
+        return False
     return any(file.endswith(suffix) for suffix in suffixes)
 
 def change_suffix(file, new_suffix):
@@ -42,7 +44,11 @@ else:
 
 fasta_suffixes = [".fna", ".fa",".fasta"]
 
-if config["pretrained_classifier"] != None:
+if config["classify_method"] == "revamp":
+    # REVAMP classifies against a local NCBI nt BLAST database, not a QIIME classifier
+    # or reference artifacts; refseqs_file and taxa_file are unused.
+    use_classifier="no"
+elif config["pretrained_classifier"] != None:
     use_classifier="yes"
 else:
     use_classifier="no"
@@ -75,7 +81,10 @@ if config["classify_method"] == "bt2-blca":
     else:
         fasta_repseqs = input_repseqs
 
-if has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
+if config["classify_method"] == "revamp":
+    output_seq = None
+    output_tax = None
+elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
     output_seq = taxonomy_dir+change_suffix(config["refseqs_file"], ".qza")
     output_tax = taxonomy_dir+change_suffix(config["taxa_file"], ".qza")
     rule import_ref_seqs:

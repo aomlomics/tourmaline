@@ -147,7 +147,7 @@ Key parameters:
 ```yaml
 run_name: [your_run_name]              # Name for this pipeline run
 output_dir: [path]                     # Output directory path
-classify_method: [method]              # Classification method (naive-bayes, consensus-blast, consensus-vsearch, bt2-blca)
+classify_method: [method]              # Classification method (naive-bayes, consensus-blast, consensus-vsearch, bt2-blca, revamp)
 collapse_taxalevel: [int] 
 # Creates an additional table where ASV counts are collapsed to the provided taxonomic level
 classify_threads: [int]                
@@ -174,6 +174,7 @@ taxa_file: [path]
 # Reference taxonomy file
 classify_method: [method]              
 # Classification method (naive-bayes, consensus-blast, consensus-vsearch)
+# Not used by revamp: nt is the reference database and NCBI taxonomy the reference taxonomy
 taxa_ranks: [comma-separated list of ranks]                    
 # Taxonomy rank levels that match the reference database
 pretrained_classifier: [full path] 
@@ -196,6 +197,19 @@ min_consensus: 0.51
 # bt2-blca
 confidence_thres: 0.8
 # Bootstrap confidence threshold for limiting taxonomic depth
+# revamp
+revamp_dir: [path]
+# Clone of https://github.com/McAllister-NOAA/REVAMP
+revamp_blastdb: [path]
+# NCBI nt database directory, with a taxdump/ prepared by REVAMP's ncbi_db_cleanup.sh
+revamp_blast_results: [path]
+# Optional BLASTn btab run elsewhere (e.g. on the machine holding nt)
+revamp_blast_mode: mostEnvOUT
+# Subject filtering when Tourmaline runs BLAST: allIN, allEnvOUT or mostEnvOUT
+revamp_query_cov: 90
+# Percent of ASV length a BLAST hit must cover to be considered
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"
+# Percent identity cutoffs limiting assignment depth, ordered S,G,F,O,C,P
 ```
 
 ## Running the Pipeline

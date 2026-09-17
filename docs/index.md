@@ -78,11 +78,12 @@ See [Repseqs Step](steps/repseqs.md) for details.
 
 * Called "taxonomy" in Tourmaline 2 code.
 * Generates taxonomic assignments and visualizations.
-* Assigns taxonomy using one of four methods:
+* Assigns taxonomy using one of five methods:
   * [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
   * [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
   * [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
   * [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
+  * [REVAMP's BLASTn against NCBI nt with lowest common ancestor](https://github.com/McAllister-NOAA/REVAMP)
 
 See [Taxonomy Step](steps/taxonomy.md) for details.
 

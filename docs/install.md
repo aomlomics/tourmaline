@@ -26,6 +26,18 @@ Optional (BLCA method only):
 conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2
 ```
 
+Optional (REVAMP method only):
+
+```bash
+conda create -c conda-forge -c bioconda -n revamp \
+  "blast>=2.13" "taxonkit>=0.20" r-base r-dplyr bioconductor-biostrings \
+  perl perl-list-moreutils krona
+```
+
+REVAMP also needs a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP) and a
+local NCBI `nt` database with taxonomy files. See
+[Taxonomy step](steps/taxonomy.md#revamp).
+
 ### Get Tourmaline 2
 
 ```bash

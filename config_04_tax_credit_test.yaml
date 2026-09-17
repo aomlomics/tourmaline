@@ -184,6 +184,10 @@ mock_community:
   backbone_check: warn
   # Optional: metrics to plot (default Taxon Accuracy Rate, Taxon Detection Rate, Bray-Curtis, Precision, Recall, F-measure)
   plot_metrics:
+  # Metric that picks each method's best parameter set (at best_run_rank) for the
+  # composition plot and the best-run box/point plots. auto = F-measure where the
+  # expected set has an asv_taxonomy, otherwise Bray-Curtis
+  best_run_metric: auto
   # Taxa coloured individually in composition plots
   composition_top_n: 12
 

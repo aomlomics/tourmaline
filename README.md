@@ -50,11 +50,12 @@ Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding da
 
 * Called "taxonomy" in Tourmaline 2 code.
 * Generates taxonomic assignments and visualizations.
-* Assigns taxonomy using one of four methods:
+* Assigns taxonomy using one of five methods:
   * [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
   * [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
   * [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
   * [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
+  * [REVAMP's BLASTn against NCBI nt with lowest common ancestor](https://github.com/McAllister-NOAA/REVAMP)
 
 ### Step 4. Generate bioinformatics metadata
 
@@ -241,7 +242,7 @@ Key parameters:
 ```yaml
 run_name: [your_run_name] # Name for this pipeline run
 output_dir: [path]        # Output directory path
-classify_method: [method] # Classification method (naive-bayes, consensus-blast, consensus-vsearch, bt2-blca)
+classify_method: [method] # Classification method (naive-bayes, consensus-blast, consensus-vsearch, bt2-blca, revamp)
 collapse_taxalevel: [int] # Creates an additional table where ASV counts are collapsed to the provided taxonomic level
 classify_threads: [int]   # Number of threads for classification
 ```
@@ -340,6 +341,19 @@ min_consensus: 0.51
 # bt2-blca
 confidence_thres: 0.8
 # Bootstrap confidence threshold for limiting taxonomic depth
+# revamp (see docs/steps/taxonomy.md for database setup)
+revamp_dir: [path]
+# Clone of https://github.com/McAllister-NOAA/REVAMP
+revamp_blastdb: [path]
+# NCBI nt database directory, with a taxdump/ prepared by REVAMP's ncbi_db_cleanup.sh
+revamp_blast_results: [path]
+# Optional BLASTn btab run elsewhere (e.g. on the machine holding nt)
+revamp_blast_mode: mostEnvOUT
+# Subject filtering when Tourmaline runs BLAST: allIN, allEnvOUT or mostEnvOUT
+revamp_query_cov: 90
+# Percent of ASV length a BLAST hit must cover to be considered
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"
+# Percent identity cutoffs limiting assignment depth, ordered S,G,F,O,C,P
 ```
 
 ## Running the workflow

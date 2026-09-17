@@ -127,7 +127,7 @@ Defines how representative sequences are assigned taxonomy and summarized.
 ```yaml
 run_name: my_run
 output_dir: /path/to/results
-classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca
+classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
 collapse_taxalevel: 7             # taxonomy level for collapsed table
 classify_threads: 10
@@ -173,6 +173,25 @@ min_consensus: 0.51
 bowtie_database: /abs/path/bowtie2_index/   # optional; auto-built if omitted
 confidence_thres: 0.8
 ```
+
+**REVAMP options**
+
+```yaml
+revamp_dir: /abs/path/REVAMP                        # REVAMP clone
+revamp_blastdb: /abs/path/blastdb                   # nt volumes plus prepared taxdump/
+revamp_blast_results: /abs/path/ASV_blastn_nt.btab  # optional; BLAST run elsewhere
+revamp_blast_mode: mostEnvOUT                       # allIN | allEnvOUT | mostEnvOUT
+revamp_query_cov: 90                                # percent of ASV length a hit must cover
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"        # percent ID cutoffs, ordered S,G,F,O,C,P
+```
+
+Used only when `classify_method` is `revamp`, which needs the `revamp` conda environment
+and ignores `refseqs_file` / `taxa_file` / `pretrained_classifier`. `revamp_blast_mode`
+applies when Tourmaline runs BLAST itself; with `revamp_blast_results` supplied it is
+recorded but not applied. Suggested cutoffs are `97,95,90,80,70,60` for rRNA genes and
+`95,92,87,77,67,60` for protein-coding genes. See
+[Taxonomy step](steps/taxonomy.md#revamp) for database preparation, running BLAST on
+another machine, and how REVAMP's output differs from the other methods.
 
 **Additional classifier flags**
 
@@ -354,6 +373,7 @@ mock_community:
   legacy_unresolved_taxa: false              # true: original tax-credit TAR/TDR (see below)
   backbone_check: warn                       # warn | error
   plot_metrics:                              # default: TAR, TDR, Bray-Curtis, Precision, Recall, F-measure
+  best_run_metric: auto                      # metric that picks each method's best parameter set
   composition_top_n: 12                      # taxa coloured individually in composition plots
 ```
 
@@ -414,11 +434,13 @@ Metrics that cannot be computed are left empty (NaN), not `-1`.
 
 Plots are drawn per mock dataset, for the metrics in `mock_community.plot_metrics` and the `plot_types` in the config:
 
-- `boxplot`: one point per sample and parameter set, by reference database and method, with one panel per rank in `plot_ranks` that is also in `eval_ranks`.
-- `pointplot`: metric by rank.
+- `boxplot`: one point per sample and parameter set, by reference database and method, with one panel per rank in `plot_ranks` that is also in `eval_ranks`. A second figure, `…-best-boxplot.pdf`, shows only each method's best parameter set, so one point per sample.
+- `pointplot`: metric by rank, with `…-best-pointplot.pdf` again restricted to the best parameter sets.
 - `heatmap`: mean over samples for each method + parameter set, by database and rank.
 - `stacked_bar`: read-weighted classification ratios by rank (needs `asv_taxonomy`).
-- `best_run_stacked_bar`: `summaries/best_runs/mock-community/mock_community_best_runs.csv` lists the best run per database for each metric at `best_run_rank` (or the deepest `eval_ranks` entry if `best_run_rank` is not one of them). `mock-community-<dataset>-<database>-composition-<rank>.pdf` (picks in `mock_community_best_per_method.csv`) draws, for each sample, the expected composition next to the observed composition of each method's best parameter set. Best is by F-measure when `asv_taxonomy` is given, otherwise by Bray-Curtis.
+- `best_run_stacked_bar`: `mock-community-<dataset>-composition-<rank>.pdf` draws the expected composition next to the observed composition of each method's best parameter set. One figure per mock dataset holds every reference database: databases are rows, mock samples are columns, and all panels share the taxon colours. `summaries/best_runs/mock-community/mock_community_best_runs.csv` also lists the best run per database for every metric in `plot_metrics`.
+
+**Choosing the best run.** `mock_community.best_run_metric` sets the metric that picks each method's best parameter set for the composition plot and the best-run box and point plots. Runs are compared at `best_run_rank` (or the deepest `eval_ranks` entry when `best_run_rank` is not one of them), averaged over the mock samples; Bray-Curtis is minimised and every other metric maximised. The default `auto` uses F-measure for databases whose expected set has an `asv_taxonomy` and Bray-Curtis for the rest, so a run holding both kinds of expected set picks per database. Naming a metric (for example `Taxon Detection Rate`) uses it everywhere; a database with no score for that metric gets no best run and a message says so. The picks are written to `summaries/best_runs/mock-community/mock_community_best_per_method.csv` with the metric, direction, value and number of tied runs.
 
 Log analysis (`generate_log_analysis`) applies to the simulated evaluation methods only.
 

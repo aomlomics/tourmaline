@@ -4,7 +4,7 @@ Tourmaline 2 provides a modular workflow for processing amplicon sequencing data
 
 1. **QA/QC** - Process raw FASTQ files, optional primer trimming, generate QIIME 2 artifact
 2. **Repseqs** - Generate ASVs using DADA2 or Deblur, optional filtering, produce feature table and representative sequences
-3. **Taxonomy** - Assign taxonomy using one of four methods, generate visualizations
+3. **Taxonomy** - Assign taxonomy using one of five methods, generate visualizations
 
 ### Getting Started
 
