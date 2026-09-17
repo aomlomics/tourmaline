@@ -209,7 +209,10 @@ reference_databases:
     min_read_length: 140
     trim_primers: true          # false for pre-trimmed amplicon references (e.g. rCRUX)
     truncate: true
+    pretrained_classifier:      # optional, mock-community naive-bayes only
 ```
+
+Primers and the simulation settings are only needed by the simulated evaluation methods.
 
 **Evaluation methods (one or more)**
 
@@ -219,7 +222,7 @@ evaluation_methods:
   - cross-validated-trad     # traditional KFold CV
   - novel-taxa               # novel-taxa simulation
   - self-validated           # full database classified against itself
-  # - mock-community         # see mock_communities below
+  # - mock-community         # see Mock community evaluation below
 ```
 
 **Simulation parameters**
@@ -273,17 +276,153 @@ Novel-taxa results are split by novel level (`L5`, `L6`, …). Stacked barplots 
 
 Log-analysis tables (`taxon_error_profiles.csv`, `confusion_pairs.csv`, `cross_fold_stability.csv`, `method_parameter_misclassified-*.csv`) include an `expected_rank` column: the deepest rank named in the expected taxonomy. It is shallower than the analysis rank when the reference lacks that rank or, in cross-validated folds, when the taxon's lower ranks are absent from the training fold. Misclassification heatmaps (`<evaluation method>-method-parameter-misclassified-<rank>.pdf`) show only taxa whose `expected_rank` is the plotted rank, with one panel per reference database holding up to `log_analysis_top_n` taxa ranked by their highest misclassification in any run (taxa never misclassified are left out); hatched cells mean the taxon had no reads in that run.
 
-**Mock community** (when `mock-community` is listed in `evaluation_methods`)
+#### Mock community evaluation
+
+Add `mock-community` to `evaluation_methods` to score taxonomy assignments of real sequencing data from mock communities, whose make-up you know. Every classify method and parameter set in the config is run on the mock ASVs against every reference database assigned to an expected set, and each result is compared with what the mock should contain. Mock evaluation needs no simulation, so `fwd_primer` / `rev_primer` are optional for databases used only here.
+
+**Inputs**
+
+| Input | Config key | Required | Format |
+|---|---|---|---|
+| Read counts | `datasets[].feature_table` | yes | TSV with ASVs as rows and samples as columns (first column = feature id), BIOM, or a repseqs `table.qza` |
+| ASV sequences | `datasets[].rep_seqs` | yes | FASTA or a repseqs `repseqs.qza`; ids must match the feature table |
+| Expected composition | `expected_sets[].composition` | this, `asv_taxonomy`, or both | TSV, see below |
+| Known ASV taxonomy | `expected_sets[].asv_taxonomy` | this, `composition`, or both | TSV, see below |
+
+Expected composition: one row per unique taxonomy, one column per mock sample, relative abundance as values. The first column header can be anything. Missing values are 0, and each sample column is rescaled to sum to 1. Duplicate rows (after the cleanup described under *Taxonomy strings*) are summed.
+
+```
+Taxonomy	mock-even	mock-staggered
+Eukaryota;Chordata;Actinopteri;Lophiiformes;Lophiidae;Lophius;Lophius americanus	0.25	0.60
+Eukaryota;Chordata;Actinopteri;Lampriformes;Lampridae;Lampris;Lampris guttatus	0.25	0.30
+Eukaryota;Chordata;Chondrichthyes;Hexanchiformes;Hexanchidae;Hexanchus	0.50	0.10
+```
+
+Known ASV taxonomy: the true taxonomy of each ASV, with headers `Feature ID` and `Taxon` (the QIIME 2 `taxonomy.tsv` layout; extra columns are ignored). ASVs left out, or with an empty or `Unassigned` taxon, count as unknown.
+
+```
+Feature ID	Taxon
+672935cdade199c3f4433afc5ba327fd	Eukaryota;Chordata;Actinopteri;Lophiiformes;Lophiidae;Lophius;Lophius americanus
+```
+
+What each expected set enables:
+
+| Provided | Mock samples | Metrics |
+|---|---|---|
+| `composition` only | composition columns that are in the feature table | TAR, TDR, Bray-Curtis |
+| `asv_taxonomy` only | feature-table samples with reads from ASVs of known taxonomy; the expected composition is built from those reads | TAR, TDR, Bray-Curtis, precision, recall, F-measure |
+| both | composition columns that are in the feature table | TAR, TDR and Bray-Curtis use `composition`; precision, recall and F-measure use `asv_taxonomy` |
+
+Feature-table samples that are not mock samples (blanks, field samples) are ignored and listed, with the reason, in `data/mock-community/datasets/<dataset>/excluded_samples.tsv`, so you can point `feature_table` at a whole run. Set `datasets[].samples` to evaluate only some samples.
+
+**Taxonomic backbones: one expected set per backbone**
+
+Reference databases can name and place the same organism differently. For example, *Antigonia combatia* is in `Acanthuriformes;Antigoniidae` in one MiFish database and `Caproiformes;Caproidae` in another. Expected taxa written against one backbone would be scored as errors against a database that uses the other. Each expected set therefore lists the `databases` it applies to, and must use those databases' taxonomy. A database can belong to only one expected set. Databases in no expected set are not used for mock evaluation (they can still be used by the other evaluation methods).
+
+Before any assignment runs, the datasets phase checks every expected taxonomy against each database in its set, at each rank in `eval_ranks`, and writes `data/mock-community/expected/<set>/backbone_check-<database>.tsv`:
+
+| status | meaning |
+|---|---|
+| `found` | the taxonomy, down to that rank, exists in the database |
+| `different_lineage` | the name at that rank exists in the database under a different lineage (listed in `database_lineages`); almost always a backbone mismatch |
+| `not_in_database` | the name is not in the database at that rank; the database may lack the taxon, or it is named differently |
+
+It also warns when the number of ranks or the rank-prefix style (`g__Name` vs `Name`) differs between the expected taxa and the database. With `backbone_check: warn` (default) the run continues and a per-rank count is printed. With `backbone_check: error` any taxon that isn't `found` stops the run.
+
+**Config**
 
 ```yaml
-mock_communities:
-  - id: fuhrman_18Sv4
-    feature_table_biom: /path/to/feature_table.biom
-    rep_seqs_fasta: /path/to/rep_seqs.fna
-    references:
-      - id: pr2-ssu
-        expected_dir: /path/to/expected
+mock_community:
+  datasets:                       # one or more sequencing datasets with mock samples
+    - id: pmel_mifish_mocks
+      feature_table: /path/to/table.tsv     # .tsv, .biom or table.qza
+      rep_seqs: /path/to/asvs.fasta          # .fasta or repseqs.qza
+      samples:                               # optional: only these samples
+  expected_sets:                  # one per taxonomic backbone
+    - id: gomex_backbone
+      databases: [mifishGom]                 # reference_databases ids using this backbone
+      composition: /path/to/composition_gomex.tsv
+      asv_taxonomy:                          # optional; enables precision/recall/F-measure
+      ranks:                                 # optional; default taxa_ranks
+    - id: addJ_backbone
+      databases: [addJ]
+      composition:
+      asv_taxonomy: /path/to/asv_taxonomy_addJ.tsv
+      ranks:
+  eval_ranks: [family, genus, species]      # ranks to score (default family, genus, species)
+  min_relative_abundance: 0                  # observed taxa must exceed this fraction of reads for TAR/TDR
+  legacy_unresolved_taxa: false              # true: original tax-credit TAR/TDR (see below)
+  backbone_check: warn                       # warn | error
+  plot_metrics:                              # default: TAR, TDR, Bray-Curtis, Precision, Recall, F-measure
+  composition_top_n: 12                      # taxa coloured individually in composition plots
 ```
+
+`ranks` names the positions in the expected set's taxonomy strings (default: the top-level `taxa_ranks`), so `eval_ranks` can be given by name. A reference database entry can also set `pretrained_classifier: /path/to/classifier.qza`. naive-bayes then classifies the mock ASVs with that classifier instead of fitting one on the full database; the parameter id is `nb-pretrained-conf<confidence>`.
+
+**Metrics** (per mock sample, per rank, per reference database, method and parameter set)
+
+At each rank, taxonomy strings are cut after that rank. A string is *resolved* at a rank if it has a name there, so an ASV assigned only to genus, and an expected taxon only known to genus, are unresolved at species.
+
+- **Taxon Accuracy Rate (TAR)**: the fraction of observed taxa that are expected, |observed ∩ expected| / |observed|. Observed taxa have more than `min_relative_abundance` of the sample's reads; expected taxa have expected abundance above 0. Only resolved taxa count on either side. NaN when no taxa are observed.
+- **Taxon Detection Rate (TDR)**: the fraction of expected taxa that are observed, |observed ∩ expected| / |expected|. NaN when no taxa are expected at that rank.
+- **Bray-Curtis**: dissimilarity between the expected composition and the observed read proportions at that rank (0 = identical, 1 = nothing shared; lower is better). Unresolved assignments keep their truncated taxonomy, and unassigned reads are pooled as `Unassigned`, so reads that are not assigned still count. No abundance threshold is applied. PCR and copy-number bias mean observed proportions rarely match the true mix even with perfect classification, so use Bray-Curtis to compare methods rather than as an absolute score.
+- **Precision, Recall, F-measure** (needs `asv_taxonomy`): each ASV's assignment is compared with its known taxonomy and weighted by its reads in the sample. A match is a true positive; underclassification (a correct but shallower assignment) is a false negative; overclassification and misclassification are a false positive and a false negative. This is the scoring used for the simulated evaluation methods. `ASV Precision`, `ASV Recall` and `ASV F-measure` weight every ASV equally. `match_ratio`, `underclassification_ratio`, `overclassification_ratio` and `misclassification_ratio` are the read-weighted fraction of each outcome. ASVs of unknown taxonomy are left out; `reads_scored_fraction` shows how many reads were scored.
+
+Metrics that cannot be computed are left empty (NaN), not `-1`.
+
+**Differences from the original tax-credit mock evaluation**
+
+- *Unresolved taxa in TAR/TDR.* Original tax-credit treats a truncated string such as `…;Lophiidae;Lophius` as its own taxon at species rank, so an assignment that stops at genus lowers TAR as a false taxon, and an expected taxon known only to genus is counted as expected at species. Here both are left out of TAR/TDR at ranks where they are unresolved (a shallow assignment is not a claim of a wrong species), and they are scored by Bray-Curtis and recall instead. Set `legacy_unresolved_taxa: true` to count them as taxa, including `Unassigned`, as in the original. Scores are only comparable with published tax-credit results in legacy mode.
+- *No-detection cases.* The original reports TAR and TDR as 0 when no expected taxon is observed, even if nothing was observed. Here TAR is NaN when nothing is observed.
+- *Inputs.* Expected results come from one composition table and/or one ASV taxonomy table per backbone, not per-dataset `expected/` directories with BIOM tables collapsed per level, `expected-taxonomy.tsv` and `trueish-taxonomies.tsv`. Ranks are named, not numbered.
+- *Precision and recall.* Weighted by reads as in the original (`per_seq_precision`), but computed whenever `asv_taxonomy` is given, alongside unweighted per-ASV scores and classification ratios.
+- *Recomputation.* Snakemake scores each assignment job separately and rescores only jobs whose assignments changed; the `force` / `append` / `backup` options are gone.
+- *Taxonomy strings.* Whitespace around ranks is removed, trailing `NA`/empty ranks are dropped (internal `NA` ranks keep their place), and `Unassigned`, `Unclassified` and `No blast hit` all mean unassigned. The original's removal of `[]()` characters is not done.
+
+**Outputs**
+
+```
+[run_name]-tax-credit/
+├── data/
+│   ├── ref_dbs/<database>/ref_seqs.qza, ref_taxa.qza
+│   ├── mock-community/
+│   │   ├── dataset_log.txt                   # staging messages: kept/excluded samples, unscored ASVs, backbone check
+│   │   ├── evaluation_plan.tsv               # dataset × expected set × database × samples
+│   │   ├── datasets/<dataset>/
+│   │   │   ├── rep_seqs.qza, feature_table.tsv
+│   │   │   └── excluded_samples.tsv          # samples not evaluated, per expected set, with reason
+│   │   └── expected/<set>/
+│   │       ├── composition.tsv, asv_taxonomy.tsv
+│   │       ├── backbone_check-<database>.tsv
+│   │       └── unscored_asvs-<dataset>.tsv   # ASVs left out of precision/recall (asv_taxonomy sets only)
+│   └── results/mock-community/<dataset>/<database>/<method>/<parameters>/taxonomy.tsv
+├── summaries/
+│   ├── mock_community_metrics.tsv            # one row per sample × rank × run
+│   ├── mock_community_composition.tsv        # expected vs observed abundance per taxon
+│   ├── mock-community/per-job/                # per-run scores the summaries are built from
+│   └── best_runs/mock-community/
+└── plots/mock-community/
+```
+
+`dataset_log.txt` is rewritten each time inputs are staged (the datasets phase) and records everything staging reports: feature and sample counts per dataset, the samples evaluated and excluded for each expected set, features with no sequence in `rep_seqs`, unscored ASVs, the backbone check counts and warnings, and the error that stopped staging, if any. The same lines are printed to the terminal with a `[mock-community]` prefix. Messages from later scoring jobs (features with no assignment in a run) are only printed to the terminal.
+
+`excluded_samples.tsv` has one row per excluded sample and expected set (`sample_id`, `expected_set`, `reason`). Reasons: `not in composition`; `in composition but not in feature table`; `no reads from ASVs with known taxonomy` (sets with only `asv_taxonomy`); `not in datasets.samples`. The file has only a header when nothing was excluded.
+
+`unscored_asvs-<dataset>.tsv` lists feature-table ASVs without a known taxonomy (`Feature ID`, `reason` = `not in asv_taxonomy` or `empty or Unassigned in asv_taxonomy`, `reads_in_mock_samples`, `reads_total`), sorted by reads in the evaluated mock samples. It is written only for expected sets with `asv_taxonomy` and pairs that have mock samples.
+
+`mock_community_metrics.tsv` columns: `MockDataset`, `Reference`, `ExpectedSet`, `Method`, `Parameters`, `SampleID`, `rank`, `level`, the metrics above, and the counts `n_expected_taxa`, `n_observed_taxa`, `n_shared_taxa`, `n_asvs_scored`, `reads_scored_fraction`. `mock_community_composition.tsv` has one row per run, sample, rank and taxon, with `expected` and `observed` relative abundance and whether the taxon is `resolved` at that rank.
+
+Plots are drawn per mock dataset, for the metrics in `mock_community.plot_metrics` and the `plot_types` in the config:
+
+- `boxplot`: one point per sample and parameter set, by reference database and method, with one panel per rank in `plot_ranks` that is also in `eval_ranks`.
+- `pointplot`: metric by rank.
+- `heatmap`: mean over samples for each method + parameter set, by database and rank.
+- `stacked_bar`: read-weighted classification ratios by rank (needs `asv_taxonomy`).
+- `best_run_stacked_bar`: `summaries/best_runs/mock-community/mock_community_best_runs.csv` lists the best run per database for each metric at `best_run_rank` (or the deepest `eval_ranks` entry if `best_run_rank` is not one of them). `mock-community-<dataset>-<database>-composition-<rank>.pdf` (picks in `mock_community_best_per_method.csv`) draws, for each sample, the expected composition next to the observed composition of each method's best parameter set. Best is by F-measure when `asv_taxonomy` is given, otherwise by Bray-Curtis.
+
+Log analysis (`generate_log_analysis`) applies to the simulated evaluation methods only.
+
+**Smoke test**: `config_04_tax_credit_test_mock.yaml` runs every mock code path on the small test databases and the fixture in `00-data/tax-credit-test/mock/` (built by `scripts/make_mock_test_fixture.py`). The two test databases disagree on the backbone for a few species, so it uses one expected set for each.
 
 Install tax-credit in the QIIME 2 amplicon environment before running:
 

@@ -20,6 +20,9 @@ reference_databases:
     min_read_length: 200
     trim_primers: false
     truncate: false
+    # Optional (mock-community, naive-bayes only): classify mock ASVs with this
+    # classifier .qza instead of fitting one on the full database
+    pretrained_classifier:
 
 ## --- EVALUATION METHODS (one or more) ---
 # cross-validated | cross-validated-trad | novel-taxa | self-validated | mock-community
@@ -120,11 +123,43 @@ log_analysis_min_obvs: 3   # minimum log observations per expected taxon
 log_analysis_top_n: 25   # taxa per reference database in sensitivity heatmaps
 
 ## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
-mock_communities: []
-mock_dir:
-mock_taxonomy_level_range: [2, 3, 4, 5, 6]
-mock_per_seq_precision: false
-mock_force_eval: false
+## See docs/configuration.md "Mock community evaluation" for file formats and metrics.
+mock_community:
+  # One or more sequencing datasets containing mock samples
+  datasets:
+    - id: my_mock_run
+      # Read counts: TSV (ASVs as rows, samples as columns), .biom, or repseqs table.qza
+      feature_table:
+      # ASV sequences: FASTA or repseqs.qza (ids must match the feature table)
+      rep_seqs:
+      # Optional: evaluate only these samples
+      samples:
+  # One expected set per taxonomic backbone. Expected taxa must use the same
+  # taxonomy as the databases listed. Set composition, asv_taxonomy, or both.
+  expected_sets:
+    - id: my_backbone
+      # reference_databases ids that use this backbone (each database in one set only)
+      databases: []
+      # TSV: unique taxonomies as rows, sample ids as columns, relative abundance as values
+      composition:
+      # TSV with headers "Feature ID" and "Taxon": known taxonomy of each ASV
+      # (enables precision / recall / F-measure; without composition, the
+      # expected composition is built from these and the read counts)
+      asv_taxonomy:
+      # Optional: rank names for this set's taxonomy strings (default taxa_ranks)
+      ranks:
+  # Ranks to score
+  eval_ranks: [family, genus, species]
+  # Observed taxa must exceed this fraction of a sample's reads to count for TAR/TDR
+  min_relative_abundance: 0
+  # true: count taxa not resolved at a rank (and Unassigned) in TAR/TDR, as original tax-credit
+  legacy_unresolved_taxa: false
+  # warn | error: what to do when expected taxa are missing from, or placed differently in, a database
+  backbone_check: warn
+  # Optional: metrics to plot (default Taxon Accuracy Rate, Taxon Detection Rate, Bray-Curtis, Precision, Recall, F-measure)
+  plot_metrics:
+  # Taxa coloured individually in composition plots
+  composition_top_n: 12
 
 ## --- ADVANCED ---
 force_evaluation: false
@@ -134,4 +169,3 @@ summary_filenames:
   novel-taxa: evaluate_classification_summary_novel.csv
   cross-validated-trad: evaluate_classification_summary_CV_trad.csv
   self-validated: evaluate_classification_summary_self_validated.csv
-  mock-community: mock_evaluation_summary.tsv

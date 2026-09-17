@@ -12,6 +12,7 @@ datasets_done = run_output + ".datasets.done"
 assign_done_dir = run_output + "assignment-done/"
 summaries_dir = run_output + "summaries/"
 evaluate_done = summaries_dir + ".evaluate.done"
+mock_jobs_dir = summaries_dir + "mock-community/per-job/"
 plots_done = run_output + config.get("plots_subdir", "plots") + "/.done"
 
 # bt2-blca has its own cutoffs; refuse older configs that shared perc_identity /
@@ -118,8 +119,8 @@ def _summary_targets():
     summary_cfg = config.get("summary_filenames") or {}
     for method in config.get("evaluation_methods", []):
         if method == "mock-community":
-            names.append(
-                summary_cfg.get("mock-community", "mock_evaluation_summary.tsv")
+            names.extend(
+                ["mock_community_metrics.tsv", "mock_community_composition.tsv"]
             )
         elif method in ("cross-validated", "cross-validated-taxa"):
             names.append(
@@ -152,12 +153,24 @@ def _plots_input():
     return []
 
 
+_manifest_cache = {"key": None, "rows": None}
+
+
 def _manifest_row(job_id):
-    df = pd.read_csv(manifest_fp, sep="\t")
-    rows = df[df["job_id"].astype(str) == str(job_id)]
-    if rows.empty:
+    # Read the manifest once (re-read only if it changes); with thousands of jobs,
+    # per-call reads made DAG building / checkpoint updates extremely slow.
+    st = os.stat(manifest_fp)
+    key = (st.st_mtime_ns, st.st_size)
+    if _manifest_cache["key"] != key:
+        df = pd.read_csv(manifest_fp, sep="\t")
+        _manifest_cache["rows"] = {
+            str(jid): row for jid, (_, row) in zip(df["job_id"].astype(str), df.iterrows())
+        }
+        _manifest_cache["key"] = key
+    row = _manifest_cache["rows"].get(str(job_id))
+    if row is None:
         raise ValueError(f"job_id not in manifest: {job_id}")
-    return rows.iloc[0]
+    return row
 
 
 def _assign_fit_done(wildcards):
@@ -172,6 +185,21 @@ def _assignment_done_inputs(wildcards):
     ck = checkpoints.tax_credit_prepare_manifest.get().output[0]
     df = pd.read_csv(ck, sep="\t")
     return expand(assign_done_dir + "{job_id}.done", job_id=df["job_id"].astype(str))
+
+
+def _mock_score_inputs(wildcards):
+    """Per-job mock-community scores (jobs that classify, not fit-only jobs)."""
+    ck = checkpoints.tax_credit_prepare_manifest.get().output[0]
+    df = pd.read_csv(ck, sep="\t", dtype=str, keep_default_na=False)
+    if df.empty:
+        return []
+    is_true = lambda col: df[col].str.lower() == "true"
+    jobs = df[
+        (df["evaluation_method"] == "mock-community")
+        & ~is_true("fit_only")
+        & ~is_true("trad_fit")
+    ]["job_id"]
+    return expand(mock_jobs_dir + "{job_id}.metrics.tsv", job_id=jobs)
 
 
 rule run_tax_credit:
@@ -213,7 +241,10 @@ checkpoint tax_credit_prepare_manifest:
 
 rule tax_credit_assign_fold:
     input:
-        manifest=lambda wildcards: checkpoints.tax_credit_prepare_manifest.get().output[0],
+        # plain path, not checkpoints...get(): these jobs are only requested via
+        # the checkpoint-aware aggregators, so re-evaluating each one on checkpoint
+        # update is unnecessary (and very slow with thousands of jobs)
+        manifest=manifest_fp,
         fit_done=_assign_fit_done,
     output:
         touch(assign_done_dir + "{job_id}.done"),
@@ -280,9 +311,25 @@ rule tax_credit_assign_fold:
         """
 
 
+rule tax_credit_mock_score_job:
+    input:
+        assign_done_dir + "{job_id}.done",
+    output:
+        mock_jobs_dir + "{job_id}.metrics.tsv",
+        mock_jobs_dir + "{job_id}.composition.tsv",
+    params:
+        cfg=CONFIGFILE,
+    conda:
+        "qiime2-amplicon-2024.10"
+    shell:
+        "python scripts/run_tax_credit.py --config {params.cfg} "
+        "--phase mock-evaluate-job --job-id {wildcards.job_id}"
+
+
 rule tax_credit_evaluate:
     input:
         _assignment_done_inputs,
+        _mock_score_inputs,
     output:
         expand(
             summaries_dir + "{summary}",

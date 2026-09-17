@@ -17,6 +17,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import tax_credit_mock
+
 # Ensure tax-credit is importable
 def _ensure_tax_credit(package_dir: str) -> None:
     root = abspath(expandvars(package_dir))
@@ -34,6 +36,8 @@ def load_config(path: str) -> dict:
     with open(path) as fh:
         cfg = yaml.safe_load(fh)
     validate_blca_config(cfg)
+    if tax_credit_mock.mock_enabled(cfg):
+        tax_credit_mock.mock_settings(cfg)
     return cfg
 
 
@@ -194,8 +198,8 @@ def reference_dataframe(cfg: dict) -> pd.DataFrame:
             refseqs,
             taxa,
             db_id,
-            db["fwd_primer"],
-            db["rev_primer"],
+            db.get("fwd_primer") or "",
+            db.get("rev_primer") or "",
             db.get("fwd_primer_id", "F"),
             db.get("rev_primer_id", "R"),
         ]
@@ -487,8 +491,37 @@ def _append_fold_assignment_rows(
     method_cfg: dict,
     confidences: list,
     job_id_prefix: str,
+    pretrained_classifier: str | None = None,
 ) -> None:
-    """Add manifest rows for one simulated fold (or mock-community combo)."""
+    """Add manifest rows for one simulated fold (or mock-community combo).
+
+    *pretrained_classifier* (naive-bayes only) skips fitting and classifies
+    with that classifier for every confidence value.
+    """
+    if method == "naive-bayes" and pretrained_classifier:
+        assign_params = _manifest_assign_params(method, method_cfg)
+        for conf in confidences:
+            p = f"nb-pretrained-conf{conf}"
+            rows.append({
+                "job_id": f"{job_id_prefix}-{p}",
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": join(results_root, subdir, dataset_id, reference_id, method, p),
+                "confidence": _manifest_confidence(method, conf),
+                "skip_fit": True,
+                "trad_fit": False,
+                "fit_only": False,
+                "fit_job_id": "",
+                **_empty_manifest_artifact_fields(),
+                "classifier_qza": pretrained_classifier,
+                **assign_params,
+            })
+        return
+
     if method in ("consensus-blast", "consensus-vsearch"):
         for combo in consensus_param_combinations(cfg):
             assign_params = _manifest_assign_params(method, method_cfg, combo)
@@ -691,6 +724,17 @@ def prepare_datasets(cfg: dict) -> None:
     if not needs_generation:
         raise ValueError("No evaluation_methods require dataset generation.")
 
+    if sim_methods or "self-validated" in eval_methods:
+        no_primers = [
+            db["id"] for db in cfg.get("reference_databases", [])
+            if db["id"] in df.index and not (db.get("fwd_primer") and db.get("rev_primer"))
+        ]
+        if no_primers:
+            raise ValueError(
+                f"fwd_primer and rev_primer are required for simulated evaluation "
+                f"methods; missing for: {no_primers}"
+            )
+
     if sim_methods:
         levelrange = cfg.get("novel_taxa_levels", [6, 5, 4, 3])
         force = cfg.get("force_regenerate", False)
@@ -726,30 +770,7 @@ def prepare_datasets(cfg: dict) -> None:
             )
 
     if "mock-community" in eval_methods:
-        stage_mock_communities(cfg)
-
-
-def stage_mock_communities(cfg: dict) -> None:
-    mock_root = cfg.get("mock_dir") or join(data_dir(cfg), "mock-community")
-    os.makedirs(mock_root, exist_ok=True)
-    for mock in cfg.get("mock_communities") or []:
-        mock_id = mock["id"]
-        dest = join(mock_root, mock_id)
-        os.makedirs(dest, exist_ok=True)
-        if mock.get("feature_table_biom"):
-            shutil.copy2(
-                abspath(expandvars(mock["feature_table_biom"])),
-                join(dest, "feature_table.biom"),
-            )
-        if mock.get("rep_seqs_fasta"):
-            rep = join(dest, "rep_seqs.fna")
-            shutil.copy2(abspath(expandvars(mock["rep_seqs_fasta"])), rep)
-        for ref in mock.get("references") or []:
-            ref_dest = join(dest, ref["id"], "expected")
-            os.makedirs(ref_dest, exist_ok=True)
-            expected = abspath(expandvars(ref["expected_dir"]))
-            for name in os.listdir(expected):
-                shutil.copy2(join(expected, name), join(ref_dest, name))
+        tax_credit_mock.stage_mock_inputs(cfg, ddir, df["Reference tax path"].to_dict())
 
 
 def prepare_manifest(cfg: dict) -> str:
@@ -774,28 +795,26 @@ def prepare_manifest(cfg: dict) -> str:
 
         for eval_method in cfg.get("evaluation_methods", []):
             if eval_method == "mock-community":
-                mock_root = cfg.get("mock_dir") or join(ddir, "mock-community")
-                for mock in cfg.get("mock_communities") or []:
-                    mock_id = mock["id"]
-                    query = join(mock_root, mock_id, "rep_seqs.qza")
-                    for ref in mock.get("references") or []:
-                        ref_id = ref["id"]
-                        _append_fold_assignment_rows(
-                            rows,
-                            cfg=cfg,
-                            results_root=results_root,
-                            subdir="mock-community",
-                            dataset_id=mock_id,
-                            reference_id=ref_id,
-                            query=query,
-                            ref_seqs=join(ddir, "ref_dbs", ref_id, "ref_seqs.qza"),
-                            ref_taxa=join(ddir, "ref_dbs", ref_id, "ref_taxa.qza"),
-                            eval_method=eval_method,
-                            method=classify_method,
-                            method_cfg=method_cfg,
-                            confidences=confidences,
-                            job_id_prefix=f"mock-{mock_id}-{ref_id}-{classify_method}",
-                        )
+                for job in tax_credit_mock.assignment_jobs(cfg, ddir):
+                    _append_fold_assignment_rows(
+                        rows,
+                        cfg=cfg,
+                        results_root=results_root,
+                        subdir="mock-community",
+                        dataset_id=job["dataset_id"],
+                        reference_id=job["reference_id"],
+                        query=job["query"],
+                        ref_seqs=job["ref_seqs"],
+                        ref_taxa=job["ref_taxa"],
+                        eval_method=eval_method,
+                        method=classify_method,
+                        method_cfg=method_cfg,
+                        confidences=confidences,
+                        job_id_prefix=(
+                            f"mock-{job['dataset_id']}-{job['reference_id']}-{classify_method}"
+                        ),
+                        pretrained_classifier=job["pretrained_classifier"],
+                    )
                 continue
 
             subdir = analysis_data_subdir(eval_method)
@@ -955,7 +974,6 @@ def prepare_manifest(cfg: dict) -> str:
 def evaluate(cfg: dict) -> None:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.framework_functions import novel_taxa_classification_evaluation
-    from tax_credit.mock_evaluation import evaluate_results
     from tax_credit.paths import list_assignment_result_dirs
 
     out = run_output_dir(cfg)
@@ -968,22 +986,8 @@ def evaluate(cfg: dict) -> None:
 
     for eval_method in cfg.get("evaluation_methods", []):
         if eval_method == "mock-community":
-            mock_root = cfg.get("mock_dir") or join(ddir, "mock-community")
-            results_dirs = list_assignment_result_dirs(
-                join(results_root, "mock-community")
-            )
-            summary_fp = join(
-                summaries_dir,
-                summary_names.get("mock-community", "mock_evaluation_summary.tsv"),
-            )
-            evaluate_results(
-                results_dirs,
-                expected_results_dir=mock_root,
-                results_fp=summary_fp,
-                mock_dir=mock_root,
-                taxonomy_level_range=cfg.get("mock_taxonomy_level_range", range(2, 7)),
-                per_seq_precision=cfg.get("mock_per_seq_precision", False),
-                force=force,
+            tax_credit_mock.write_summaries(
+                cfg, join(out, "assignment_manifest.tsv"), ddir, out,
             )
             continue
 
@@ -1426,6 +1430,7 @@ def plot_results(cfg: dict) -> None:
 
     for eval_method in cfg.get("evaluation_methods", []):
         if eval_method == "mock-community":
+            tax_credit_mock.plot_mock(cfg, out, plots_dir, plot_types, palette_override)
             continue
         eval_label = eval_method_label(eval_method)
         method_plots_dir = join(plots_dir, eval_method)
@@ -1583,9 +1588,10 @@ def main() -> int:
     parser.add_argument("--config", required=True, help="Path to config_04_tax_credit.yaml")
     parser.add_argument(
         "--phase",
-        choices=["datasets", "manifest", "evaluate", "plot", "post-assign"],
+        choices=["datasets", "manifest", "evaluate", "plot", "post-assign", "mock-evaluate-job"],
         default="datasets",
     )
+    parser.add_argument("--job-id", help="Manifest job_id for --phase mock-evaluate-job")
     args = parser.parse_args()
     cfg = load_config(args.config)
 
@@ -1597,6 +1603,18 @@ def main() -> int:
         evaluate(cfg)
     elif args.phase == "plot":
         plot_results(cfg)
+    elif args.phase == "mock-evaluate-job":
+        if not args.job_id:
+            parser.error("--phase mock-evaluate-job requires --job-id")
+        _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
+        out = run_output_dir(cfg)
+        manifest = pd.read_csv(
+            join(out, "assignment_manifest.tsv"), sep="\t", dtype=str, keep_default_na=False,
+        )
+        rows = manifest[manifest["job_id"] == args.job_id]
+        if rows.empty:
+            parser.error(f"job_id not in manifest: {args.job_id}")
+        tax_credit_mock.evaluate_job(cfg, rows.iloc[0], data_dir(cfg), out)
     elif args.phase == "post-assign":
         evaluate(cfg)
         plot_results(cfg)
