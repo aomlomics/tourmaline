@@ -193,6 +193,18 @@ recorded but not applied. Suggested cutoffs are `97,95,90,80,70,60` for rRNA gen
 [Taxonomy step](steps/taxonomy.md#revamp) for database preparation, running BLAST on
 another machine, and how REVAMP's output differs from the other methods.
 
+**Krona plot options (any classify method)**
+
+```yaml
+make_krona: False        # build figures/{run_name}-krona.html
+krona_per_sample: True   # add one Krona dataset per sample
+```
+
+Off by default because it needs a `krona` conda environment
+(`conda create -c conda-forge -c bioconda -n krona krona`). Configs written before this
+option was added still work; the plot is simply not built. See
+[Taxonomy step](steps/taxonomy.md#krona-plots).
+
 **Additional classifier flags**
 
 ```yaml

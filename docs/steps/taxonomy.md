@@ -44,6 +44,10 @@ revamp_blast_mode: mostEnvOUT             # allIN | allEnvOUT | mostEnvOUT
 revamp_query_cov: 90                      # percent of ASV length a hit must cover
 revamp_taxonomy_cutoffs: "97,95,90,80,70,60"  # percent ID cutoffs, ordered S,G,F,O,C,P
 
+# Krona plot (optional, works with any classify method)
+make_krona: False            # requires the `krona` conda env
+krona_per_sample: True       # one dataset per sample alongside the all-samples plot
+
 # Optional metadata for barplots
 sample_metadata_file: 00-data/metadata.tsv
 ```
@@ -54,6 +58,31 @@ sample_metadata_file: 00-data/metadata.tsv
 - Optional collapsed table at `collapse_taxalevel`
 - Combined ASV/taxonomy/sequence TSV for downstream FAIR metadata workflows
 - Exported taxonomy TSV alongside the QIIME 2 taxonomy artifact
+- Optional Krona plot at `figures/{run_name}-krona.html` when `make_krona` is `True`
+
+### Krona plots
+
+Setting `make_krona: True` adds an interactive [Krona](https://github.com/marbl/Krona/wiki)
+plot for any classify method. `scripts/taxonomy_to_krona.py` turns the taxonomy artifact
+and feature table into Krona text files under `figures/krona_inputs/`, and `ktImportText`
+renders them into one self-contained HTML file. Rank prefixes (`k__`, `d__`) are stripped,
+trailing empty or `NA` ranks are dropped, and unassigned features are grouped under
+`Unassigned`.
+
+The plot always includes an `all_samples` dataset summed across the run; with
+`krona_per_sample: True` each sample is added as its own dataset, selectable from the
+dropdown at the top of the plot. Set it to `False` for runs with many samples.
+
+Requires a `krona` environment:
+
+```bash
+conda create -c conda-forge -c bioconda -n krona krona
+```
+
+No Krona taxonomy database is needed — `ktUpdateTaxonomy.sh` applies only to Krona's
+taxid-based importers, and Tourmaline supplies resolved lineage strings instead. The
+result is a plain HTML file rather than a QIIME 2 visualization, so open it directly in a
+browser rather than through `qiime tools view`.
 
 ### REVAMP
 

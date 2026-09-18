@@ -56,12 +56,20 @@ else:
     if config["refseqs_file"] == None or config["taxa_file"] == None:
         print(f"ERROR: refseqs_file and taxa_file must be provided if pretrained_classifier is not used.\n")
 
+# Krona plots are opt-in: they need the `krona` conda env, which most runs don't have.
+# Read with .get so configs written before this option still parse.
+make_krona = config.get("make_krona", False)
+krona_dir = taxonomy_dir + "figures/krona_inputs/"
+krona_manifest = krona_dir + "krona_datasets.tsv"
+krona_html = taxonomy_dir + "figures/" + config["run_name"] + "-krona.html"
+
 rule run_taxonomy:
     input:
         taxonomy_tsv,
         taxonomy_dir + "figures/" + config["run_name"] + "-taxa_barplot.qzv",
         taxonomy_dir + config["run_name"] + "-taxa_sample_table_" + "l" + str(config["collapse_taxalevel"]) + ".tsv",
-        taxonomy_dir + config["run_name"] + "-asv_taxa_features.tsv"
+        taxonomy_dir + config["run_name"] + "-asv_taxa_features.tsv",
+        *([krona_html] if make_krona else [])
 
 if config["classify_method"] == "bt2-blca":
     if has_fa_suffix(input_repseqs, [".qza"]):
@@ -195,6 +203,38 @@ rule export_asv_taxa_features:
         "qiime2-amplicon-2024.10"
     shell:
         "python scripts/create_asv_seq_taxa_output.py --input_repseqs {input.repseqs} --input_taxonomy {input.taxonomy} --output {output} --taxaranks {params.taxaranks}"
+
+if make_krona:
+    rule krona_inputs:
+        input:
+            table=input_table,
+            taxonomy=taxonomy_qza
+        output:
+            manifest=krona_manifest
+        params:
+            outdir=krona_dir,
+            persample="yes" if config.get("krona_per_sample", True) else "no"
+        conda:
+            "qiime2-amplicon-2024.10"
+        shell:
+            "python scripts/taxonomy_to_krona.py "
+            "--table {input.table} "
+            "--taxonomy {input.taxonomy} "
+            "--outdir {params.outdir} "
+            "--manifest {output.manifest} "
+            "--per-sample {params.persample}"
+
+    rule krona_plot:
+        input:
+            manifest=krona_manifest
+        output:
+            krona_html
+        conda:
+            "krona"
+        shell:
+            # The manifest gives each dataset as `path<TAB>label`; Krona wants `path,label`.
+            "ktImportText -o {output} "
+            "$(awk -F'\\t' '{{print $1\",\"$2}}' {input.manifest} | tr '\\n' ' ')"
 
 rule taxa_barplot:
     input:

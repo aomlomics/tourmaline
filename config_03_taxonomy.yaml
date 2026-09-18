@@ -75,6 +75,12 @@ revamp_query_cov: 90
 # Suggested: 97,95,90,80,70,60 for rRNA genes; 95,92,87,77,67,60 for protein-coding genes.
 revamp_taxonomy_cutoffs: "97,95,90,80,70,60"
 
+## --- KRONA PLOT (optional, any classify method) ---
+# Optional: build an interactive Krona HTML plot; requires the `krona` conda env.
+make_krona: False
+# Optional: include one Krona dataset per sample alongside the all-samples plot.
+krona_per_sample: True
+
 ## --- ADDITIONAL CLASSIFIER FLAGS ---
 # Optional: extra command-line parameters appended to chosen classifier.
 classify_params: --verbose

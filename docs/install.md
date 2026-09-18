@@ -38,6 +38,14 @@ REVAMP also needs a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP)
 local NCBI `nt` database with taxonomy files. See
 [Taxonomy step](steps/taxonomy.md#revamp).
 
+Optional (Krona plots, `make_krona: True`, any classify method):
+
+```bash
+conda create -c conda-forge -c bioconda -n krona krona
+```
+
+No Krona taxonomy database download is required.
+
 ### Get Tourmaline 2
 
 ```bash
