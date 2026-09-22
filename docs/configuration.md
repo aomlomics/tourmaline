@@ -266,6 +266,8 @@ novel_recall_min_level: 3
 force_regenerate: false
 ```
 
+In novel-taxa folds the expected taxonomy of each query is truncated to the deepest rank still present in that fold's reference. Removing the novel taxon can remove its parent as well (a monotypic genus goes with its only species), and a rank the reference no longer holds cannot be returned by any classifier, so grading against it would count every method as wrong whatever it did. Queries with no rank left in the reference are dropped from the fold. Dataset generation reports how many queries this affects per fold; novel-taxa scores are therefore not comparable with runs generated before this behaviour.
+
 `cv_recall_max_level` controls cross-validated assignment manifest generation (default `6`; `min_level` is always `max_level - 1` so each CV fold is listed once). Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
 
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
@@ -283,7 +285,35 @@ fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
 generate_plots: true
 ```
 
-Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, and `min_consensus` expand into parameter sweeps for consensus methods. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
+`classify_methods` accepts `naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca` and `revamp`. Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, and `min_consensus` expand into parameter sweeps for consensus methods. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
+
+**REVAMP options (mock-community only)**
+
+```yaml
+revamp_dir: /abs/path/REVAMP            # REVAMP clone
+revamp_blastdb: /abs/path/blastdb       # NCBI nt directory with a prepared taxdump/
+revamp_query_cov_values: [90]           # percent of ASV length a BLAST hit must cover
+revamp_taxonomy_cutoffs_values:         # percent identity cutoffs, ordered S,G,F,O,C,P
+  - "97,95,90,80,70,60"
+  - "95,92,87,77,67,60"
+revamp_blast_mode_values: [mostEnvOUT]  # allIN | allEnvOUT | mostEnvOUT
+```
+
+`revamp` classifies against a local NCBI `nt` BLAST database, which is far too large to simulate cross-validated, novel-taxa or self-validated datasets from, so it runs **only for `mock-community`**. Listing it alongside other evaluation methods is fine — it is skipped for them with a message, and the other classify methods still run. Listing it with no `mock-community` in `evaluation_methods` is an error.
+
+Because `nt` is not a QIIME reference artifact, it is declared as a `reference_databases` entry carrying `revamp: true` and no `refseqs_file` / `taxa_file`:
+
+```yaml
+reference_databases:
+  - id: ncbi-nt
+    revamp: true
+```
+
+Only `revamp` classifies against that entry, and `revamp` classifies against nothing else — every other database/method pairing is skipped. Its expected set must use the NCBI taxonomy backbone, since that is what REVAMP assigns; the backbone check is skipped for it because there is no local reference taxonomy to compare against.
+
+All three sweep keys accept a single value or a list. `revamp_query_cov_values` and `revamp_taxonomy_cutoffs_values` are applied to BLAST output, so their combinations reuse one BLAST search — the same fit-job sharing bt2-blca uses for its bowtie2 index. `revamp_blast_mode_values` changes the search itself, so each mode costs another full BLAST against `nt`; with precomputed results it is ignored (the filtering already happened) and a message says so. Parameter sets appear in summaries and plots as, for example, `qc90-cut97_95_90_80_70_60-mostEnvOUT`.
+
+BLASTing `nt` usually happens on the machine that holds it. Give each mock dataset a `blast_results` btab and no BLAST runs locally; leave it empty and one BLAST job runs per dataset and mode, shared by every parameter combination. See [Taxonomy step](steps/taxonomy.md#revamp) for the BLAST command, the `revamp` conda environment and database preparation.
 
 **Plotting and log analysis**
 
@@ -360,6 +390,8 @@ Before any assignment runs, the datasets phase checks every expected taxonomy ag
 
 It also warns when the number of ranks or the rank-prefix style (`g__Name` vs `Name`) differs between the expected taxa and the database. With `backbone_check: warn` (default) the run continues and a per-rank count is printed. With `backbone_check: error` any taxon that isn't `found` stops the run.
 
+**Changing datasets or databases after a first run.** The evaluation plan is written by the staging phase, which does not re-run when only the config changes. If you add a mock dataset or a reference database (for example an `ncbi-nt` entry for revamp) to an existing run name, delete the `.datasets.done` marker in the run output directory — or pass `--forcerun tax_credit_prepare_datasets` — so staging rebuilds the plan. The manifest phase compares the config against `data/mock-community/staged_inputs.tsv` and stops with this message if they disagree, rather than quietly skipping the new database.
+
 **Config**
 
 ```yaml
@@ -369,6 +401,7 @@ mock_community:
       feature_table: /path/to/table.tsv     # .tsv, .biom or table.qza
       rep_seqs: /path/to/asvs.fasta          # .fasta or repseqs.qza
       samples:                               # optional: only these samples
+      blast_results: /path/to/mock.btab      # optional, revamp only: BLASTn vs nt
   expected_sets:                  # one per taxonomic backbone
     - id: gomex_backbone
       databases: [mifishGom]                 # reference_databases ids using this backbone

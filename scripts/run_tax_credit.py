@@ -183,6 +183,9 @@ def reference_dataframe(cfg: dict) -> pd.DataFrame:
         db_id = db["id"]
         if db_id in exclude:
             continue
+        if is_revamp_database(db):
+            # nt is not staged as reference artifacts; revamp reads it via BLAST.
+            continue
         db_staging = join(staging_root, db_id)
         refseqs = _ensure_text_reference(
             abspath(expandvars(db["refseqs_file"])),
@@ -259,9 +262,117 @@ _SUPPORTED_CLASSIFY_METHODS = frozenset({
     "consensus-blast",
     "consensus-vsearch",
     "bt2-blca",
+    "revamp",
 })
 
+# revamp classifies against a local NCBI nt BLAST database, which is far too large
+# to simulate cross-validated / novel-taxa / self-validated datasets from.
+_MOCK_ONLY_CLASSIFY_METHODS = frozenset({"revamp"})
+
 _SHARED_FIT_METHODS = frozenset({"naive-bayes", "bt2-blca"})
+
+_REVAMP_DEFAULT_CUTOFFS = "97,95,90,80,70,60"
+_revamp_skip_notice = {"printed": False}
+
+
+def is_revamp_database(db: dict) -> bool:
+    """True for a reference_databases entry that stands for the local NCBI nt db."""
+    return bool(db.get("revamp"))
+
+
+def revamp_database_ids(cfg: dict) -> list[str]:
+    exclude = set(cfg.get("exclude_databases") or [])
+    return [
+        db["id"] for db in cfg.get("reference_databases") or []
+        if is_revamp_database(db) and db["id"] not in exclude
+    ]
+
+
+def validate_revamp_config(cfg: dict) -> None:
+    """Check the revamp method's config: mock-community only, nt db, tool paths."""
+    methods = cfg.get("classify_methods") or cfg.get("classify_method", "naive-bayes")
+    if isinstance(methods, str):
+        methods = [methods]
+    if "revamp" not in methods:
+        return
+
+    errors = []
+    eval_methods = cfg.get("evaluation_methods") or []
+    if "mock-community" not in eval_methods:
+        errors.append(
+            "revamp is in classify_methods but mock-community is not in "
+            "evaluation_methods. revamp classifies against a local NCBI nt database, "
+            "which is too large to simulate cross-validated / novel-taxa / "
+            "self-validated datasets from, so it only runs for mock communities."
+        )
+    other_evals = [m for m in eval_methods if m != "mock-community"]
+    if other_evals and not _revamp_skip_notice["printed"]:
+        _revamp_skip_notice["printed"] = True
+        print(
+            f"[tax-credit] revamp is skipped for {', '.join(other_evals)} "
+            "(mock-community only); the other classify methods still run for them.",
+            file=sys.stderr,
+        )
+    if not revamp_database_ids(cfg):
+        errors.append(
+            "revamp is in classify_methods but no reference_databases entry has "
+            "`revamp: true`. Add one (an id such as ncbi-nt, with no refseqs_file / "
+            "taxa_file) and list it in the databases of a mock_community expected "
+            "set built on the NCBI taxonomy backbone."
+        )
+    for key in ("revamp_dir", "revamp_blastdb"):
+        if not cfg.get(key):
+            errors.append(f"revamp is in classify_methods but {key} is not set.")
+    if errors:
+        raise ValueError("Invalid revamp config:\n  - " + "\n  - ".join(errors))
+
+
+def revamp_blast_modes(cfg: dict) -> list[str]:
+    """BLAST subject-filtering modes to benchmark; each needs its own BLAST run."""
+    modes = cfg.get("revamp_blast_mode_values") or cfg.get("revamp_blast_mode") or [
+        "mostEnvOUT"
+    ]
+    if isinstance(modes, str):
+        modes = [modes]
+    unknown = [m for m in modes if m not in ("allIN", "allEnvOUT", "mostEnvOUT")]
+    if unknown:
+        raise ValueError(
+            f"revamp_blast_mode_values must be allIN, allEnvOUT or mostEnvOUT; got {unknown}"
+        )
+    return list(modes)
+
+
+def revamp_param_combinations(cfg: dict) -> list[dict]:
+    """Post-BLAST parameter combinations; these reuse one BLAST result."""
+    qcs = cfg.get("revamp_query_cov_values") or cfg.get("revamp_query_cov") or [90]
+    if not isinstance(qcs, (list, tuple)):
+        qcs = [qcs]
+    cutoffs = (
+        cfg.get("revamp_taxonomy_cutoffs_values")
+        or cfg.get("revamp_taxonomy_cutoffs")
+        or [_REVAMP_DEFAULT_CUTOFFS]
+    )
+    if isinstance(cutoffs, str):
+        cutoffs = [cutoffs]
+    return [
+        # Spaces are stripped: the cutoffs reach the assignment script as one shell
+        # argument, and they also name the parameter set in summaries and plots.
+        {"query_cov": float(qc), "taxonomy_cutoffs": str(cut).replace(" ", "")}
+        for qc, cut in itertools.product(qcs, cutoffs)
+    ]
+
+
+def revamp_param_id(combo: dict, blast_mode: str) -> str:
+    cutoffs = str(combo["taxonomy_cutoffs"]).replace(",", "_").replace(" ", "")
+    return (
+        f"qc{_format_sweep_param(combo['query_cov'])}-cut{cutoffs}-{blast_mode}"
+    )
+
+
+def revamp_blast_id(blast_mode: str) -> str:
+    """Shared BLAST directory name; one BLAST per subject-filtering mode."""
+    return f"blast-{blast_mode}"
+
 
 
 def classify_methods(cfg: dict) -> list[str]:
@@ -383,6 +494,13 @@ def method_settings(cfg: dict, method: str) -> dict:
         )
         settings["perc_identity"] = cfg["blca_perc_identity"]
         settings["query_cov"] = cfg["blca_query_cov"]
+    elif method == "revamp":
+        validate_revamp_config(cfg)
+        settings["taxa_ranks"] = cfg.get(
+            "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
+        )
+        settings["revamp_dir"] = cfg["revamp_dir"]
+        settings["revamp_blastdb"] = cfg["revamp_blastdb"]
     return settings
 
 
@@ -427,6 +545,9 @@ def _manifest_assign_params(
     method_cfg: dict,
     consensus_combo: dict[str, float] | None = None,
     bt2_combo: dict[str, float] | None = None,
+    revamp_combo: dict | None = None,
+    revamp_blast_mode: str = "",
+    revamp_blast_results: str = "",
 ) -> dict:
     na = _manifest_na()
     params = {
@@ -437,6 +558,12 @@ def _manifest_assign_params(
         "query_cov": na,
         "min_consensus": na,
         "taxa_ranks": na,
+        "revamp_dir": na,
+        "revamp_blastdb": na,
+        "revamp_blast_results": na,
+        "revamp_blast_mode": na,
+        "revamp_query_cov": na,
+        "revamp_taxonomy_cutoffs": na,
     }
     if method == "naive-bayes":
         params["fit_params"] = method_cfg.get("fit_params") or na
@@ -456,6 +583,19 @@ def _manifest_assign_params(
         )
         params["perc_identity"] = float(bt2_combo["perc_identity"])
         params["query_cov"] = float(bt2_combo["query_cov"])
+    elif method == "revamp":
+        params["taxa_ranks"] = method_cfg.get(
+            "taxa_ranks", "kingdom,phylum,class,order,family,genus,species"
+        )
+        params["revamp_dir"] = method_cfg.get("revamp_dir") or na
+        params["revamp_blastdb"] = method_cfg.get("revamp_blastdb") or na
+        if revamp_combo is not None:
+            params["revamp_query_cov"] = float(revamp_combo["query_cov"])
+            params["revamp_taxonomy_cutoffs"] = str(revamp_combo["taxonomy_cutoffs"])
+        if revamp_blast_mode:
+            params["revamp_blast_mode"] = revamp_blast_mode
+        if revamp_blast_results:
+            params["revamp_blast_results"] = revamp_blast_results
     else:
         raise ValueError(f"Unsupported classify method for manifest: {method}")
     return params
@@ -492,6 +632,7 @@ def _append_fold_assignment_rows(
     confidences: list,
     job_id_prefix: str,
     pretrained_classifier: str | None = None,
+    revamp_blast_results: str | None = None,
 ) -> None:
     """Add manifest rows for one simulated fold (or mock-community combo).
 
@@ -544,6 +685,77 @@ def _append_fold_assignment_rows(
                 **_empty_manifest_artifact_fields(),
                 **assign_params,
             })
+        return
+
+    if method == "revamp":
+        # BLAST against nt is the expensive step and query_cov / taxonomy_cutoffs are
+        # applied to its output, so one BLAST per subject-filtering mode is shared by
+        # every parameter combination -- the same fit-job sharing bt2-blca uses.
+        combos = revamp_param_combinations(cfg)
+        modes = revamp_blast_modes(cfg)
+        if revamp_blast_results and len(modes) > 1:
+            print(
+                f"[tax-credit] {dataset_id}: blast_results supplied, so "
+                f"revamp_blast_mode_values {modes} would produce identical runs; "
+                f"using {modes[0]} as the label only.",
+                file=sys.stderr,
+            )
+            modes = modes[:1]
+        for blast_mode in modes:
+            fit_job_id = ""
+            btab = revamp_blast_results or ""
+            if not revamp_blast_results:
+                shared_dir = join(
+                    results_root, subdir, dataset_id, reference_id, method,
+                    revamp_blast_id(blast_mode),
+                )
+                fit_job_id = f"{job_id_prefix}-{revamp_blast_id(blast_mode)}"
+                rows.append({
+                    "job_id": fit_job_id,
+                    "evaluation_method": eval_method,
+                    "dataset_id": dataset_id,
+                    "reference_id": reference_id,
+                    "query_qza": query,
+                    "ref_seqs": ref_seqs,
+                    "ref_taxa": ref_taxa,
+                    "output_dir": shared_dir,
+                    "confidence": _manifest_na(),
+                    "skip_fit": False,
+                    "trad_fit": False,
+                    "fit_only": True,
+                    "fit_job_id": "",
+                    **_empty_manifest_artifact_fields(),
+                    **_manifest_assign_params(
+                        method, method_cfg, revamp_blast_mode=blast_mode
+                    ),
+                })
+                btab = join(shared_dir, "revamp", "blast_results", "ASV_blastn_nt.btab")
+            for combo in combos:
+                p = revamp_param_id(combo, blast_mode)
+                rows.append({
+                    "job_id": f"{job_id_prefix}-{p}",
+                    "evaluation_method": eval_method,
+                    "dataset_id": dataset_id,
+                    "reference_id": reference_id,
+                    "query_qza": query,
+                    "ref_seqs": ref_seqs,
+                    "ref_taxa": ref_taxa,
+                    "output_dir": join(
+                        results_root, subdir, dataset_id, reference_id, method, p
+                    ),
+                    "confidence": _manifest_na(),
+                    "skip_fit": True,
+                    "trad_fit": False,
+                    "fit_only": False,
+                    "fit_job_id": fit_job_id,
+                    **_empty_manifest_artifact_fields(),
+                    **_manifest_assign_params(
+                        method, method_cfg,
+                        revamp_combo=combo,
+                        revamp_blast_mode=blast_mode,
+                        revamp_blast_results=btab,
+                    ),
+                })
         return
 
     if method == "bt2-blca":
@@ -789,6 +1001,9 @@ def prepare_manifest(cfg: dict) -> str:
     db_ids = list(reference_dataframe(cfg).index)
     cv_max_level, cv_min_level = _cv_recall_levels(cfg)
 
+    revamp_dbs = set(revamp_database_ids(cfg))
+    validate_revamp_config(cfg)
+
     for classify_method in classify_methods(cfg):
         method_cfg = method_settings(cfg, classify_method)
         confidences = confidences_for_method(cfg, classify_method)
@@ -796,6 +1011,11 @@ def prepare_manifest(cfg: dict) -> str:
         for eval_method in cfg.get("evaluation_methods", []):
             if eval_method == "mock-community":
                 for job in tax_credit_mock.assignment_jobs(cfg, ddir):
+                    # The nt "database" is only classified by revamp, and revamp only
+                    # classifies against nt: every other pairing is meaningless.
+                    is_revamp_db = job["reference_id"] in revamp_dbs
+                    if is_revamp_db != (classify_method == "revamp"):
+                        continue
                     _append_fold_assignment_rows(
                         rows,
                         cfg=cfg,
@@ -814,7 +1034,11 @@ def prepare_manifest(cfg: dict) -> str:
                             f"mock-{job['dataset_id']}-{job['reference_id']}-{classify_method}"
                         ),
                         pretrained_classifier=job["pretrained_classifier"],
+                        revamp_blast_results=job.get("blast_results"),
                     )
+                continue
+
+            if classify_method in _MOCK_ONLY_CLASSIFY_METHODS:
                 continue
 
             subdir = analysis_data_subdir(eval_method)

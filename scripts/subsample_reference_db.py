@@ -43,9 +43,11 @@ string verbatim (both source databases are unwrapped, one line per sequence,
 with bare accession headers such as ``AB021901`` or
 ``OP537910.1_representative_of_4_identical_accessions``).  Taxonomy rows keep
 the ``Feature ID``/``Taxon`` header and all seven semicolon-separated ranks,
-including literal ``NA`` placeholders - ``clean_database``'s junk filter does
-not treat ``NA`` as junk, so those lineages are deliberately preserved.  Output
-records follow input file order.
+including literal ``NA`` placeholders - ``clean_database`` keeps a lineage that
+is merely unresolved at some ranks (``...;Gadus;NA``), so those are deliberately
+preserved to exercise the NA path.  Lineages whose *every* rank is ``NA`` are
+dropped by ``clean_database`` and so are not worth carrying into a subsample.
+Output records follow input file order.
 
 Inputs may be QIIME 2 ``.qza`` artifacts or plain FASTA/TSV; ``.qza`` payloads
 are read directly from the artifact.  With ``--write-qza`` (requires the
@@ -318,10 +320,15 @@ def subsample(records: list, n_target: int, rng: random.Random,
         round_idx += 1
 
     # --- Keep at least one NA-bearing lineage, which clean_database preserves ---
-    has_na = any("NA" in r.ranks for recs in chosen.values() for r in recs)
+    # Only partly-NA lineages qualify: clean_database drops all-NA ones, so an
+    # all-NA pick would vanish before it could exercise anything.
+    def _partly_na(rec) -> bool:
+        return "NA" in rec.ranks and any(r not in ("NA", "") for r in rec.ranks)
+
+    has_na = any(_partly_na(r) for recs in chosen.values() for r in recs)
     if not has_na:
         na_species = sorted(k for k, recs in by_species.items()
-                            if "NA" in recs[0].ranks and k not in chosen)
+                            if _partly_na(recs[0]) and k not in chosen)
         if na_species:
             rng.shuffle(na_species)
             budget += 1          # allow a single overshoot rather than drop it

@@ -14,6 +14,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 BT2_CONDA_ENV = "bt2-blca"
 BT2_INDEX_MARKER = "bowtie2_index.1.bt2"
+REVAMP_CONDA_ENV = "revamp"
 
 
 def run_cmd(cmd: str, check: bool = True) -> None:
@@ -23,6 +24,10 @@ def run_cmd(cmd: str, check: bool = True) -> None:
 
 def run_bt2_cmd(cmd: str, check: bool = True) -> None:
     run_cmd(f"conda run -n {BT2_CONDA_ENV} --no-capture-output {cmd}", check=check)
+
+
+def run_revamp_cmd(cmd: str, check: bool = True) -> None:
+    run_cmd(f"conda run -n {REVAMP_CONDA_ENV} --no-capture-output {cmd}", check=check)
 
 
 def _qiime_export(qza_path: Path, dest_path: Path, output_format: str) -> None:
@@ -302,6 +307,99 @@ def assign_bt2_blca(
     return assignments
 
 
+def _revamp_workdir(out_dir: Path, query_qza: Path) -> Path:
+    """Lay out a REVAMP-style working directory and fill in its ASV inputs.
+
+    REVAMP's scripts use relative paths between dada2/ and blast_results/, and its
+    taxonomy script wants a counts table. Counts don't affect assignment, so a
+    single placeholder sample is enough here.
+    """
+    work = out_dir / "revamp"
+    (work / "dada2").mkdir(parents=True, exist_ok=True)
+    (work / "blast_results").mkdir(parents=True, exist_ok=True)
+
+    query_fasta = ensure_fasta(query_qza, out_dir / "staging")
+    asvs = work / "dada2" / "ASVs.fa"
+    shutil.copyfile(query_fasta, asvs)
+
+    counts = work / "dada2" / "ASVs_counts.tsv"
+    with asvs.open(encoding="utf-8", errors="replace") as fasta, counts.open(
+        "w", encoding="utf-8"
+    ) as out:
+        out.write("x\tplaceholder_sample\n")
+        for line in fasta:
+            if line.startswith(">"):
+                out.write(f"{line[1:].strip().split()[0]}\t1\n")
+    return work
+
+
+def revamp_blast(
+    query_qza: Path,
+    out_dir: Path,
+    cfg: dict,
+) -> Path:
+    """BLAST ASVs against nt once; parameter sweeps reuse the result."""
+    work = _revamp_workdir(out_dir, query_qza)
+    script = SCRIPT_DIR / "run_revamp_taxonomy.sh"
+    run_revamp_cmd(
+        f"bash '{script}' --mode blast "
+        f"--revamp-dir '{cfg['revamp_dir']}' "
+        f"--workdir '{work}' "
+        f"--blastdb '{cfg['revamp_blastdb']}' "
+        f"--blast-mode {cfg.get('revamp_blast_mode') or 'mostEnvOUT'} "
+        f"--threads {int(cfg.get('classify_threads', 1))}"
+    )
+    return work / "blast_results" / "ASV_blastn_nt.btab"
+
+
+def assign_revamp(
+    query_qza: Path,
+    out_dir: Path,
+    cfg: dict,
+    blast_results: Path | None = None,
+) -> Path:
+    """Assign taxonomy with REVAMP, reusing BLAST results when supplied.
+
+    *blast_results* is either a user-supplied btab or one produced by an earlier
+    --fit-only job; without it, BLAST runs here.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    work = _revamp_workdir(out_dir, query_qza)
+    btab = work / "blast_results" / "ASV_blastn_nt.btab"
+
+    if blast_results:
+        if not Path(blast_results).exists():
+            raise FileNotFoundError(f"revamp blast results not found: {blast_results}")
+        shutil.copyfile(blast_results, btab)
+    else:
+        revamp_blast(query_qza, out_dir, cfg)
+
+    script = SCRIPT_DIR / "run_revamp_taxonomy.sh"
+    run_revamp_cmd(
+        f"bash '{script}' --mode assign "
+        f"--revamp-dir '{cfg['revamp_dir']}' "
+        f"--workdir '{work}' "
+        f"--blastdb '{cfg['revamp_blastdb']}' "
+        f"--run-name revamp "
+        f"--query-cov {cfg.get('revamp_query_cov') or 90} "
+        f"--cutoffs '{cfg.get('revamp_taxonomy_cutoffs') or '97,95,90,80,70,60'}'"
+    )
+
+    assignments = out_dir / "query_tax_assignments.txt"
+    converter = SCRIPT_DIR / "revamp_to_qiime_taxonomy.py"
+    taxa_ranks = cfg.get("taxa_ranks") or "kingdom,phylum,class,order,family,genus,species"
+    run_cmd(
+        "python "
+        f"'{converter}' "
+        f"--asv-taxonomy-table '{work}/ASV2Taxonomy/revamp_asvTaxonomyTable.txt' "
+        f"--formatted-blast '{work}/blast_results/ASV_blastn_nt_formatted.txt' "
+        f"--repseqs-fasta '{work}/dada2/ASVs.fa' "
+        f"--output '{assignments}' "
+        f"--taxaranks '{taxa_ranks}'"
+    )
+    return assignments
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--query-qza", required=True)
@@ -324,6 +422,14 @@ def main() -> int:
         "--taxa-ranks",
         default="kingdom,phylum,class,order,family,genus,species",
     )
+    # REVAMP (mock-community only): nt is the reference database, so --ref-seqs /
+    # --ref-taxa are unused; --revamp-blast-results reuses BLAST run elsewhere.
+    parser.add_argument("--revamp-dir", default=None)
+    parser.add_argument("--revamp-blastdb", default=None)
+    parser.add_argument("--revamp-blast-results", default=None)
+    parser.add_argument("--revamp-blast-mode", default="mostEnvOUT")
+    parser.add_argument("--revamp-query-cov", default="90")
+    parser.add_argument("--revamp-taxonomy-cutoffs", default="97,95,90,80,70,60")
     args = parser.parse_args()
 
     cfg = {
@@ -335,6 +441,11 @@ def main() -> int:
         "query_cov": args.query_cov,
         "min_consensus": args.min_consensus,
         "taxa_ranks": args.taxa_ranks,
+        "revamp_dir": args.revamp_dir,
+        "revamp_blastdb": args.revamp_blastdb,
+        "revamp_blast_mode": args.revamp_blast_mode,
+        "revamp_query_cov": args.revamp_query_cov,
+        "revamp_taxonomy_cutoffs": args.revamp_taxonomy_cutoffs,
     }
     query = Path(args.query_qza)
     ref_seqs = Path(args.ref_seqs)
@@ -364,7 +475,14 @@ def main() -> int:
                 int(cfg.get("classify_threads", 1)),
             )
             return 0
-        print(f"--fit-only supports naive-bayes and bt2-blca only, not {method}", file=sys.stderr)
+        if method == "revamp":
+            # The shared "fit" for REVAMP is the BLAST search; sweeps reuse its btab.
+            revamp_blast(query, out_dir, cfg)
+            return 0
+        print(
+            f"--fit-only supports naive-bayes, bt2-blca and revamp only, not {method}",
+            file=sys.stderr,
+        )
         return 1
 
     if method == "naive-bayes":
@@ -381,6 +499,20 @@ def main() -> int:
         assign_consensus_blast(query, ref_seqs, ref_taxa, out_dir, cfg)
     elif method == "consensus-vsearch":
         assign_consensus_vsearch(query, ref_seqs, ref_taxa, out_dir, cfg)
+    elif method == "revamp":
+        missing = [
+            flag for flag, value in (
+                ("--revamp-dir", args.revamp_dir),
+                ("--revamp-blastdb", args.revamp_blastdb),
+            ) if not value
+        ]
+        if missing:
+            print(f"revamp requires {', '.join(missing)}", file=sys.stderr)
+            return 1
+        assign_revamp(
+            query, out_dir, cfg,
+            blast_results=Path(args.revamp_blast_results) if args.revamp_blast_results else None,
+        )
     else:
         print(f"Unsupported classify_method for tax-credit fold: {method}", file=sys.stderr)
         return 1

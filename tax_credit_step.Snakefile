@@ -83,12 +83,32 @@ def _assign_params(wildcards):
         "classify_params": _row_str(row, "classify_params", ""),
         "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
         "confidence": _row_str(row, "confidence", ""),
+        # revamp (mock-community only); blank for every other method
+        "revamp_dir": _row_str(row, "revamp_dir", ""),
+        "revamp_blastdb": _row_str(row, "revamp_blastdb", ""),
+        "revamp_blast_results": _row_str(row, "revamp_blast_results", ""),
+        "revamp_blast_mode": _row_str(row, "revamp_blast_mode", "mostEnvOUT"),
+        "revamp_query_cov": _row_str(row, "revamp_query_cov", "90"),
+        "revamp_taxonomy_cutoffs": _row_str(
+            row, "revamp_taxonomy_cutoffs", "97,95,90,80,70,60"
+        ),
     }
     if method in ("consensus-blast", "consensus-vsearch"):
         params["perc_identity"] = _row_optional_float(row, "perc_identity")
         params["query_cov"] = _row_optional_float(row, "query_cov")
         params["min_consensus"] = _row_optional_float(row, "min_consensus")
         params["taxa_ranks"] = ""
+    elif method == "revamp":
+        # nt is the reference database: the shared cutoff columns are unused, and the
+        # revamp_* params above carry everything the assignment needs.
+        params["perc_identity"] = 0.8
+        params["query_cov"] = 0.8
+        params["min_consensus"] = 0.51
+        params["taxa_ranks"] = _row_str(
+            row,
+            "taxa_ranks",
+            config.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species"),
+        )
     elif method == "bt2-blca":
         # manifest columns are shared; config fallbacks are the required blca_* keys
         params["perc_identity"] = _row_optional_float(row, "perc_identity")
@@ -265,6 +285,7 @@ rule tax_credit_assign_fold:
         ROW_SKIP=$(echo "{params.row.skip_fit}" | tr -d '"')
         ROW_CLS=$(echo "{params.row.classifier_qza}" | tr -d '"')
         ROW_BT2=$(echo "{params.assign[bowtie_index_dir]}" | tr -d '"')
+        ROW_RVBLAST=$(echo "{params.assign[revamp_blast_results]}" | tr -d '"')
         TRAD_FIT=$(echo "{params.row.trad_fit}" | tr -d '"')
         ROW_FIT_ONLY=$(echo "{params.row.fit_only}" | tr -d '"')
 
@@ -276,6 +297,17 @@ rule tax_credit_assign_fold:
         EXTRA_BT2=""
         if [ -n "$ROW_BT2" ] && [ "$ROW_BT2" != "nan" ] && [ "$ROW_BT2" != "" ]; then
             EXTRA_BT2="--bowtie-index-dir $ROW_BT2"
+        fi
+        EXTRA_REVAMP=""
+        if [ "{params.assign[classify_method]}" = "revamp" ]; then
+            EXTRA_REVAMP="--revamp-dir {params.assign[revamp_dir]} \
+                --revamp-blastdb {params.assign[revamp_blastdb]} \
+                --revamp-blast-mode {params.assign[revamp_blast_mode]} \
+                --revamp-query-cov {params.assign[revamp_query_cov]} \
+                --revamp-taxonomy-cutoffs {params.assign[revamp_taxonomy_cutoffs]}"
+            if [ -n "$ROW_RVBLAST" ] && [ "$ROW_RVBLAST" != "nan" ]; then
+                EXTRA_REVAMP="$EXTRA_REVAMP --revamp-blast-results $ROW_RVBLAST"
+            fi
         fi
         CONF_FLAG=""
         if [ -n "$ROW_CONF" ] && [ "$ROW_CONF" != "nan" ] && [ "$ROW_CONF" != "NA" ]; then
@@ -305,7 +337,7 @@ rule tax_credit_assign_fold:
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
             --taxa-ranks '{params.assign[taxa_ranks]}' \
-            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $FIT_ONLY
+            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_REVAMP $FIT_ONLY
 
         touch {output}
         """

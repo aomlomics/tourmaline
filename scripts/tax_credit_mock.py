@@ -45,6 +45,7 @@ LEGACY_KEYS = (
 )
 TABLE_EXTENSIONS = (".tsv", ".txt", ".biom", ".qza")
 SEQUENCE_EXTENSIONS = (".fasta", ".fa", ".fna", ".fas", ".qza")
+BLAST_EXTENSIONS = (".btab", ".tsv", ".txt", ".out")
 DEFAULT_RANKS = "kingdom,phylum,class,order,family,genus,species"
 DEFAULT_PLOT_METRICS = [
     "Taxon Accuracy Rate",
@@ -152,6 +153,13 @@ def mock_settings(cfg: dict) -> dict:
             errors.extend(_check_file(entry.get(key), f"{label}.{key}",
                                       extensions, required=True))
             dataset[key] = _path(entry[key]) if entry.get(key) else None
+        # Optional BLASTn results for the revamp classify method, usually produced on
+        # the machine that holds NCBI nt. Without one, revamp BLASTs locally.
+        errors.extend(_check_file(entry.get("blast_results"),
+                                  f"{label}.blast_results",
+                                  BLAST_EXTENSIONS, required=False))
+        dataset["blast_results"] = (
+            _path(entry["blast_results"]) if entry.get("blast_results") else None)
         datasets.append(dataset)
     if not datasets:
         errors.append("mock_community.datasets needs at least one dataset.")
@@ -251,6 +259,11 @@ def mock_settings(cfg: dict) -> dict:
     }
 
 
+def _is_revamp_db(db: dict | None) -> bool:
+    """True for a reference_databases entry standing in for the local NCBI nt db."""
+    return bool(db and db.get("revamp"))
+
+
 def _check_id(value: str, label: str, seen: set) -> list[str]:
     if not value:
         return [f"{label}: id is required."]
@@ -289,6 +302,10 @@ def expected_dir(data_root: str, set_id: str) -> str:
 
 def dataset_log_path(data_root: str) -> str:
     return join(mock_data_dir(data_root), "dataset_log.txt")
+
+
+def staged_inputs_path(data_root: str) -> str:
+    return join(mock_data_dir(data_root), "staged_inputs.tsv")
 
 
 def plan_path(data_root: str) -> str:
@@ -395,6 +412,10 @@ def _stage_mock_inputs(cfg: dict, data_root: str, reference_taxonomy_text: dict)
     db_entries = {db["id"]: db for db in cfg["reference_databases"]}
 
     for db_id in settings["database_to_set"]:
+        if _is_revamp_db(db_entries.get(db_id)):
+            # revamp reads NCBI nt through BLAST; there is nothing to stage.
+            _log(f"{db_id}: revamp database (NCBI nt), no reference artifacts staged")
+            continue
         seqs_qza, taxa_qza = reference_qzas(data_root, db_id)
         _stage_sequences_qza(_path(db_entries[db_id]["refseqs_file"]), seqs_qza)
         _stage_taxonomy_qza(_path(db_entries[db_id]["taxa_file"]), taxa_qza)
@@ -435,6 +456,11 @@ def _stage_mock_inputs(cfg: dict, data_root: str, reference_taxonomy_text: dict)
             expected_lineages.update(asv_taxonomy[asv_taxonomy != ""])
 
         for db_id in expected_set["databases"]:
+            if db_id not in reference_taxonomy_text:
+                # revamp / NCBI nt: no local reference taxonomy to compare against.
+                _log(f"{expected_set['id']} / {db_id}: no reference taxonomy file, "
+                     "backbone check skipped")
+                continue
             backbone_problems.extend(_backbone_check(
                 expected_set, db_id, expected_lineages,
                 reference_taxonomy_text[db_id], settings["eval_ranks"], edir))
@@ -493,6 +519,16 @@ def _stage_mock_inputs(cfg: dict, data_root: str, reference_taxonomy_text: dict)
     pd.DataFrame(plan_rows).to_csv(plan_path(data_root), sep="\t", index=False)
     _log(f"evaluation plan: {plan_path(data_root)}")
 
+    # Record the datasets and databases this staging run covered. The evaluation plan
+    # is only rebuilt when staging re-runs, so a config that gains a dataset or
+    # database afterwards would otherwise be silently ignored when the manifest is
+    # rebuilt from the stale plan; check_staged_inputs compares the two.
+    staged = pd.DataFrame(
+        [{"kind": "dataset", "id": d["id"]} for d in settings["datasets"]]
+        + [{"kind": "database", "id": db} for db in sorted(settings["database_to_set"])]
+    )
+    staged.to_csv(staged_inputs_path(data_root), sep="\t", index=False)
+
     if backbone_problems and settings["backbone_check"] == "error":
         raise ValueError(
             "Backbone check failed (backbone_check: error):\n  - "
@@ -540,14 +576,55 @@ def read_plan(data_root: str) -> pd.DataFrame:
     return pd.read_csv(fp, sep="\t", dtype=str)
 
 
+def check_staged_inputs(cfg: dict, data_root: str) -> None:
+    """Fail when the config's mock datasets/databases differ from what was staged.
+
+    The evaluation plan is written by the staging phase and read by every later
+    phase. Staging does not re-run when only the config changes, so adding a
+    database (for example an `ncbi-nt` entry for revamp) after a first run would
+    otherwise produce a manifest with no jobs for it and no error.
+    """
+    fp = staged_inputs_path(data_root)
+    if not exists(fp):
+        return  # staged by an older version; nothing to compare against
+    staged = pd.read_csv(fp, sep="\t", dtype=str, keep_default_na=False)
+    settings = mock_settings(cfg)
+    wanted = {
+        "dataset": {d["id"] for d in settings["datasets"]},
+        "database": set(settings["database_to_set"]),
+    }
+    problems = []
+    for kind, ids in wanted.items():
+        have = set(staged[staged["kind"] == kind]["id"])
+        for missing in sorted(ids - have):
+            problems.append(f"{kind} {missing!r} is in the config but was not staged")
+        for extra in sorted(have - ids):
+            problems.append(f"{kind} {extra!r} was staged but is not in the config")
+    if problems:
+        raise ValueError(
+            "Mock-community inputs are out of date with the config:\n  - "
+            + "\n  - ".join(problems)
+            + "\n\nThe evaluation plan is only rebuilt when the staging phase runs. "
+            "Delete the .datasets.done marker in the run output directory and run "
+            "again (or add --forcerun tax_credit_prepare_datasets) to re-stage."
+        )
+
+
 def assignment_jobs(cfg: dict, data_root: str) -> list[dict]:
     """One assignment input per dataset and database in the evaluation plan."""
+    check_staged_inputs(cfg, data_root)
     plan = read_plan(data_root)
     db_entries = {db["id"]: db for db in cfg["reference_databases"]}
     jobs = []
+    settings = mock_settings(cfg)
+    blast_by_dataset = {d["id"]: d.get("blast_results") for d in settings["datasets"]}
     for (dataset_id, db_id), _ in plan.groupby(["dataset_id", "database"], sort=False):
-        ref_seqs, ref_taxa = reference_qzas(data_root, db_id)
-        pretrained = db_entries[db_id].get("pretrained_classifier")
+        if _is_revamp_db(db_entries.get(db_id)):
+            ref_seqs = ref_taxa = ""
+            pretrained = None
+        else:
+            ref_seqs, ref_taxa = reference_qzas(data_root, db_id)
+            pretrained = db_entries[db_id].get("pretrained_classifier")
         jobs.append({
             "dataset_id": dataset_id,
             "reference_id": db_id,
@@ -555,6 +632,7 @@ def assignment_jobs(cfg: dict, data_root: str) -> list[dict]:
             "ref_seqs": ref_seqs,
             "ref_taxa": ref_taxa,
             "pretrained_classifier": _path(pretrained) if pretrained else None,
+            "blast_results": blast_by_dataset.get(dataset_id),
         })
     return jobs
 
