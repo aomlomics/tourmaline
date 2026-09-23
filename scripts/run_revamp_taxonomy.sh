@@ -142,26 +142,33 @@ blast)
     # BLAST reports "The -taxids command line option requires additional data files"
     # and the exclusion list is not applied, silently giving allIN results.
     if [[ -n "$negative_list" ]]; then
-        missing_taxdb=TRUE
         IFS=':' read -ra blastdb_paths <<< "$BLASTDB"
-        for dir in "${blastdb_paths[@]}"; do
-            if [[ -f "$dir/taxdb.btd" && -f "$dir/taxdb.bti" ]]; then
-                missing_taxdb=FALSE
-                break
+        # taxdb.btd/.bti carry the names; taxonomy4blast.sqlite3 is what BLAST 2.12+
+        # uses to expand a taxid list to its subtree. A missing sqlite3 file is not
+        # always reported cleanly -- it can crash the search minutes in.
+        for required in taxdb.btd taxdb.bti taxonomy4blast.sqlite3; do
+            found=FALSE
+            for dir in "${blastdb_paths[@]}"; do
+                if [[ -f "$dir/$required" ]]; then
+                    found=TRUE
+                    break
+                fi
+            done
+            if [[ "$found" = FALSE ]]; then
+                echo "ERROR: blast mode '$blast_mode' filters by taxid, which needs BLAST's" >&2
+                echo "       taxonomy files; $required was not found on BLASTDB ($BLASTDB)." >&2
+                echo "       Install them into the database directory:" >&2
+                echo "         cd $blastdb && update_blastdb.pl taxdb && tar -xzf taxdb.tar.gz" >&2
+                echo "       (or: wget https://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz)" >&2
+                echo "       All three must come from the same taxdb download." >&2
+                echo "       If they cannot be installed, set revamp_blast_mode: allIN, which" >&2
+                echo "       does no taxid filtering." >&2
+                exit 1
             fi
         done
-        if [[ "$missing_taxdb" = TRUE ]]; then
-            echo "ERROR: blast mode '$blast_mode' filters by taxid, which needs BLAST's" >&2
-            echo "       taxonomy files (taxdb.btd, taxdb.bti, taxonomy4blast.sqlite3)." >&2
-            echo "       None were found on BLASTDB ($BLASTDB)." >&2
-            echo "       Install them into the database directory:" >&2
-            echo "         cd $blastdb && update_blastdb.pl taxdb && tar -xzf taxdb.tar.gz" >&2
-            echo "       (or: wget https://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz)" >&2
-            echo "       If they cannot be installed, set revamp_blast_mode: allIN, which" >&2
-            echo "       does no taxid filtering." >&2
-            exit 1
-        fi
+        echo "Taxid filtering: $(wc -l < "$negative_list") taxids excluded ($blast_mode)"
     fi
+    echo "BLAST version: $(blastn -version 2>&1 | head -1)"
 
     n_asvs=$(grep -c ">" "$workdir/dada2/ASVs.fa")
     max_target_seqs=4000
