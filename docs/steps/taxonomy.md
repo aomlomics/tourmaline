@@ -13,7 +13,7 @@ Assigns taxonomy and generates visualizations using one of five methods:
 ```yaml
 classify_method: naive-bayes        # or consensus-blast, consensus-vsearch, bt2-blca, revamp
 classify_threads: 4
-collapse_taxalevel: 0               # build collapsed table at this rank (0 disables)
+collapse_taxalevel: 7               # rank (1-7) for the additional collapsed count table
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
 
 # Inputs from Repseqs step or external artifacts (choose one source)
@@ -51,6 +51,19 @@ krona_per_sample: True       # one dataset per sample alongside the all-samples 
 # Optional metadata for barplots
 sample_metadata_file: 00-data/metadata.tsv
 ```
+
+### Reference file formats
+
+`refseqs_file` must be a QIIME 2 artifact (`.qza`) or FASTA (`.fna`, `.fa`, `.fasta`) — any
+other extension raises a `ValueError` before the run starts. If you supply FASTA, Tourmaline
+imports both reference files itself, and `taxa_file` must be a **headerless** TSV (feature ID,
+tab, taxonomy string). If you supply `.qza`, both must be artifacts.
+
+`bt2-blca` needs plain text, so `.qza` reference files are exported to FASTA automatically for
+that method.
+
+`taxa_ranks` must match the rank structure of your reference taxonomy — it determines how the
+taxonomy string is split into columns in the exported tables.
 
 ### Outputs
 

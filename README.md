@@ -6,149 +6,261 @@
 
 Tourmaline 2 is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline 2 manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
-## Major changes in v2 vs. v1
+You describe your analysis in YAML configuration files, and Tourmaline runs the right QIIME 2 commands in the right order, keeping a copy of the config next to every set of results so a run can always be traced back to its parameters.
 
-**To use the Legacy v1 version of Tourmaline**, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository!
+📖 **Full documentation:** [docs/index.md](docs/index.md) (built as an mkdocs site — run `mkdocs serve` locally to browse it)
 
-### Run via tourmaline.sh script
+---
 
-Instead of interacting with Snakemake rules directly, the main way to run Tourmaline 2 is through the `tourmaline.sh` script. This script allows you to run one or more of the workflow steps at a time, specify specific config files, and set the maximum number of cores. You must be located in the tourmaline directory when running it, however you can set the output file destinations to anywhere.
+## New to amplicon sequence analysis?
 
-Usage:
+If you are new to metabarcoding or bioinformatics, start here. If you have used QIIME 2 before, skip to [Quick start](#quick-start).
 
-```bash
-conda activate snakemake-tour2
-./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,config3] --cores N
+### What this workflow does
+
+You sequenced a marker gene (16S, 18S, COI, 12S MiFish, …) from a set of samples and got back a pile of FASTQ files. Tourmaline turns those into a table of *what organisms were found in which samples*:
+
+```
+FASTQ files  →  clean reads  →  unique sequences (ASVs)  →  names for those sequences
+   (raw)         Step 1 qaqc      Step 2 repseqs            Step 3 taxonomy
+                                       ↓                          ↓
+                               feature table + ASV seqs    taxonomy table + barplots
 ```
 
-You can still run individual snakemake rules as before. Each of the three steps (explained more below) has its own Snakefile, so you must specify the correct snakefile when running an individual rule.
+### Vocabulary
 
-### Providing externally-generated data
+| Term | Meaning |
+|---|---|
+| **Amplicon / marker gene** | The short, targeted stretch of DNA you PCR-amplified and sequenced. |
+| **Demultiplexed** | One FASTQ file (or pair) per sample, already split out from the pooled sequencing run. Tourmaline expects this. |
+| **Primer trimming** | Removing the PCR primer sequences from the start of each read. Done in Step 1 with Cutadapt. |
+| **Denoising** | Correcting sequencing errors and collapsing reads into exact unique sequences. Done in Step 2 with DADA2 or Deblur. |
+| **ASV** | Amplicon Sequence Variant — one exact unique sequence. The modern replacement for clustered "OTUs". |
+| **Representative sequences (repseqs)** | The FASTA-like set of ASV sequences. |
+| **Feature table** | A matrix of ASVs (rows) × samples (columns) holding read counts. |
+| **Taxonomy assignment** | Comparing each ASV against a reference database to get a name like `Eukaryota;Chordata;…;Lophius americanus`. |
+| **Reference database** | Sequences + their known taxonomy (SILVA, PR2, MIDORI, a custom MiFish database, NCBI `nt`, …). |
+| **QIIME 2 artifact (`.qza`/`.qzv`)** | A zip file holding data (`.qza`) or a viewable visualization (`.qzv`) plus its provenance. View `.qzv` files at [view.qiime2.org](https://view.qiime2.org). |
+| **Conda environment** | An isolated software installation. Tourmaline uses several, by name. |
+| **Snakemake rule** | One step of the workflow. Snakemake only re-runs rules whose outputs are missing or out of date. |
 
-Unlike Tourmaline 1, you can start any of the three workflow steps with data from an external program, so long as it is formatted correctly. For example, if you already have ASV sequences and just want to assign taxonomy with Tourmaline, you can format them for QIIME 2 (code to help with this below) and just provide the file path in your config file.
+### What you need before starting
 
-## Overview
+1. **Demultiplexed FASTQ files** — one file per sample (single-end) or two (paired-end). Tourmaline does not demultiplex.
+2. **Your primer sequences** — if you want Tourmaline to trim them.
+3. **A reference database** for your marker gene — for taxonomy assignment.
+4. *(Optional)* **A sample metadata TSV** — used for barplots and diversity plots.
 
-Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding data. The pipeline consists of three main steps, plus an optional fourth step:
+### Practical advice for a first run
 
-### Step 1. Sequence quality assurance and quality control
+- Start with the small example data in [`00-data/`](00-data/) to confirm your install works before pointing at real data.
+- Run one step at a time and look at the `.qzv` outputs before moving on. In particular, look at the quality plots from Step 1 *before* choosing DADA2 truncation lengths in Step 2.
+- Give each attempt a distinct `run_name`. Tourmaline keeps runs side by side, so comparing parameter sets is cheap.
+- Use `--dryrun` (see [Running](#running-the-workflow)) to see what *would* run without running it.
 
-* Called "qaqc" in Tourmaline 2 code.
-* Processes raw fastq files (paired-end or single-end data).
-* Provides sequence quality plots for demultiplexed raw and/or trimmed reads.
-* Optionally trims primer sequences from raw reads.
-* Creates a QIIME 2 sequence artifact.
+---
 
-### Step 2. Representative sequences (denoising and ASV generation)
+## Quick start
 
-* Called "repseqs" in Tourmaline 2 code.
-* Generates ASVs using the specified method (DADA2 or Deblur).
-* Optional filtering based on length, abundance, and prevalence.
-* Produces feature table and representative sequences.
+```bash
+# 1. Get Tourmaline (the default branch, V2)
+git clone https://github.com/aomlomics/tourmaline.git
+cd tourmaline
 
-### Step 3. Taxonomy assignment
+# 2. Create the environments (one time) — see Setup below for the full list
+conda create -c conda-forge -c bioconda -n snakemake-tour2 snakemake biopython yq parallel
 
-* Called "taxonomy" in Tourmaline 2 code.
-* Generates taxonomic assignments and visualizations.
+# 3. Activate the Snakemake environment
+conda activate snakemake-tour2
+
+# 4. Edit the example configs, then run all three steps
+./tourmaline.sh \
+  --step qaqc,repseqs,taxonomy \
+  --configfile config_01_qaqc.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml \
+  --cores 6
+```
+
+See [docs/quick_start.md](docs/quick_start.md) and [docs/install.md](docs/install.md) for more.
+
+---
+
+## Overview of the steps
+
+Tourmaline 2 is modular. Each step has its own Snakefile and its own config file, and steps chain together through files on disk — so **any step can be the starting point** if you supply correctly formatted input.
+
+### Step 1 — Sequence QA/QC (`qaqc`)
+
+* Processes demultiplexed FASTQ files (paired-end or single-end).
+* Optionally trims primer sequences from raw reads (Cutadapt).
+* Optionally merges paired-end reads with vsearch (`to_merge`), e.g. when you plan to use Deblur.
+* Produces sequence quality plots for raw and/or trimmed reads.
+* Creates a QIIME 2 demultiplexed sequence artifact.
+
+📖 [docs/steps/qaqc.md](docs/steps/qaqc.md)
+
+### Step 2 — Representative sequences (`repseqs`)
+
+* Generates ASVs with DADA2 (paired- or single-end) or Deblur (single-end).
+* Optional filtering by length, abundance, prevalence, frequency, and sample count.
+* Produces the feature table and representative sequences, plus denoising stats.
+* Optional alpha rarefaction and core diversity metrics (`plot_diversity`).
+
+📖 [docs/steps/repseqs.md](docs/steps/repseqs.md)
+
+### Step 3 — Taxonomy assignment (`taxonomy`)
+
 * Assigns taxonomy using one of five methods:
   * [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
   * [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
   * [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
   * [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
   * [REVAMP's BLASTn against NCBI nt with lowest common ancestor](https://github.com/McAllister-NOAA/REVAMP)
+* Produces a taxonomy table, an interactive taxa barplot, a table collapsed to a chosen rank, and a combined ASV/taxonomy/sequence TSV.
+* Optional interactive [Krona](https://github.com/marbl/Krona/wiki) plot (`make_krona`), for any classify method.
 
-### Step 4. Generate bioinformatics metadata
+📖 [docs/steps/taxonomy.md](docs/steps/taxonomy.md)
+
+### Step 4 — Reference database benchmarking (`tax-credit`) — *in development*
+
+* Benchmarks reference databases and classify methods against each other using cross-validated, novel-taxa, self-validated, and mock-community evaluations.
+* Produces metric summaries and plots to help you pick a database and confidence threshold.
+* Requires the sibling [tax-credit](https://github.com/aomlomics/tax-credit) package.
+
+> **Note:** the tax-credit step currently lives on the `feature/tax-credit-module` branch and is not yet part of the main `V2` branch.
+
+📖 [docs/steps/tax_credit.md](docs/steps/tax_credit.md)
+
+### Analysis metadata (utility script)
 
 * Creates a file with metadata about the analysis using FAIR eDNA terms.
 * File can be read into the [NOAA Ocean DNA Explorer](https://www.ngi.msstate.edu/node).
+* This is a standalone script, not a `tourmaline.sh` step — see [Generating analysis metadata](#generating-analysis-metadata).
 
-## Setup Requirements
+📖 [docs/metadata.md](docs/metadata.md)
+
+---
+
+## Setup
+
+### Required
 
 * [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
-* [QIIME 2 (2024.10) amplicon workflow](https://docs.qiime2.org/2024.10/install/)
-* [Snakemake conda environment, with extra packages installed](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+* [QIIME 2 (2024.10) amplicon distribution](https://docs.qiime2.org/2024.10/install/) — **the environment must be named exactly `qiime2-amplicon-2024.10`**, because the Snakemake rules request it by name.
+* A Snakemake environment with a few extra packages:
 
    ```bash
    conda create -c conda-forge -c bioconda -n snakemake-tour2 snakemake biopython yq parallel
    ```
 
-* [V2 (default) branch of Tourmaline](https://github.com/aomlomics/tourmaline.git)
+* Tourmaline itself (the default branch is `V2`):
 
    ```bash
    git clone https://github.com/aomlomics/tourmaline.git
    ```
 
-* bowtie2-blca conda environment (required only if running BLCA taxa assignment)
+### Optional, per feature
 
-    ```bash
-   conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2
-    ```
+| Environment | Needed for | Create with |
+|---|---|---|
+| `bt2-blca` | `classify_method: bt2-blca` | `conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2` |
+| `revamp` | `classify_method: revamp` | `conda create -c conda-forge -c bioconda -n revamp "blast>=2.13" "taxonkit>=0.20" r-base r-dplyr bioconductor-biostrings perl perl-list-moreutils krona` |
+| `krona` | `make_krona: True` | `conda create -c conda-forge -c bioconda -n krona krona` |
 
-### Running Requirements
+REVAMP additionally needs a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP) and a local NCBI `nt` BLAST database with prepared taxonomy files — see [docs/steps/taxonomy.md#revamp](docs/steps/taxonomy.md#revamp).
 
-* `snakemake-tour2` environment must be activated
-* Required configuration files for each step
-* Input data files (vary depending on starting step)
-* Must run from the Tourmaline directory downloaded from GitHub, which contains the `tourmaline.sh` script and Snakefiles
+The tax-credit step additionally needs the sibling `tax-credit` package installed into the QIIME 2 environment (`pip install -e ../tax-credit`).
 
-## Configuration Files
+📖 [docs/install.md](docs/install.md)
 
-The pipeline uses three main configuration files, one for each step. These files can have any name, and example files are provided.
+### Running requirements
 
-### 1. Sample/QA/QC Configuration (config_01_qaqc.yaml)
+* The `snakemake-tour2` environment must be **activated**.
+* You must run from the Tourmaline directory (it contains `tourmaline.sh`, the Snakefiles, and `scripts/`, which rules call by relative path). Output can go anywhere via `output_dir`.
+* Config files for each step you intend to run.
 
-Key parameters:
+---
+
+## Configuration files
+
+Each step reads one YAML config file. The example configs in the repository are extensively commented and are the best starting point — copy one and edit it:
+
+| Step | Example config | Snakefile |
+|---|---|---|
+| qaqc | [`config_01_qaqc.yaml`](config_01_qaqc.yaml) | `qaqc_step.Snakefile` |
+| repseqs | [`config_02_repseqs.yaml`](config_02_repseqs.yaml) | `repseqs_step.Snakefile` |
+| taxonomy | [`config_03_taxonomy.yaml`](config_03_taxonomy.yaml) | `taxonomy_step.Snakefile` |
+| tax-credit | [`config_04_tax_credit.yaml`](config_04_tax_credit.yaml) | `tax_credit_step.Snakefile` |
+
+Config files can have any name; pass whichever you want with `--configfile`.
+
+> **Keep optional keys present but empty.** The Snakefiles read most config values directly, so a *missing* key raises a `KeyError` before the workflow starts. An empty value is fine and means "not set" — deleting the line is not.
+
+📖 **[docs/configuration.md](docs/configuration.md) is the complete parameter reference.** The summaries below cover the keys most runs need.
+
+### 1. QA/QC configuration
 
 ```yaml
-run_name: [your_run_name]              # Name for this qaqc run, will be a prefix for outputs
-output_dir: [path]                     # Output directory path
-raw_fastq_path: [path]                 # Path to raw fastq files
-paired_end: [True/False]               # Whether data is paired-end
-to_trim: [True/False]                  # Whether to trim sequences
+run_name: my_run                # prefix for this run's outputs
+output_dir: "../v2-results"     # where outputs are written
+paired_end: True                # True for paired-end, False for single-end
+to_trim: True                   # trim primers with Cutadapt
+to_merge: False                 # merge paired reads with vsearch
+assay_name: Bacteria-16S-V4V5-Parada   # for metadata reporting
 
-# Trimming parameters
-fwd_primer: [sequence]                 # Forward primer sequence
-rev_primer: [sequence]                 # Reverse primer sequence
-discard_untrimmed: [True/False]        # Whether to discard sequences without the primer
-minimum_length: [int]                  # Minimum sequence length to keep after trimming
+# Primer trimming (used when to_trim: True)
+fwd_primer: GTGYCAGCMGCCGCGGTAA # IUPAC ambiguity codes supported
+rev_primer: GGACTACNVGGGTWTCTAAT
+discard_untrimmed: False        # drop reads with no primer match
+minimum_length: 50              # minimum read length kept after trimming
+trimming_threads: 5
+
+# Merging (used when to_merge: True)
+maxdiffs: 20
+merge_stagger: --p-allowmergestagger
 ```
 
-#### QA/QC Input Files
+`assay_name` should come from the [NOAA Omics metabarcoding assays](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/blob/main/assays.tsv) controlled vocabulary.
 
-There are three options for input files in the QA/QC step. You must choose one and leave the others blank in the config file:
+#### QA/QC input files
+
+Choose **one** of these four and leave the others blank:
 
 ```yaml
-# Full path to raw demultiplexed fastq files. Sample names will be the prefix of the file names.
+# Directory of raw demultiplexed fastq files. Sample names are the file name prefixes.
 raw_fastq_path: [path]
-# Full path to pre-trimmed fastq files. Sample names will be the prefix of the file names.
+# Directory of already-trimmed fastq files (suffix _R[1,2].fastq.gz).
 trimmed_fastq_path: [path]
-# Relative path and file name of a QIIME2 manifest file. It can point to trimmed or untrimmed reads.
+# A QIIME 2 manifest file. Can point to trimmed or untrimmed reads.
 sample_manifest_file: [path/filename]
+# An already-imported QIIME 2 demultiplexed sequence artifact.
+preexisting_fastq_qza: [path]
 ```
 
-##### Sample Manifest Format
+#### FASTQ file naming (when not using a manifest)
 
-Can provide either the current QIIME2 tab-separated file format, or the legacy comma-separated format. Much have the correct headers:
+* Paired-end: `{sample}_R1.fastq.gz` and `{sample}_R2.fastq.gz`
+* Alternative: `{sample}_R1_001.fastq.gz` and `{sample}_R2_001.fastq.gz`
+* Single-end: `{sample}_R1.fastq.gz` or `{sample}_R1_001.fastq.gz`
 
-**Tab-separated**
+#### Sample manifest format
 
-Paired-end:
+Provide either the current QIIME 2 tab-separated format or the legacy comma-separated format. Headers must match exactly.
+
+**Tab-separated**, paired-end:
 
 ```tsv
-sample-id  forward-absolute-filepath     reverse-absolute-filepath
-sample1    /path/to/sample1_R1.fastq.gz  /path/to/sample1_R2.fastq.gz
+sample-id	forward-absolute-filepath	reverse-absolute-filepath
+sample1	/path/to/sample1_R1.fastq.gz	/path/to/sample1_R2.fastq.gz
 ```
 
-Single-end:
+**Tab-separated**, single-end:
 
 ```tsv
-sample-id  absolute-filepath
-sample1    /path/to/sample1_R1.fastq.gz
+sample-id	absolute-filepath
+sample1	/path/to/sample1_R1.fastq.gz
 ```
 
-**CSV (legacy)**
-
-Paired-end:
+**CSV (legacy)**, paired-end:
 
 ```csv
 sample-id,absolute-filepath,direction
@@ -156,78 +268,156 @@ sample1,/path/to/sample1_R1.fastq.gz,forward
 sample1,/path/to/sample1_R2.fastq.gz,reverse
 ```
 
-Single-end:
+**CSV (legacy)**, single-end:
 
 ```csv
 sample-id,absolute-filepath
 sample1,/path/to/sample1_R1.fastq.gz
 ```
 
-### FASTQ Files without a manifest file
-
-* Paired-end naming: `{sample}_R1.fastq.gz` and `{sample}_R2.fastq.gz`
-* Alternative format: `{sample}_R1_001.fastq.gz` and `{sample}_R2_001.fastq.gz`
-* Single-end naming: `{sample}_R1.fastq.gz` or `{sample}_R1_001.fastq.gz`
-
-### 2. Representative sequences configuration (config_02_repseqs.yaml)
-
-Key parameters:
+### 2. Representative sequences configuration
 
 ```yaml
-run_name: [your_run_name] # Name for this repseqs run, can be the same or different than qaqc step
-output_dir: [path]        # Output directory path
-asv_method: [method]      # ASV method (dada2pe, dada2se, deblur)
+run_name: my_run                # can match or differ from the qaqc run
+output_dir: "../v2-results"
+asv_method: dada2pe             # dada2pe | dada2se | deblur
+asv_threads: 5
 
-# DADA2 parameters (if using dada2pe/dada2se)
+# DADA2 parameters (dada2pe / dada2se)
+dada2_trunc_len_f: 245          # truncate forward reads here (0 = full length)
+dada2pe_trunc_len_r: 190        # truncate reverse reads (paired-end only)
+dada2_trim_left_f: 0            # bases trimmed from the start of forward reads
+dada2pe_trim_left_r: 0          # bases trimmed from the start of reverse reads
+dada2_max_ee_f: 2               # max expected errors, forward
+dada2pe_max_ee_r: 2             # max expected errors, reverse
+dada2_trunc_q: 2                # truncate at the first base with this quality
+dada2_pooling_method: pseudo    # independent | pseudo | pooled
+dada2_chimera_method: consensus # none | consensus | pooled
 
-dada2_trunc_len_f: [int]   # Forward read truncation length
-dada2pe_trunc_len_r: [int] # Reverse read truncation length (paired-end only)
-dada2_trim_left_f: [int]   # Number of bases to trim from start of forward reads
-dada2pe_trim_left_r: [int] # Number of bases to trim from start of reverse reads (paired-end only)
+# Deblur parameters (deblur)
+deblur_trim_length: 150         # final sequence length
+reference_seqs:                 # reference artifact for positive filtering
 
-# Filtering options
-to_filter: [True/False]        # Whether to apply filtering
-repseq_min_length: [int]       # Minimum ASV length
-repseq_max_length: [int]       # Maximum ASV length
-repseq_min_abundance: [float]  # Minimum abundance threshold
-repseq_min_prevalence: [float] # Minimum prevalence threshold
+# Optional diversity outputs
+plot_diversity: True
+alpha_max_depth: 500            # required when plot_diversity: True
+core_sampling_depth: 500        # required when plot_diversity: True
+
+# Optional filtering
+to_filter: False
+repseq_min_length: 0
+repseq_max_length: 0
+repseq_min_abundance: 0         # relative abundance, 0–1
+repseq_min_prevalence: 0        # fraction of samples, 0–1
+repseq_min_frequency: 0         # absolute total count
+repseq_min_samples: 0           # minimum number of samples
 ```
+
+> ⚠️ **If you set `to_filter: True`, also set `repseq_max_length` to a real upper bound** (e.g. `100000`). The length filter keeps sequences where `length <= repseq_max_length`, so leaving the default `0` removes every sequence.
+
+Choosing truncation lengths is the main judgement call in this step: look at the quality plots produced by Step 1, and truncate where quality drops off while still leaving enough overlap for paired reads to merge.
 
 #### Repseqs input files
 
-You have two options for providing files to the repseqs step:
+Two options:
 
-**1) Provide an existing Tourmaline QA/QC run**
+**1) Use an existing Tourmaline QA/QC run**
 
-* Either use the same `run_name` and `output_dir` for both steps, or
-* Use a different `run_name` for the repseqs step, and provide the `sample_run_name` you want to use. Can be helpful if you are testing out different trimming parameters.
+* Use the same `run_name` and `output_dir` for both steps, or
+* Use a different `run_name` for repseqs and set `qaqc_run_name` to the QA/QC run you want. Useful when testing different trimming parameters against one denoising setup.
 
-**2) Provide an externally generated QIIME2 sequence archive (.qza)**
+**2) Provide an externally generated QIIME 2 sequence artifact**
 
+Set `fastq_qza_file`. See [Starting from external data](#starting-from-external-data).
 
-To generate a QIIME2 sequence archive, you need a manifest file linking sample names with the absolute file path of the fastq.gz files (see the [TSV format above](https://github.com/aomlomics/tourmaline/blob/develop/README.md#sample-manifest-format).
+### 3. Taxonomy configuration
 
-Activate the `qiime2-amplicon-2024.10` environment.
+```yaml
+run_name: my_run
+output_dir: "../v2-results"
+classify_method: naive-bayes    # naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp
+collapse_taxalevel: 7           # rank (1–7) for the additional collapsed count table
+classify_threads: 10
+sample_metadata_file: 00-data/metadata.tsv   # optional, for the barplot
+```
+
+Reference database keys:
+
+```yaml
+database_name: "silva-138_1-99-515f_926r-uniq"  # descriptive only, recorded in metadata
+refseqs_file: [path]            # reference sequences (.qza or FASTA)
+taxa_file: [path]               # reference taxonomy (.qza or TSV)
+taxa_ranks: kingdom,phylum,class,order,family,genus,species  # must match the database
+pretrained_classifier: [path]   # naive-bayes only; overrides refseqs_file/taxa_file
+bowtie_database: [path]         # bt2-blca only; prebuilt index, else built from refseqs
+```
+
+Method-specific parameters:
+
+```yaml
+# naive-bayes
+skl_confidence: 0.7      # confidence threshold limiting assignment depth
+
+# consensus-blast / consensus-vsearch
+perc_identity: 0.8       # minimum percent identity for a hit (0–1)
+query_cov: 0.8           # minimum query coverage for a hit (0–1)
+min_consensus: 0.51      # fraction of hits that must agree
+
+# bt2-blca
+confidence_thres: 0.8    # bootstrap confidence threshold limiting assignment depth
+
+# revamp (see docs/steps/taxonomy.md#revamp for database setup)
+revamp_dir: [path]              # clone of https://github.com/McAllister-NOAA/REVAMP
+revamp_blastdb: [path]          # NCBI nt directory with a taxdump/ from ncbi_db_cleanup.sh
+revamp_blast_results: [path]    # optional: a BLASTn btab produced elsewhere
+revamp_blast_mode: mostEnvOUT   # allIN | allEnvOUT | mostEnvOUT
+revamp_query_cov: 90            # percent of ASV length a hit must cover (0–100)
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"  # percent ID cutoffs, ordered S,G,F,O,C,P
+
+# Krona plot (any classify method)
+make_krona: False        # writes figures/{run_name}-krona.html
+krona_per_sample: True   # add one Krona dataset per sample
+
+# Extra flags appended to the classifier command
+classify_params: --verbose
+```
+
+#### Taxonomy input files
+
+Two options:
+
+**1) Use an existing Tourmaline repseqs run**
+
+* Use the same `run_name` and `output_dir` for both steps, or
+* Use a different `run_name` for taxonomy and set `repseqs_run_name`. Useful when comparing classifiers against one set of ASVs.
+
+**2) Provide externally generated QIIME 2 artifacts**
+
+Set both `repseqs_qza_file` and `table_qza_file`. See [Starting from external data](#starting-from-external-data).
+
+---
+
+## Starting from external data
+
+Unlike Tourmaline 1, you can begin at any step using data from another program, as long as it is formatted as the QIIME 2 artifact that step expects. For example, if you already have ASV sequences and only want taxonomy, import them and set `repseqs_qza_file`.
+
+Activate the QIIME 2 environment first:
 
 ```bash
 conda activate qiime2-amplicon-2024.10
 ```
 
-Import to a QIIME2 artifact. Change code to match your manifest file name and desired output .qza file name and path.
-
-**Paired-end data**
+**Demultiplexed reads → `.qza`** (for `preexisting_fastq_qza` or `fastq_qza_file`). Needs a [manifest file](#sample-manifest-format):
 
 ```bash
+# Paired-end
 qiime tools import \
    --type 'SampleData[PairedEndSequencesWithQuality]' \
    --input-path my_pe.manifest \
    --output-path output-file_pe_fastq.qza \
    --input-format PairedEndFastqManifestPhred33V2
-```
 
-**Single-end data**
-
-```bash
+# Single-end
 qiime tools import \
    --type 'SampleData[SequencesWithQuality]' \
    --input-path my_se.manifest \
@@ -235,42 +425,7 @@ qiime tools import \
    --input-format SingleEndFastqManifestPhred33V2
 ```
 
-### 3. Taxonomy configuration (config_03_taxonomy.yaml)
-
-Key parameters:
-
-```yaml
-run_name: [your_run_name] # Name for this pipeline run
-output_dir: [path]        # Output directory path
-classify_method: [method] # Classification method (naive-bayes, consensus-blast, consensus-vsearch, bt2-blca, revamp)
-collapse_taxalevel: [int] # Creates an additional table where ASV counts are collapsed to the provided taxonomic level
-classify_threads: [int]   # Number of threads for classification
-```
-
-#### Taxonomy Input Files
-
-You have two options for providing files to the taxonomy step:
-
-**1) Provide an existing Tourmaline repseqs run**
-
-* Either use the same `run_name` and `output_dir` for both steps, or
-* Use a different `run_name` for the taxonomy step, and provide the `repseqs_run_name` you want to use. Can be helpful if you are testing out different ASV parameters.
-
-**2) Provide externally generated QIIME2 sequence archive and table (.qza)**
-
-Must provide paths for both `repseqs_qza_file` and `table_qza_file`
-
-**ASV sequences**
-
-If you have a fasta file of ASV/OTU sequences, you can use the following code to generate a QIIME 2 repseqs archive.
-
-Activate the `qiime2-amplicon-2024.10` environment.
-
-```bash
-conda activate qiime2-amplicon-2024.10
-```
-
-Import to a QIIME 2 artifact. Change code to match your fasta file name and desired output .qza file name and path.
+**ASV sequences (FASTA) → `.qza`** (for `repseqs_qza_file`):
 
 ```bash
 qiime tools import \
@@ -279,13 +434,10 @@ qiime tools import \
    --output-path output-asvs.qza
 ```
 
-**Read count table**
-
-If you have a biom formatted table, you can [follow the QIIME2 guidance and check the format prior to importing](https://docs.qiime2.org/2024.10/tutorials/importing/#feature-table-data). Example for a BIOM v1.0.0 formatted file:
+**Read count table → `.qza`** (for `table_qza_file`). If you have a BIOM file, [check its format first](https://docs.qiime2.org/2024.10/tutorials/importing/#feature-table-data):
 
 ```bash
-conda activate qiime2-amplicon-2024.10
-
+# BIOM v1.0.0
 qiime tools import \
   --input-path feature-table-v100.biom \
   --type 'FeatureTable[Frequency]' \
@@ -293,11 +445,9 @@ qiime tools import \
   --output-path feature-table.qza
 ```
 
-If you have a .tsv file with rows as unique sequences and columns as sample read counts, you can first [convert to BIOM](https://biom-format.org/documentation/biom_conversion.html) then convert to .qza. Example:
+If you have a TSV with unique sequences as rows and samples as columns, [convert to BIOM](https://biom-format.org/documentation/biom_conversion.html) first:
 
 ```bash
-conda activate qiime2-amplicon-2024.10
-
 biom convert -i otu_table.txt -o new_otu_table.biom --to-hdf5 --table-type="OTU table"
 
 qiime tools import \
@@ -307,88 +457,24 @@ qiime tools import \
   --output-path feature-table.qza
 ```
 
-Key parameters for reference database:
+> QIIME 2 artifacts written by one QIIME 2 version are often **not** readable by earlier versions. Import with 2024.10 if you plan to run Tourmaline 2 on the result.
 
-```yaml
-database_name: [name]
-# Reference database name, just used for metadata
-refseqs_file: [path]
-# Reference sequences file,
-taxa_file: [path]
-# Reference taxonomy file
-classify_method: [method]
-# Classification method (naive-bayes, consensus-blast, consensus-vsearch)
-taxa_ranks: [comma-separated list of ranks]
-# Taxonomy rank levels that match the reference database
-pretrained_classifier: [full path]
-# Optional for naive-bayes method, if provided will ignore refseqs_file and taxa_file
-bowtie_database: [path] # optional for bt2-blca, folder with bowtie index database, refseqs and taxa files also required
-```
+📖 [docs/external_data.md](docs/external_data.md)
 
-Method-specific parameters:
-
-```yaml
-# naive-bayes
-skl_confidence: 0.7
-# Confidence threshold for limiting taxonomic depth
-# SEQ SIMILARITY (consensus-blast or consensus-vsearch)
-perc_identity: 0.8
-# Percent identity threshold for matches
-query_cov: 0.8
-# Query alignment coverage threshold for matches
-min_consensus: 0.51
-# Minimum fraction of assignments must match top hit to be accepted as consensus assignment
-# bt2-blca
-confidence_thres: 0.8
-# Bootstrap confidence threshold for limiting taxonomic depth
-# revamp (see docs/steps/taxonomy.md for database setup)
-revamp_dir: [path]
-# Clone of https://github.com/McAllister-NOAA/REVAMP
-revamp_blastdb: [path]
-# NCBI nt database directory, with a taxdump/ prepared by REVAMP's ncbi_db_cleanup.sh
-revamp_blast_results: [path]
-# Optional BLASTn btab run elsewhere (e.g. on the machine holding nt)
-revamp_blast_mode: mostEnvOUT
-# Subject filtering when Tourmaline runs BLAST: allIN, allEnvOUT or mostEnvOUT
-revamp_query_cov: 90
-# Percent of ASV length a BLAST hit must cover to be considered
-revamp_taxonomy_cutoffs: "97,95,90,80,70,60"
-# Percent identity cutoffs limiting assignment depth, ordered S,G,F,O,C,P
-```
+---
 
 ## Running the workflow
 
-The workflow can be run using the `tourmaline.sh` script. You can run all steps at once or run them modularly.
-
-### Clone Tourmaline develop branch (first time only)
-
-If this is your first time running Tourmaline, you'll need to set up your directory.
-
-Start by cloning the Tourmaline directory and files of the **develop** branch:
-
-```bash
-git clone --branch develop https://github.com/aomlomics/tourmaline.git
-```
-
-### Activate Snakemake Conda environment
-
-```
-conda activate snakemake-tour2
-```
-
-Also make sure you have the ```qiime2-amplicon-2024.10``` environment installed, with that name. You do not need to install anything else in that environment.
-
 ### Basic usage
 
-Navigate to the Tourmaline directory downloaded from GitHub as your working directory, then run:
+Activate the environment and run from the Tourmaline directory:
 
 ```bash
-./tourmaline.sh --step/-s [step] --configfile/-c [config_file] --cores/-n [num_cores]
+conda activate snakemake-tour2
+./tourmaline.sh --step/-s [steps] --configfile/-c [config_files] --cores/-n [num_cores]
 ```
 
-#### Examples
-
-Run a single step (taxonomy):
+Run a single step:
 
 ```bash
 ./tourmaline.sh -s taxonomy -c config_03_taxonomy.yaml -n 6
@@ -397,64 +483,156 @@ Run a single step (taxonomy):
 Run all steps with one command:
 
 ```bash
-./tourmaline.sh -s qaqc,repseqs,taxonomy -c config_01_sample.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml -n 6
+./tourmaline.sh -s qaqc,repseqs,taxonomy \
+  -c config_01_qaqc.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml -n 6
 ```
 
-#### Important notes
+**Important:**
 
-* The number of steps must match the number of config files provided.
-* Each step corresponds to its respective config file.
-* Config files must be provided in the same order as the steps.
+* The number of steps must match the number of config files.
+* Config files must be given in the same order as the steps.
+* Valid steps are `qaqc`, `repseqs`, `taxonomy`, and `tax-credit`.
 
-### Generate bioinformatics metadata
+### Running Snakemake directly
 
-To generate a report file with metadata on the bioinformatics, provide your three config files to the ```scripts/format_analysisMetadata.py```, along with a `project_id`. Optionally, you can provide an `analysis_run_name` and `assay_name`, or the default will use the values provided in the sample step config file.  If you are running the script outside of the tourmaline folder, you must also provide the path to the tourmaline metadata file. 
+You can still call Snakemake yourself — necessary for dry runs, single rules, or `--printshellcmds`. Each step has its own Snakefile and target rule:
 
-Example:  
 ```bash
-python scripts/format_analysisMetadata.py -s config_01_sample.yaml -r config_02_repseqs.yaml -t config_03_taxonomy.yaml -p my_project -o my-tourmaline-metadata.tsv
+snakemake --use-conda -s qaqc_step.Snakefile     qaqc_all     --configfile config_01_qaqc.yaml --cores 6 --dryrun
+snakemake --use-conda -s repseqs_step.Snakefile  run_denoise  --configfile config_02_repseqs.yaml --cores 6
+snakemake --use-conda -s taxonomy_step.Snakefile run_taxonomy --configfile config_03_taxonomy.yaml --cores 6
 ```
 
-Full documentation:  
-```
-usage: format_analysisMetadata.py [-h] -s SAMPLES_CONFIG -r REPSEQS_CONFIG -t TAXONOMY_CONFIG -p PROJECT_ID [-a ASSAY_NAME]
-                                  [-A ANALYSIS_RUN_NAME] [-T TOURMALINE_METADATA] -o OUTPUT
+A dry run (`--dryrun`) is the fastest way to check a config before committing compute to it.
 
-Generate a single TSV file from multiple YAML files.
+### Parameter sweeps
 
-options:
-  -h, --help            show this help message and exit
-  -s SAMPLES_CONFIG, --samples_config SAMPLES_CONFIG
-                        Path to the samples config file
-  -r REPSEQS_CONFIG, --repseqs_config REPSEQS_CONFIG
-                        Path to the repseqs config file
-  -t TAXONOMY_CONFIG, --taxonomy_config TAXONOMY_CONFIG
-                        Path to the taxonomy config file
-  -p PROJECT_ID, --project_id PROJECT_ID
-                        Value for project_id
-  -a ASSAY_NAME, --assay_name ASSAY_NAME
-                        Value for assay_name, otherwise use value in samples config
-  -A ANALYSIS_RUN_NAME, --analysis_run_name ANALYSIS_RUN_NAME
-                        Value for analysis_run_name, otherwise use value in samples config
-  -T TOURMALINE_METADATA, --tourmaline_metadata TOURMALINE_METADATA
-                        Path to tourmaline metadata
-  -o OUTPUT, --output OUTPUT
-                        Path to the output folder
-            
+To compare many parameter sets, expand a base config over a parameter space and run the results in parallel:
+
+```bash
+python scripts/generate_configs.py <base_config> <parameter_space_config>
+
+scripts/run_parallel_tourmaline.sh \
+  --config-dir parameter_sweep_configs --config-prefix config-01-qaqc \
+  --step qaqc --parallel-jobs 4 --cores-per-job 6
 ```
 
-## Directory structure
+Example parameter space files are in [`00-data/`](00-data/) (`parameter_space*.yaml`). Parallel runs require GNU `parallel`.
 
-The pipeline creates the following directory structure for outputs:
+### HPC / SLURM
+
+`scripts/sbatch_tourmaline2_step*.sh` are SLURM array wrappers for the same steps. Adapt the account, partition, and resource lines to your cluster.
+
+📖 [docs/running.md](docs/running.md)
+
+---
+
+## Outputs
+
+Everything lands under `output_dir`, one directory per run and step:
 
 ```
 output_dir/
-├── [run_name]-samples/    # QA/QC outputs
+├── [run_name]-qaqc/       # QA/QC outputs
 ├── [run_name]-repseqs/    # Representative sequences outputs
-└── [run_name]-taxonomy/   # Taxonomy assignment outputs
+├── [run_name]-taxonomy/   # Taxonomy assignment outputs
+└── [run_name]-tax-credit/ # Benchmarking outputs (tax-credit step)
 ```
 
-Each directory contains the relevant outputs for that step of the pipeline.
+Each step also **copies its config file into its own output directory** as `{run_name}-{step}_config.yaml`, so a run's provenance sits next to its results.
+
+Key files:
+
+| File | Step | Contents |
+|---|---|---|
+| `raw_fastq.qza`, `{run_name}_fastq.qza` | qaqc | Imported reads, before and after trimming |
+| `stats/*.qzv` | qaqc | Quality summaries — view at [view.qiime2.org](https://view.qiime2.org) |
+| `{run_name}-table.qza` / `-table.tsv` | repseqs | Feature table (ASV × sample counts) |
+| `{run_name}-repseqs.qza` | repseqs | Representative sequences |
+| `stats/dada2_stats.tsv` / `deblur_stats.tsv` | repseqs | Reads retained at each denoising stage |
+| `{run_name}-taxonomy.tsv` / `.qza` | taxonomy | Per-ASV taxonomy assignments |
+| `figures/{run_name}-taxa_barplot.qzv` | taxonomy | Interactive taxa barplot |
+| `{run_name}-taxa_sample_table_l{N}.tsv` | taxonomy | Counts collapsed to rank N |
+| `{run_name}-asv_taxa_features.tsv` | taxonomy | Combined ASV + taxonomy + sequence table |
+| `figures/{run_name}-krona.html` | taxonomy | Krona plot, when `make_krona: True` |
+
+---
+
+## Generating analysis metadata
+
+To produce a FAIR eDNA analysis metadata TSV (readable by the [NOAA Ocean DNA Explorer](https://www.ngi.msstate.edu/node)), run `scripts/format_analysisMetadata.py` **after** your runs finish. It takes the results directory and the **run names** of each step — it finds each run's copied config file itself — plus a `project_id` and an output folder.
+
+```bash
+python scripts/format_analysisMetadata.py \
+  -w ../v2-results \
+  -q my_qaqc_run -r my_repseqs_run -t my_taxonomy_run \
+  -p my_project \
+  -O output_folder/
+```
+
+```
+usage: format_analysisMetadata.py [-h] -w WORKING_DIR -q QAQC_RUN_NAME -r REPSEQS_RUN_NAME
+                                  -t TAXONOMY_RUN_NAME -p PROJECT_ID [-a ASSAY_NAME]
+                                  [-A ANALYSIS_RUN_NAME] [-T TOURMALINE_METADATA] -O OUTPUT_FOLDER
+
+options:
+  -h, --help            show this help message and exit
+  -w, --working_dir     Working directory containing the step output folders
+  -q, --qaqc_run_name   Run name for the qaqc step
+  -r, --repseqs_run_name
+                        Run name for the repseqs step
+  -t, --taxonomy_run_name
+                        Run name for the taxonomy step
+  -p, --project_id      Value for project_id
+  -a, --assay_name      Value for assay_name, otherwise uses value in qaqc config
+  -A, --analysis_run_name
+                        Value for analysis_run_name, otherwise uses taxonomy run name
+  -T, --tourmaline_metadata
+                        Path to tourmaline metadata (default ./00-data/tourmaline_metadata.yaml)
+  -O, --output_folder   Output folder where files will be saved
+```
+
+Alongside the metadata TSV it copies the taxonomy and table outputs into the output folder with the analysis run name as a prefix.
+
+📖 [docs/metadata.md](docs/metadata.md)
+
+---
+
+## Documentation map
+
+| Page | Covers |
+|---|---|
+| [docs/index.md](docs/index.md) | Overview and feature summary |
+| [docs/quick_start.md](docs/quick_start.md) | Shortest path to a first run |
+| [docs/install.md](docs/install.md) | Requirements and conda environments |
+| [docs/configuration.md](docs/configuration.md) | **Complete** parameter reference for all four configs |
+| [docs/running.md](docs/running.md) | `tourmaline.sh`, direct Snakemake, sweeps, HPC |
+| [docs/steps/qaqc.md](docs/steps/qaqc.md) | Step 1 details |
+| [docs/steps/repseqs.md](docs/steps/repseqs.md) | Step 2 details |
+| [docs/steps/taxonomy.md](docs/steps/taxonomy.md) | Step 3 details, including REVAMP and Krona |
+| [docs/steps/tax_credit.md](docs/steps/tax_credit.md) | Step 4, database benchmarking |
+| [docs/external_data.md](docs/external_data.md) | Starting from externally generated inputs |
+| [docs/metadata.md](docs/metadata.md) | FAIR eDNA analysis metadata |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Common errors and fixes |
+| [docs/citation_legacy.md](docs/citation_legacy.md) | Citation and v1 resources |
+
+---
+
+## Major changes in v2 vs. v1
+
+**To use the legacy v1 version of Tourmaline**, check out the [V1 branch](https://github.com/aomlomics/tourmaline/tree/V1) of this repository. The v1 README is kept here as [`README_v1.md`](README_v1.md).
+
+* **Run via the `tourmaline.sh` script.** Instead of interacting with Snakemake rules directly, the main entry point is `tourmaline.sh`, which runs one or more steps, each with its own config file and a shared core count. You can still call individual Snakemake rules — each step has its own Snakefile, so specify the right one.
+* **Modular steps.** qaqc, repseqs, and taxonomy are separate Snakefiles with separate configs and separate output directories, so you can re-run one step over several parameter sets while reusing upstream output.
+* **Externally-generated data.** Any step can start from data produced elsewhere, as long as it is formatted as the expected QIIME 2 artifact.
+* **More taxonomy methods.** bt2-blca and REVAMP join the three QIIME 2 classifiers.
+* **FAIR eDNA metadata output** for submission to the NOAA Ocean DNA Explorer.
+
+📖 [docs/citation_legacy.md](docs/citation_legacy.md)
+
+## Citation
+
+Thompson, L. R., Anderson, S. R., Den Uyl, P. A., Patin, N. V., Sanderson, G. & Goodwin, K. D. Tourmaline: A containerized workflow for rapid and iterable amplicon sequence analysis using QIIME 2 and Snakemake. *GigaScience*, Volume 11, 2022, giac066. doi: [10.1093/gigascience/giac066](https://doi.org/10.1093/gigascience/giac066)
 
 ## Disclaimer
 

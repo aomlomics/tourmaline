@@ -10,7 +10,7 @@ To use the Legacy V1 version of Tourmaline, check out the [V1 branch](https://gi
 
 Tourmaline has several features that enhance usability and interoperability:
 
-* **Portability.** Native support for Linux and macOS in addition to Docker containers.
+* **Portability.** Native support for Linux and macOS, using conda environments.
 * **QIIME 2.** The core commands of Tourmaline, including the [DADA2](https://benjjneb.github.io/dada2/index.html) and [Deblur](https://github.com/biocore/deblur) packages, are all commands of QIIME 2, one of the most popular amplicon sequence analysis software tools available. You can print all of the QIIME 2 and other shell commands of your workflow before or while running the workflow.
 * **Snakemake.** Managing the workflow with Snakemake provides several benefits: 
   - **Configuration files** contains all parameters for each step in a separate file, so you can see what your workflow is doing, make changes for a subsequent run, and improve reproducibility.
@@ -21,14 +21,16 @@ Tourmaline has several features that enhance usability and interoperability:
 
 ## What options does Tourmaline support?
 
-If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in the Snakefiles. Tourmaline also supports taxonomic assignment by Bayesian Least Common Ancestor. The main analysis features and options supported by Tourmaline are as follows:
+If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in the Snakefiles. Tourmaline also supports taxonomic assignment by Bayesian Lowest Common Ancestor (BLCA) and by REVAMP's lowest common ancestor over BLASTn hits against NCBI `nt`. The main analysis features and options supported by Tourmaline are as follows:
 
-* FASTQ sequence import using a manifest file, a folder of fastq.gz files, or use your pre-imported FASTQ .qza file
+* FASTQ sequence import using a manifest file, a folder of fastq.gz files, or a pre-imported FASTQ .qza file
+* Optional primer trimming with Cutadapt and paired-end read merging with vsearch
 * Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
-* Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), consensus [VSEARCH](https://doi.org/10.7717/peerj.2584), and [BT2-BLCA](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
-* Feature filtering by taxonomy, sequence length, feature ID, and abundance/prevalence
-* Interactive taxonomy barplots and visualizations
+* Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), consensus [VSEARCH](https://doi.org/10.7717/peerj.2584), [BT2-BLCA](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca), and [REVAMP](https://github.com/McAllister-NOAA/REVAMP)
+* Feature filtering by sequence length, abundance, prevalence, frequency, and sample count
+* Interactive taxonomy barplots, collapsed count tables, and optional [Krona](https://github.com/marbl/Krona/wiki) plots
 * Alpha diversity metrics, rarefaction analyses, and ordination plots
+* Reference database benchmarking with the tax-credit step
 
 ## Major changes in v2 vs. v1
 
@@ -51,7 +53,7 @@ Unlike Tourmaline 1, you can start any of the three workflow steps with data fro
 
 ## Overview
 
-Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding data. The pipeline consists of three main steps, plus an optional fourth step:
+Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding data. It has three main steps, an optional benchmarking step, and a metadata utility script. Steps chain through files on disk, so any step can be the starting point if you supply correctly formatted input:
 
 ### Step 1. Sequence quality assurance and quality control
 
@@ -87,23 +89,39 @@ See [Repseqs Step](steps/repseqs.md) for details.
 
 See [Taxonomy Step](steps/taxonomy.md) for details.
 
-### Step 4. Generate bioinformatics metadata
+### Step 4. Reference database benchmarking (optional)
+
+* Called "tax-credit" in Tourmaline 2 code.
+* Benchmarks reference databases and classify methods against each other using
+  cross-validated, novel-taxa, self-validated and mock-community evaluations.
+* Helps you choose a database, method and confidence threshold before analyzing real data.
+* Requires the sibling [tax-credit](https://github.com/aomlomics/tax-credit) package.
+
+> **In development.** This step currently lives on the `feature/tax-credit-module` branch and
+> is not yet part of the main `V2` branch.
+
+See [Tax-credit Step](steps/tax_credit.md) for details.
+
+### Generate bioinformatics metadata
 
 * Creates a file with metadata about the analysis using FAIR eDNA terms.
 * File can be read into the [NOAA Ocean DNA Explorer](https://www.ngi.msstate.edu/node).
+* A standalone script (`scripts/format_analysisMetadata.py`), not a `tourmaline.sh` step.
 
 See [Analysis Metadata](metadata.md) for details.
 
 
 ## Documentation Structure
 
+- **[Quick Start](quick_start.md)**: The shortest path to a first run
 - **[Install and Setup](install.md)**: Requirements, conda environments, and getting Tourmaline
 - **[Configuration](configuration.md)**: Config file parameters for all three steps
 - **[Running](running.md)**: Using `tourmaline.sh` script and examples
 - **[Steps](steps/qaqc.md)**: Detailed documentation for each pipeline step
     - [QA/QC](steps/qaqc.md): Sequence quality control and trimming
     - [Repseqs](steps/repseqs.md): ASV generation with DADA2 or Deblur
-    - [Taxonomy](steps/taxonomy.md): Taxonomic assignment methods
+    - [Taxonomy](steps/taxonomy.md): Taxonomic assignment methods, REVAMP and Krona plots
+    - [Tax-credit](steps/tax_credit.md): Reference database benchmarking
 - **[External Data](external_data.md)**: Providing externally-generated inputs and conversions
 - **[Analysis Metadata](metadata.md)**: Generating bioinformatics metadata
 - **[Troubleshooting](troubleshooting.md)**: Common issues and tips
@@ -115,10 +133,14 @@ The pipeline creates the following directory structure for outputs:
 
 ```
 output_dir/
-├── [run_name]-qaqc/    # QA/QC outputs (was "samples" in some docs)
+├── [run_name]-qaqc/       # QA/QC outputs
 ├── [run_name]-repseqs/    # Representative sequences outputs
-└── [run_name]-taxonomy/   # Taxonomy assignment outputs
+├── [run_name]-taxonomy/   # Taxonomy assignment outputs
+└── [run_name]-tax-credit/ # Benchmarking outputs (tax-credit step)
 ```
+
+Each step also copies its config file into its own output directory as
+`{run_name}-{step}_config.yaml`, so a run's provenance sits next to its results.
 
 Each directory contains the relevant outputs for that step of the pipeline.
 

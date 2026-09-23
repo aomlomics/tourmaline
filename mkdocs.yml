@@ -17,6 +17,7 @@ markdown_extensions:
   - admonition
 nav:
   - 'Home': 'index.md'
+  - 'Quick Start': 'quick_start.md'
   - 'Install and Setup': 'install.md'
   - 'Configuration': 'configuration.md'
   - 'Running': 'running.md'
@@ -24,6 +25,7 @@ nav:
     - 'QA/QC': 'steps/qaqc.md'
     - 'Repseqs (ASV Generation)': 'steps/repseqs.md'
     - 'Taxonomy': 'steps/taxonomy.md'
+    - 'Tax-credit (Benchmarking)': 'steps/tax_credit.md'
   - 'External Data': 'external_data.md'
   - 'Analysis Metadata': 'metadata.md'
   - 'Troubleshooting': 'troubleshooting.md'

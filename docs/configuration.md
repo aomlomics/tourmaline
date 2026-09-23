@@ -1,6 +1,8 @@
 ## Configuration
 
-Tourmaline 2 uses three config files, one per step. Example names below reflect defaults; any filename is acceptable. Templates for each file are in the Tourmaline folder.
+Tourmaline 2 uses one config file per step. Example names below reflect defaults; any filename is acceptable. Templates for each file are in the Tourmaline folder.
+
+Most config values are read directly by the Snakefiles, so a **missing key raises a `KeyError`** before the workflow starts. Keep optional keys present but empty rather than deleting the line.
 
 ### 1. QA/QC configuration (Template: config_01_qaqc.yaml)
 
@@ -14,7 +16,6 @@ output_dir: /path/to/results     # absolute or relative directory for outputs
 paired_end: true                 # true for paired-end, false for single-end data
 to_trim: true                    # enable primer trimming with Cutadapt
 to_merge: false                  # enable vsearch merge (paired-end only)
-to_filter: false                # enable feature filtering steps
 assay_name: Bacteria-16S-V4V5-Parada  # for metadata reporting
 ```
 Select assay name based on the [NOAA Omics metabarcoding assays](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/blob/main/assays.tsv) controlled vocabulary. If your assay is not available, please create an [issue](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/issues).
@@ -110,13 +111,23 @@ reference_seqs: 00-data/ref.qza  # required reference set
 **Post-denoising filtering (required if `to_filter` is `True`)**
 
 ```yaml
-repseq_min_length: 0
-repseq_max_length: 0
-repseq_min_abundance: 0
-repseq_min_prevalence: 0
-repseq_min_frequency: 0
-repseq_min_samples: 0
+to_filter: false              # enable the filters below
+repseq_min_length: 0          # minimum sequence length, inclusive
+repseq_max_length: 100000     # maximum sequence length, inclusive
+repseq_min_abundance: 0       # minimum relative abundance, 0-1
+repseq_min_prevalence: 0      # minimum fraction of samples, 0-1
+repseq_min_frequency: 0       # minimum total count across all samples
+repseq_min_samples: 0         # minimum number of samples a feature appears in
 ```
+
+> **Set `repseq_max_length` before enabling `to_filter`.** The length filter keeps sequences
+> where `length <= repseq_max_length`, so the template default of `0` removes every sequence.
+> Use a real upper bound such as `100000`.
+
+Filters are applied in order: length, then feature ID / frequency / sample count, then
+abundance and prevalence, after which the representative sequences are filtered to match the
+surviving table. Filtering by taxonomy is not available in v2; filter on taxonomy downstream
+of the taxonomy step instead.
 
 ### 3. Taxonomy configuration (Template: config_03_taxonomy.yaml)
 
@@ -215,7 +226,7 @@ See [Running](running.md) for multi-step invocation and [External Data](external
 
 ### 4. Tax-credit configuration (Template: config_04_tax_credit.yaml)
 
-The tax-credit step benchmarks reference databases using [tax-credit](../tax-credit/) simulations and Tourmaline taxonomy assignment rules. It does not require outputs from the repseqs or taxonomy steps.
+The tax-credit step benchmarks reference databases using [tax-credit](https://github.com/aomlomics/tax-credit) simulations and Tourmaline taxonomy assignment rules. It does not require outputs from the repseqs or taxonomy steps. See [Tax-credit step](steps/tax_credit.md) for an overview of what it does and how to run it.
 
 **Core run settings**
 

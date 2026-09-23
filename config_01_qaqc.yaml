@@ -50,5 +50,7 @@ merge_stagger: --p-allowmergestagger
 ## --- COMPUTE AND QUALITY SETTINGS ---
 # Optional: number of threads for trimming-related commands.
 trimming_threads: 5
-# Optional: quality cutoff passed to downstream QA utilities (currently informational).
-seq_quality_cutoff: 0.85 #not used yet
+# Optional: per-base quality fraction used by the optional `check_seq_qual_dropoff` rule,
+# which reports where read quality falls below this cutoff. Not part of the default
+# `qaqc_all` target - request the stats/{run_name}-seq_qual_dropoff.txt file to build it.
+seq_quality_cutoff: 0.85
