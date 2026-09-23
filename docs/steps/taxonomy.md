@@ -131,6 +131,20 @@ Taxid filtering additionally needs BLAST's `taxdb` files (`taxdb.btd`, `taxdb.bt
 the option "requires additional data files". Drop `-negative_taxidlist` and set
 `revamp_blast_mode: allIN` if they are unavailable.
 
+The same applies when Tourmaline runs BLAST itself: `allEnvOUT` and `mostEnvOUT` filter by
+taxid, so `run_revamp_taxonomy.sh` checks for the `taxdb` files before starting and stops
+with installation instructions if they are missing. This check matters because BLAST
+otherwise prints that message and **keeps going with the exclusion list unapplied**,
+producing `allIN` results labelled as `mostEnvOUT` after a full-length search. Install
+them into the database directory with:
+
+```bash
+cd /path/to/blastdb && update_blastdb.pl taxdb && tar -xzf taxdb.tar.gz
+```
+
+The database directory is prepended to `BLASTDB` for the search, so the files are found
+whether they sit beside the `nt` volumes or elsewhere on that path.
+
 With supplied results, only `taxdump/` is needed locally — the `nt` volumes are not read.
 The run fails if the feature table and representative sequences describe different ASVs,
 or if the BLAST file contains query IDs absent from the representative sequences. ASVs

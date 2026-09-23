@@ -102,6 +102,17 @@ prefer_env_bin() {
 RSCRIPT="$(prefer_env_bin Rscript)"
 PERL="$(prefer_env_bin perl)"
 
+# Largest per-ASV hit count in a blast_assessment.pl report. Computed with awk rather
+# than `sort | head`, which exits 141 (SIGPIPE) under `set -o pipefail` once the file is
+# long enough that sort is still writing when head closes the pipe.
+max_hit_count() {
+    awk -F'\t' 'NF>1 && $2+0>m {m=$2+0} END {print m+0}' "$1"
+}
+
+# BLAST looks for its taxonomy files (taxdb.*, taxonomy4blast.sqlite3) along BLASTDB, not
+# only beside -db. Put the database directory on that path so taxid filtering can work.
+export BLASTDB="${blastdb}${BLASTDB:+:$BLASTDB}"
+
 case "$mode" in
 blast)
     if [[ ! -f "$workdir/dada2/ASVs.fa" ]]; then
@@ -127,6 +138,31 @@ blast)
         exit 1
     fi
 
+    # -negative_taxidlist additionally needs BLAST's own taxonomy files. Without them
+    # BLAST reports "The -taxids command line option requires additional data files"
+    # and the exclusion list is not applied, silently giving allIN results.
+    if [[ -n "$negative_list" ]]; then
+        missing_taxdb=TRUE
+        IFS=':' read -ra blastdb_paths <<< "$BLASTDB"
+        for dir in "${blastdb_paths[@]}"; do
+            if [[ -f "$dir/taxdb.btd" && -f "$dir/taxdb.bti" ]]; then
+                missing_taxdb=FALSE
+                break
+            fi
+        done
+        if [[ "$missing_taxdb" = TRUE ]]; then
+            echo "ERROR: blast mode '$blast_mode' filters by taxid, which needs BLAST's" >&2
+            echo "       taxonomy files (taxdb.btd, taxdb.bti, taxonomy4blast.sqlite3)." >&2
+            echo "       None were found on BLASTDB ($BLASTDB)." >&2
+            echo "       Install them into the database directory:" >&2
+            echo "         cd $blastdb && update_blastdb.pl taxdb && tar -xzf taxdb.tar.gz" >&2
+            echo "       (or: wget https://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz)" >&2
+            echo "       If they cannot be installed, set revamp_blast_mode: allIN, which" >&2
+            echo "       does no taxid filtering." >&2
+            exit 1
+        fi
+    fi
+
     n_asvs=$(grep -c ">" "$workdir/dada2/ASVs.fa")
     max_target_seqs=4000
     runthroughcount=3
@@ -148,10 +184,16 @@ blast)
             -out "$workdir/blast_results/ASV_blastn_nt.btab" \
             ${negative_list:+-negative_taxidlist "$negative_list"}
 
+        if [[ ! -s "$workdir/blast_results/ASV_blastn_nt.btab" ]]; then
+            echo "ERROR: BLASTn produced no hits ($workdir/blast_results/ASV_blastn_nt.btab" >&2
+            echo "       is empty). Check the messages above and that -db $blastdb/nt exists." >&2
+            exit 1
+        fi
+
         "$PERL" "$revamp_dir/assets/blast_assessment.pl" \
             -i "$workdir/blast_results/ASV_blastn_nt.btab" \
             -c "$n_asvs" > "$workdir/blast_results/checkmaxtargetseqs.txt"
-        highest=$(sort -k2 -nr "$workdir/blast_results/checkmaxtargetseqs.txt" | head -1 | cut -f2)
+        highest=$(max_hit_count "$workdir/blast_results/checkmaxtargetseqs.txt")
 
         if [[ "$highest" -lt "$max_target_seqs" ]]; then
             pass_blast_scrutiny=TRUE
@@ -200,7 +242,7 @@ assign)
     n_asvs=$(grep -c ">" "$workdir/dada2/ASVs.fa")
     "$PERL" "$revamp_dir/assets/blast_assessment.pl" -i "$btab" -c "$n_asvs" \
         > "$workdir/blast_results/checkmaxtargetseqs.txt"
-    highest=$(sort -k2 -nr "$workdir/blast_results/checkmaxtargetseqs.txt" | head -1 | cut -f2)
+    highest=$(max_hit_count "$workdir/blast_results/checkmaxtargetseqs.txt")
     if [[ "$highest" -ge 4000 ]]; then
         echo "WARNING: an ASV has ${highest} BLAST hits at its best percent identity."
         echo "         If BLASTn was run with -max_target_seqs ${highest} or lower, hit lists are"
