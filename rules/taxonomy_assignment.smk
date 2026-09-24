@@ -1,4 +1,4 @@
-## Shared taxonomy assignment rules for Tourmaline taxonomy and tax-credit steps.
+## Shared taxonomy assignment rules, included by taxonomy_step.Snakefile.
 ## Parent Snakefile must define: output_dir, config, input_repseqs, output_seq, output_tax,
 ## use_classifier, classify_method, fasta_repseqs (bt2-blca), input_table (revamp),
 ## taxonomy_dir, taxonomy_qza, taxonomy_tsv, classifier_qza, fit_params (optional string).

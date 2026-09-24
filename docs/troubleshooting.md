@@ -78,19 +78,6 @@ on the `BLASTDB` path. Without them BLAST prints a warning and **continues with 
 list unapplied**. Tourmaline checks for this before starting; see
 [Taxonomy step](steps/taxonomy.md#revamp).
 
-### Tax-credit
-
-**Jobs run one at a time.** Keep `classify_threads` well below `--cores`, or a single
-assignment job claims every core and the rest serialize.
-
-**A newly added database or mock dataset produces no jobs.** Staging does not re-run when only
-the config changes. Delete the `.datasets.done` marker in the run output directory, or pass
-`--forcerun tax_credit_prepare_datasets`. See [Tax-credit step](steps/tax_credit.md).
-
-**Novel-taxa scores are near zero on the test databases.** Expected. The subsampled fixtures in
-`00-data/tax-credit-test/` are too small for meaningful novel-taxa results — they are for
-smoke-testing only.
-
 ### Debugging technique
 
 - **Dry run first.** `--dryrun` shows what Snakemake plans to do without doing it.

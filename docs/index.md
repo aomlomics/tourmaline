@@ -30,7 +30,6 @@ If you have used QIIME 2 before, you might be wondering which QIIME 2 commands T
 * Feature filtering by sequence length, abundance, prevalence, frequency, and sample count
 * Interactive taxonomy barplots, collapsed count tables, and optional [Krona](https://github.com/marbl/Krona/wiki) plots
 * Alpha diversity metrics, rarefaction analyses, and ordination plots
-* Reference database benchmarking with the tax-credit step
 
 ## Major changes in v2 vs. v1
 
@@ -53,7 +52,7 @@ Unlike Tourmaline 1, you can start any of the three workflow steps with data fro
 
 ## Overview
 
-Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding data. It has three main steps, an optional benchmarking step, and a metadata utility script. Steps chain through files on disk, so any step can be the starting point if you supply correctly formatted input:
+Tourmaline 2 is a modular Snakemake pipeline for processing DNA metabarcoding data. It has three main steps plus a metadata utility script. Steps chain through files on disk, so any step can be the starting point if you supply correctly formatted input:
 
 ### Step 1. Sequence quality assurance and quality control
 
@@ -89,20 +88,7 @@ See [Repseqs Step](steps/repseqs.md) for details.
 
 See [Taxonomy Step](steps/taxonomy.md) for details.
 
-### Step 4. Reference database benchmarking (optional)
-
-* Called "tax-credit" in Tourmaline 2 code.
-* Benchmarks reference databases and classify methods against each other using
-  cross-validated, novel-taxa, self-validated and mock-community evaluations.
-* Helps you choose a database, method and confidence threshold before analyzing real data.
-* Requires the sibling [tax-credit](https://github.com/aomlomics/tax-credit) package.
-
-> **In development.** This step currently lives on the `feature/tax-credit-module` branch and
-> is not yet part of the main `V2` branch.
-
-See [Tax-credit Step](steps/tax_credit.md) for details.
-
-### Generate bioinformatics metadata
+### Step 4. Generate bioinformatics metadata
 
 * Creates a file with metadata about the analysis using FAIR eDNA terms.
 * File can be read into the [NOAA Ocean DNA Explorer](https://www.ngi.msstate.edu/node).
@@ -121,7 +107,6 @@ See [Analysis Metadata](metadata.md) for details.
     - [QA/QC](steps/qaqc.md): Sequence quality control and trimming
     - [Repseqs](steps/repseqs.md): ASV generation with DADA2 or Deblur
     - [Taxonomy](steps/taxonomy.md): Taxonomic assignment methods, REVAMP and Krona plots
-    - [Tax-credit](steps/tax_credit.md): Reference database benchmarking
 - **[External Data](external_data.md)**: Providing externally-generated inputs and conversions
 - **[Analysis Metadata](metadata.md)**: Generating bioinformatics metadata
 - **[Troubleshooting](troubleshooting.md)**: Common issues and tips
@@ -135,8 +120,7 @@ The pipeline creates the following directory structure for outputs:
 output_dir/
 ├── [run_name]-qaqc/       # QA/QC outputs
 ├── [run_name]-repseqs/    # Representative sequences outputs
-├── [run_name]-taxonomy/   # Taxonomy assignment outputs
-└── [run_name]-tax-credit/ # Benchmarking outputs (tax-credit step)
+└── [run_name]-taxonomy/   # Taxonomy assignment outputs
 ```
 
 Each step also copies its config file into its own output directory as

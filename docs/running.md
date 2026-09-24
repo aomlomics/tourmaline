@@ -7,7 +7,7 @@ rules invoke `scripts/...` by relative path. Outputs can go anywhere, via `outpu
 
 ```bash
 conda activate snakemake-tour2
-./tourmaline.sh --step [qaqc,repseqs,taxonomy,tax-credit] --configfile [config1,config2,...] --cores N
+./tourmaline.sh --step [qaqc,repseqs,taxonomy] --configfile [config1,config2,...] --cores N
 ```
 
 Short flags: `-s` / `-c` / `-n`.
@@ -33,12 +33,6 @@ Run all steps with one command:
 ./tourmaline.sh -s qaqc,repseqs,taxonomy -c config_01_qaqc.yaml,config_02_repseqs.yaml,config_03_taxonomy.yaml -n 6
 ```
 
-Run tax-credit only (reference database benchmarking):
-
-```bash
-./tourmaline.sh -s tax-credit -c config_04_tax_credit.yaml -n 6
-```
-
 ### Running Snakemake directly
 
 Call Snakemake yourself for dry runs, single rules, or `--printshellcmds`. Each step has its own
@@ -49,7 +43,6 @@ Snakefile and target rule:
 | qaqc | `qaqc_step.Snakefile` | `qaqc_all` |
 | repseqs | `repseqs_step.Snakefile` | `run_denoise` |
 | taxonomy | `taxonomy_step.Snakefile` | `run_taxonomy` (the default target) |
-| tax-credit | `tax_credit_step.Snakefile` | `run_tax_credit` |
 
 ```bash
 snakemake --use-conda -s qaqc_step.Snakefile     qaqc_all     --configfile config_01_qaqc.yaml --cores 6 --dryrun
@@ -115,8 +108,7 @@ environment. Total cores used is roughly `--parallel-jobs × --cores-per-job`, s
 machine.
 
 To compare *classifiers or databases* rather than denoising parameters, the run-name chaining
-above is usually simpler: point several taxonomy configs at one `repseqs_run_name`. Consider the
-[tax-credit step](steps/tax_credit.md) if the question is which database to trust.
+above is usually simpler: point several taxonomy configs at one `repseqs_run_name`.
 
 ### HPC / SLURM
 
@@ -136,8 +128,7 @@ account, partition, time and memory directives to your cluster before submitting
 output_dir/
 ├── [run_name]-qaqc/
 ├── [run_name]-repseqs/
-├── [run_name]-taxonomy/
-└── [run_name]-tax-credit/
+└── [run_name]-taxonomy/
 ```
 
 Each step copies its config file into its own output directory as `{run_name}-{step}_config.yaml`,

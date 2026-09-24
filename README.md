@@ -120,16 +120,6 @@ Tourmaline 2 is modular. Each step has its own Snakefile and its own config file
 
 📖 [docs/steps/taxonomy.md](docs/steps/taxonomy.md)
 
-### Step 4 — Reference database benchmarking (`tax-credit`) — *in development*
-
-* Benchmarks reference databases and classify methods against each other using cross-validated, novel-taxa, self-validated, and mock-community evaluations.
-* Produces metric summaries and plots to help you pick a database and confidence threshold.
-* Requires the sibling [tax-credit](https://github.com/aomlomics/tax-credit) package.
-
-> **Note:** the tax-credit step currently lives on the `feature/tax-credit-module` branch and is not yet part of the main `V2` branch.
-
-📖 [docs/steps/tax_credit.md](docs/steps/tax_credit.md)
-
 ### Analysis metadata (utility script)
 
 * Creates a file with metadata about the analysis using FAIR eDNA terms.
@@ -168,8 +158,6 @@ Tourmaline 2 is modular. Each step has its own Snakefile and its own config file
 
 REVAMP additionally needs a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP) and a local NCBI `nt` BLAST database with prepared taxonomy files — see [docs/steps/taxonomy.md#revamp](docs/steps/taxonomy.md#revamp).
 
-The tax-credit step additionally needs the sibling `tax-credit` package installed into the QIIME 2 environment (`pip install -e ../tax-credit`).
-
 📖 [docs/install.md](docs/install.md)
 
 ### Running requirements
@@ -189,7 +177,6 @@ Each step reads one YAML config file. The example configs in the repository are 
 | qaqc | [`config_01_qaqc.yaml`](config_01_qaqc.yaml) | `qaqc_step.Snakefile` |
 | repseqs | [`config_02_repseqs.yaml`](config_02_repseqs.yaml) | `repseqs_step.Snakefile` |
 | taxonomy | [`config_03_taxonomy.yaml`](config_03_taxonomy.yaml) | `taxonomy_step.Snakefile` |
-| tax-credit | [`config_04_tax_credit.yaml`](config_04_tax_credit.yaml) | `tax_credit_step.Snakefile` |
 
 Config files can have any name; pass whichever you want with `--configfile`.
 
@@ -491,7 +478,7 @@ Run all steps with one command:
 
 * The number of steps must match the number of config files.
 * Config files must be given in the same order as the steps.
-* Valid steps are `qaqc`, `repseqs`, `taxonomy`, and `tax-credit`.
+* Valid steps are `qaqc`, `repseqs`, and `taxonomy`.
 
 ### Running Snakemake directly
 
@@ -535,8 +522,7 @@ Everything lands under `output_dir`, one directory per run and step:
 output_dir/
 ├── [run_name]-qaqc/       # QA/QC outputs
 ├── [run_name]-repseqs/    # Representative sequences outputs
-├── [run_name]-taxonomy/   # Taxonomy assignment outputs
-└── [run_name]-tax-credit/ # Benchmarking outputs (tax-credit step)
+└── [run_name]-taxonomy/   # Taxonomy assignment outputs
 ```
 
 Each step also **copies its config file into its own output directory** as `{run_name}-{step}_config.yaml`, so a run's provenance sits next to its results.
@@ -605,12 +591,11 @@ Alongside the metadata TSV it copies the taxonomy and table outputs into the out
 | [docs/index.md](docs/index.md) | Overview and feature summary |
 | [docs/quick_start.md](docs/quick_start.md) | Shortest path to a first run |
 | [docs/install.md](docs/install.md) | Requirements and conda environments |
-| [docs/configuration.md](docs/configuration.md) | **Complete** parameter reference for all four configs |
+| [docs/configuration.md](docs/configuration.md) | **Complete** parameter reference for every config file |
 | [docs/running.md](docs/running.md) | `tourmaline.sh`, direct Snakemake, sweeps, HPC |
 | [docs/steps/qaqc.md](docs/steps/qaqc.md) | Step 1 details |
 | [docs/steps/repseqs.md](docs/steps/repseqs.md) | Step 2 details |
 | [docs/steps/taxonomy.md](docs/steps/taxonomy.md) | Step 3 details, including REVAMP and Krona |
-| [docs/steps/tax_credit.md](docs/steps/tax_credit.md) | Step 4, database benchmarking |
 | [docs/external_data.md](docs/external_data.md) | Starting from externally generated inputs |
 | [docs/metadata.md](docs/metadata.md) | FAIR eDNA analysis metadata |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common errors and fixes |
