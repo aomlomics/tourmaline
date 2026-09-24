@@ -16,7 +16,7 @@ os.makedirs(os.path.dirname(config_output_path), exist_ok=True)
 shutil.copy(workflow.configfiles[0], config_output_path)
 
 def has_fa_suffix(file, suffixes):
-    if file == None:
+    if file is None or file == "":
         return False
     return any(file.endswith(suffix) for suffix in suffixes)
 
