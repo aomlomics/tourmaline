@@ -257,8 +257,28 @@ assign)
         echo "         Re-run BLASTn with a higher -max_target_seqs."
     fi
 
+    # reformat_blast.R needs dplyr and Biostrings. Check before doing any work, and
+    # report which R was used: a host R earlier in PATH, or an R_HOME exported for the
+    # QIIME rules, both lead to an R whose library lacks these packages.
+    echo "Using R: $RSCRIPT"
+    if ! env -u R_HOME "$RSCRIPT" --vanilla -e \
+        'quit(status = !all(c("dplyr","Biostrings") %in% rownames(installed.packages())))' \
+        >/dev/null 2>&1; then
+        echo "ERROR: $RSCRIPT cannot load dplyr and/or Biostrings, which" >&2
+        echo "       REVAMP's reformat_blast.R requires." >&2
+        echo "       R version: $(env -u R_HOME "$RSCRIPT" --vanilla -e 'cat(R.version.string)' 2>&1 | tail -1)" >&2
+        echo "       Library paths:" >&2
+        env -u R_HOME "$RSCRIPT" --vanilla -e 'cat(paste("        ", .libPaths()), sep="\n")' 2>&1 | tail -5 >&2
+        echo "       Install them into the revamp environment:" >&2
+        echo "         conda install -n revamp -c conda-forge -c bioconda r-dplyr bioconductor-biostrings" >&2
+        echo "       If R_HOME is set in your shell (the QIIME rules need it on some" >&2
+        echo "       machines), it is ignored here; a host R earlier in PATH is not used" >&2
+        echo "       when the revamp environment has its own Rscript." >&2
+        exit 1
+    fi
+
     echo "Reformatting BLAST output: $(date)"
-    "$RSCRIPT" --vanilla "$revamp_dir/assets/reformat_blast.R" "$workdir/blast_results" "$query_cov"
+    env -u R_HOME "$RSCRIPT" --vanilla "$revamp_dir/assets/reformat_blast.R" "$workdir/blast_results" "$query_cov"
 
     mkdir -p "$workdir/ASV2Taxonomy"
     cd "$workdir/ASV2Taxonomy"
