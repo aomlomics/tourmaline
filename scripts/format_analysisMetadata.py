@@ -104,6 +104,17 @@ def assign_tools(taxa,tour):
     elif taxa['classify_method'] == 'naive-bayes':
         software = ";".join([tour['qiime2_version'], "naive-bayes classifier; scikit-learn "+str(tour['scikit-learn_version'])])
         cat = "sequence composition"
+    elif taxa['classify_method'] == 'revamp':
+        # REVAMP assigns outside QIIME 2: BLASTn against NCBI nt, then lowest common ancestor.
+        parts = ["REVAMP", "blast "+str(tour['blast_version'])]
+        if tour.get('taxonkit_version'):
+            parts.append("taxonkit "+str(tour['taxonkit_version']))
+        software = ";".join(parts)
+        cat = "sequence similarity"
+    else:
+        # bt2-blca and any later method: no version metadata recorded for it yet.
+        software = str(taxa['classify_method'])
+        cat = "sequence similarity"
     return (software,cat)
 
 def trim_paramF(qaqc,repseqs,tour):
@@ -138,6 +149,21 @@ def trim_paramF(qaqc,repseqs,tour):
     else:
         return ("not applicable","not applicable")
 
+def tax_class_id_cutoff(taxa):
+    if taxa['classify_method'] in ['consensus-blast','consensus-vsearch']:
+        return taxa['perc_identity']
+    elif taxa['classify_method'] == 'revamp':
+        # REVAMP uses one cutoff per rank; the first is the species-level cutoff.
+        return str(taxa['revamp_taxonomy_cutoffs']).split(',')[0]
+    return "not applicable"
+
+def tax_class_query_cutoff(taxa):
+    if taxa['classify_method'] in ['consensus-blast','consensus-vsearch']:
+        return taxa['query_cov']
+    elif taxa['classify_method'] == 'revamp':
+        return taxa['revamp_query_cov']
+    return "not applicable"
+
 def assign_collapse(taxa):
     if taxa['classify_method'] in ['consensus-blast','consensus-vsearch']:
         output = f"minimum consensus lowest common ancestor of {str(taxa['min_consensus'])}"
@@ -145,6 +171,12 @@ def assign_collapse(taxa):
         output = f"confidence threshold of {str(taxa['skl_confidence'])}"
     elif taxa['classify_method'] == 'bt2-blca':
         output = f"minimum confidence threshold of {str(taxa['confidence_threshold'])}"
+    elif taxa['classify_method'] == 'revamp':
+        output = (f"lowest common ancestor of all best BLAST hits, with percent identity "
+                  f"cutoffs of {str(taxa['revamp_taxonomy_cutoffs'])} for species,genus,"
+                  f"family,order,class,phylum")
+    else:
+        output = ""
     return output
 
 
@@ -230,8 +262,8 @@ def main():
         "otu_db_custom": taxa3['database_name'],
         "tax_assign_cat": assign_tools(taxa3,tour)[1],
         "otu_seq_comp_appr": assign_tools(taxa3,tour)[0],
-        "tax_class_id_cutoff": taxa3['perc_identity'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
-        "tax_class_query_cutoff": taxa3['query_cov'] if taxa3['classify_method'] in ['consensus-blast','consensus-vsearch'] else "not applicable",
+        "tax_class_id_cutoff": tax_class_id_cutoff(taxa3),
+        "tax_class_query_cutoff": tax_class_query_cutoff(taxa3),
         "tax_class_other": taxa3['classify_params'],
         "tax_class_collapse": assign_collapse(taxa3),
         "tax_class_other": "",

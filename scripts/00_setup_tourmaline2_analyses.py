@@ -152,6 +152,12 @@ def update_config_03_taxonomy(config_path, run_name, output_dir, metadata_file, 
     elif classifier_method == 'bt2-blca':
         # For bt2-blca, use the provided database path directly
         config["bowtie_database"] = os.path.abspath(database_path)
+    elif classifier_method == 'revamp':
+        # For revamp, the database is the local NCBI nt directory; there are no
+        # reference sequence/taxonomy artifacts. revamp_dir must still be set by hand.
+        config["revamp_blastdb"] = os.path.abspath(database_path)
+        config["refseqs_file"] = None
+        config["taxa_file"] = None
 
     with open(config_path, "w") as f:
         yaml.safe_dump(config, f, sort_keys=False)
@@ -180,7 +186,7 @@ def main():
     )
     parser.add_argument(
         "--classifier-method",
-        choices=['naive-bayes', 'consensus-blast', 'consensus-vsearch', 'bt2-blca'],
+        choices=['naive-bayes', 'consensus-blast', 'consensus-vsearch', 'bt2-blca', 'revamp'],
         required=True,
         help="Taxonomy classification method"
     )

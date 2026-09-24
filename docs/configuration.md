@@ -1,6 +1,8 @@
 ## Configuration
 
-Tourmaline 2 uses three config files, one per step. Example names below reflect defaults; any filename is acceptable. Templates for each file are in the Tourmaline folder.
+Tourmaline 2 uses one config file per step. Example names below reflect defaults; any filename is acceptable. Templates for each file are in the Tourmaline folder.
+
+Most config values are read directly by the Snakefiles, so a **missing key raises a `KeyError`** before the workflow starts. Keep optional keys present but empty rather than deleting the line.
 
 ### 1. QA/QC configuration (Template: config_01_qaqc.yaml)
 
@@ -14,7 +16,6 @@ output_dir: /path/to/results     # absolute or relative directory for outputs
 paired_end: true                 # true for paired-end, false for single-end data
 to_trim: true                    # enable primer trimming with Cutadapt
 to_merge: false                  # enable vsearch merge (paired-end only)
-to_filter: false                # enable feature filtering steps
 assay_name: Bacteria-16S-V4V5-Parada  # for metadata reporting
 ```
 Select assay name based on the [NOAA Omics metabarcoding assays](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/blob/main/assays.tsv) controlled vocabulary. If your assay is not available, please create an [issue](https://github.com/NOAA-Omics/noaa-omics-metabarcoding-assays/issues).
@@ -110,13 +111,23 @@ reference_seqs: 00-data/ref.qza  # required reference set
 **Post-denoising filtering (required if `to_filter` is `True`)**
 
 ```yaml
-repseq_min_length: 0
-repseq_max_length: 0
-repseq_min_abundance: 0
-repseq_min_prevalence: 0
-repseq_min_frequency: 0
-repseq_min_samples: 0
+to_filter: false              # enable the filters below
+repseq_min_length: 0          # minimum sequence length, inclusive
+repseq_max_length: 100000     # maximum sequence length, inclusive
+repseq_min_abundance: 0       # minimum relative abundance, 0-1
+repseq_min_prevalence: 0      # minimum fraction of samples, 0-1
+repseq_min_frequency: 0       # minimum total count across all samples
+repseq_min_samples: 0         # minimum number of samples a feature appears in
 ```
+
+> **Set `repseq_max_length` before enabling `to_filter`.** The length filter keeps sequences
+> where `length <= repseq_max_length`, so the template default of `0` removes every sequence.
+> Use a real upper bound such as `100000`.
+
+Filters are applied in order: length, then feature ID / frequency / sample count, then
+abundance and prevalence, after which the representative sequences are filtered to match the
+surviving table. Filtering by taxonomy is not available in v2; filter on taxonomy downstream
+of the taxonomy step instead.
 
 ### 3. Taxonomy configuration (Template: config_03_taxonomy.yaml)
 
@@ -127,7 +138,7 @@ Defines how representative sequences are assigned taxonomy and summarized.
 ```yaml
 run_name: my_run
 output_dir: /path/to/results
-classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca
+classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
 collapse_taxalevel: 7             # taxonomy level for collapsed table
 classify_threads: 10
@@ -174,6 +185,37 @@ bowtie_database: /abs/path/bowtie2_index/   # optional; auto-built if omitted
 confidence_thres: 0.8
 ```
 
+**REVAMP options**
+
+```yaml
+revamp_dir: /abs/path/REVAMP                        # REVAMP clone
+revamp_blastdb: /abs/path/blastdb                   # nt volumes plus prepared taxdump/
+revamp_blast_results: /abs/path/ASV_blastn_nt.btab  # optional; BLAST run elsewhere
+revamp_blast_mode: mostEnvOUT                       # allIN | allEnvOUT | mostEnvOUT
+revamp_query_cov: 90                                # percent of ASV length a hit must cover
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"        # percent ID cutoffs, ordered S,G,F,O,C,P
+```
+
+Used only when `classify_method` is `revamp`, which needs the `revamp` conda environment
+and ignores `refseqs_file` / `taxa_file` / `pretrained_classifier`. `revamp_blast_mode`
+applies when Tourmaline runs BLAST itself; with `revamp_blast_results` supplied it is
+recorded but not applied. Suggested cutoffs are `97,95,90,80,70,60` for rRNA genes and
+`95,92,87,77,67,60` for protein-coding genes. See
+[Taxonomy step](steps/taxonomy.md#revamp) for database preparation, running BLAST on
+another machine, and how REVAMP's output differs from the other methods.
+
+**Krona plot options (any classify method)**
+
+```yaml
+make_krona: False        # build figures/{run_name}-krona.html
+krona_per_sample: True   # add one Krona dataset per sample
+```
+
+Off by default because it needs a `krona` conda environment
+(`conda create -c conda-forge -c bioconda -n krona krona`). Configs written before this
+option was added still work; the plot is simply not built. See
+[Taxonomy step](steps/taxonomy.md#krona-plots).
+
 **Additional classifier flags**
 
 ```yaml
@@ -181,5 +223,3 @@ classify_params: --verbose   # appended to the chosen classifier command
 ```
 
 See [Running](running.md) for multi-step invocation and [External Data](external_data.md) for conversions and artifact preparation tips.
-
-

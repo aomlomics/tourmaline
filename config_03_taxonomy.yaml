@@ -26,7 +26,7 @@ database_name: "silva-138_1-99-515f_926r-uniq"
 refseqs_file: "00-data/silva-138_1-99-515f_926r-uniq-seq.qza"
 # Required, unless using pretrained classifier: reference taxonomy (TSV or .qza) compatible with chosen method.
 taxa_file: "00-data/silva-138_1-99-515f_926r-uniq-tax.qza"
-# Required: taxonomy assignment method (`naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca`).
+# Required: taxonomy assignment method (`naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca`, `revamp`).
 classify_method: naive-bayes
 # Required: ordered taxonomy ranks to expand in outputs (comma-separated).
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
@@ -54,6 +54,32 @@ min_consensus: 0.51
 bowtie_database: 
 # Optional: BLCA confidence threshold for accepting assignments (0–1 scale).
 confidence_thres: 0.8
+
+## --- REVAMP OPTIONS ---
+## Only used when classify_method is `revamp`. Requires the `revamp` conda env and a
+## REVAMP clone; refseqs_file/taxa_file are ignored (nt is the reference database).
+# Required for revamp: path to a REVAMP clone (https://github.com/McAllister-NOAA/REVAMP).
+revamp_dir:
+# Required for revamp: database directory holding the NCBI nt volumes and a taxdump/
+# subdirectory prepared by REVAMP's ncbi_db_cleanup.sh. When revamp_blast_results is
+# supplied, only taxdump/ (names/nodes/merged/delnodes.dmp, common_names.dmp) is needed.
+revamp_blastdb:
+# Optional: BLASTn results (outfmt 6: qseqid pident length staxids sacc) run elsewhere
+# against nt, e.g. on the machine holding the database. Leave empty to BLAST locally.
+revamp_blast_results:
+# Optional: BLASTn subject filtering (`allIN`, `allEnvOUT`, `mostEnvOUT`); local BLAST only.
+revamp_blast_mode: mostEnvOUT
+# Optional: percent of ASV length a BLAST hit must cover to be considered (0-100).
+revamp_query_cov: 90
+# Optional: percent identity cutoffs for assignment depth, ordered S,G,F,O,C,P.
+# Suggested: 97,95,90,80,70,60 for rRNA genes; 95,92,87,77,67,60 for protein-coding genes.
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"
+
+## --- KRONA PLOT (optional, any classify method) ---
+# Optional: build an interactive Krona HTML plot; requires the `krona` conda env.
+make_krona: False
+# Optional: include one Krona dataset per sample alongside the all-samples plot.
+krona_per_sample: True
 
 ## --- ADDITIONAL CLASSIFIER FLAGS ---
 # Optional: extra command-line parameters appended to chosen classifier.

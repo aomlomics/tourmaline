@@ -121,6 +121,7 @@ if config["asv_method"] == "dada2pe":
         threads: config["asv_threads"]
         shell:
             """
+            export R_LIBS_USER= R_LIBS= R_PROFILE_USER= R_ENVIRON_USER=; 
             # Only check if trunclen > 0
             if ([ {params.trunclenf} -gt 0 ] || [ {params.trunclenr} -gt 0 ]); then
                 echo "Checking that truncation lengths are less than maximum read length."
@@ -197,6 +198,7 @@ elif config["asv_method"] == "dada2se":
         threads: config["asv_threads"]
         shell:
             """
+            export R_LIBS_USER= R_LIBS= R_PROFILE_USER= R_ENVIRON_USER=;
             qiime dada2 denoise-single \
             --i-demultiplexed-seqs {input[0]} \
             --p-trunc-len {params.trunclenf} \
@@ -237,6 +239,7 @@ elif config["asv_method"] == "deblur":
         threads: config["asv_threads"]
         shell:
             """
+            export R_LIBS_USER= R_LIBS= R_PROFILE_USER= R_ENVIRON_USER=;
             qiime deblur denoise-other \
             --i-demultiplexed-seqs {input[0]} \
             --i-reference-seqs {input.reference_seqs} \

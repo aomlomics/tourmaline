@@ -1,3 +1,23 @@
 # Ignore Snakemake log files
 logs/*.log
 dont_upload/*
+# OS / editor
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Snakemake
+.snakemake/
+
+# Local run outputs and scratch
+*.log
+recorded_metadata/
+test_blca/
+test-ode-input/
+parameter_sweep_configs/
+
+# Large reference databases - fetch these, don't commit them
+00-data/*.qza
+!00-data/tax-credit-test/*.qza

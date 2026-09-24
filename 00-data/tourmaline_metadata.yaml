@@ -9,6 +9,7 @@ cutadapt_version: 4.9
 vsearch_version: 2.22.1
 blast_version: 2.16.0
 scikit-learn_version: 1.4.2
+taxonkit_version: 0.20.0  # revamp classify method only
 
 ## FIXED PARAMETERS
 merge_min_overlap: 12

@@ -6,7 +6,7 @@ import shutil
 
 parser = argparse.ArgumentParser(description="Generate analysis metadata commands.")
 parser.add_argument('--working-directory', '--wd', required=True, help='Base directory to search for analyses.')
-parser.add_argument('--classify-method', required=True, help='Classification method: consensus-blast, naive-bayes, consensus-vsearch, bt2-blca.')
+parser.add_argument('--classify-method', required=True, help='Classification method: consensus-blast, naive-bayes, consensus-vsearch, bt2-blca, revamp.')
 parser.add_argument('--database', required=True, help='Database string for taxonomy config.')
 parser.add_argument('--project-id', required=True, help='Project ID string.')
 parser.add_argument('--assay-name', required=True, help='Assay name string.')

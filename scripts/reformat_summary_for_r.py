@@ -8,17 +8,19 @@ import argparse
 import shutil
 
 
-def truncate_taxonomy(full_taxonomy, confidences, cutoff):
+def truncate_taxonomy(full_taxonomy, confidences, cutoff, output_levels):
     # the taxonomy and confidences may have an extra semicolon at the end
-    full_taxonomy = full_taxonomy.rstrip(';')
-    confidences = confidences.rstrip(';')
-    taxonomy = dict([level.split(':', 1) for level in full_taxonomy.split(';')])
-    truncated_taxonomy = {}
-    for level_info in confidences.split(';'):
-        level_name, confidence_value = level_info.split(':')
-        if float(confidence_value) >= cutoff:
-            truncated_taxonomy[level_name] = taxonomy[level_name]
-            truncated_confidence = float(confidence_value)
+    taxonomy = dict(level.split(':', 1) for level in full_taxonomy.rstrip(';').split(';'))
+    confidence = dict(level.split(':', 1) for level in confidences.rstrip(';').split(';'))
+    truncated_taxonomy = []
+    truncated_confidence = 0
+    # keep ranks from the top down and stop at the first rank below the cutoff,
+    # so a low-confidence rank never leaves a gap above higher-confidence ranks
+    for level in output_levels:
+        if level not in taxonomy or float(confidence.get(level, 0)) < cutoff:
+            break
+        truncated_taxonomy.append(taxonomy[level])
+        truncated_confidence = float(confidence[level])
     return truncated_taxonomy, truncated_confidence
 
 
@@ -36,12 +38,15 @@ def reformat_summary(summary_file_name, output_file_name, cutoff, output_levels)
         fields = line.strip('\n').split('\t')
         # a colon in the taxonomy means that something was found
         if ':' in fields[taxonomy_index]:
-            taxonomy, confidence = truncate_taxonomy(fields[taxonomy_index], fields[confidence_index], cutoff)
-            output_taxonomy = [taxonomy.get(level, '') for level in output_levels]
-            fields_to_write = fields[:taxonomy_index] + [';'.join(output_taxonomy)] + [str(confidence)]
+            taxonomy, confidence = truncate_taxonomy(fields[taxonomy_index], fields[confidence_index], cutoff, output_levels)
+            if not taxonomy:
+                output_taxonomy = 'Unassigned'
+                fields_to_write = fields[:taxonomy_index] + [output_taxonomy] + [str(0)]
+            else:
+                fields_to_write = fields[:taxonomy_index] + [';'.join(taxonomy)] + [str(confidence)]
         else:
             output_taxonomy = 'Unassigned'
-            fields_to_write = fields[:taxonomy_index] + [output_taxonomy] + [str(confidence)]
+            fields_to_write = fields[:taxonomy_index] + [output_taxonomy] + [str(0)]
         
         output.write('\t'.join(fields_to_write) + '\n')
 
