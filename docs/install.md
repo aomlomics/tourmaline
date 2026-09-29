@@ -17,7 +17,7 @@ they are not created for you from environment files.
 **QIIME 2** — follow the [official 2024.10 install instructions](https://docs.qiime2.org/2024.10/install/)
 for your operating system. The default environment name from the official installer is already
 `qiime2-amplicon-2024.10`; if you name it something else, the rules will not find it. You do not
-need to install anything else into this environment.
+need to install anything else into this environment (except for the tax-credit step, below).
 
 Verify:
 
@@ -64,6 +64,22 @@ conda create -c conda-forge -c bioconda -n krona krona
 ```
 
 No Krona taxonomy database download is required.
+
+**Tax-credit benchmarking** (the `tax-credit` step) needs the sibling
+[tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package installed into the QIIME 2 environment.
+Use the `tour2-tax-credit` branch, which is the version Tourmaline 2 expects:
+
+```bash
+cd ..    # alongside your tourmaline clone
+git clone -b tour2-tax-credit https://github.com/ksil-NOAA/tour2-tax-credit.git tax-credit
+
+conda activate qiime2-amplicon-2024.10
+pip install -e tax-credit
+```
+
+Cloning into a directory named `tax-credit` keeps the shipped configs working as-is, since
+`tax_credit_package_dir` defaults to `../tax-credit`. Any other name works too — just point
+`tax_credit_package_dir` at it.
 
 ### Get Tourmaline 2
 
