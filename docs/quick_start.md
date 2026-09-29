@@ -66,6 +66,7 @@ Tips for a first run:
 
 ### Next steps
 
+- [Tax-credit](steps/tax_credit.md): benchmark reference databases before committing to one
 - [Analysis Metadata](metadata.md): produce FAIR eDNA metadata for the NOAA Ocean DNA Explorer
 - [Troubleshooting](troubleshooting.md): when something goes wrong
 

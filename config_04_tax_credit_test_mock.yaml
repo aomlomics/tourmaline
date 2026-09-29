@@ -1,0 +1,142 @@
+## Tourmaline tax-credit MOCK-COMMUNITY SMOKE TEST config.
+## `tourmaline.sh --step tax-credit -c <this file> -n 6`
+##
+## Uses the small subsampled TEST databases in 00-data/tax-credit-test/ and the
+## mock fixture in 00-data/tax-credit-test/mock/ (built by
+## scripts/make_mock_test_fixture.py). Every mock ASV has an exact match in
+## mifishGom-test, so scores are not meaningful -- this only checks that the
+## mock-community code paths run.
+##
+## The two databases use different taxonomic backbones for some taxa (e.g.
+## Antigonia combatia), so each gets its own expected set, and the backbone
+## check reports the mismatches.
+
+
+## --- CORE RUN SETTINGS ---
+run_name: tax_credit_test_mock
+output_dir: "../v2-results"
+tax_credit_package_dir: "../tax-credit"
+
+## --- REFERENCE DATABASES (one or more) ---
+reference_databases:
+  - id: mifishGom-test
+    refseqs_file: 00-data/tax-credit-test/mifishGom-test-seqs.qza
+    taxa_file: 00-data/tax-credit-test/mifishGom-test-taxa.qza
+    fwd_primer: GCCGGTAAAACTCGTGCCAGC
+    rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
+    fwd_primer_id: MiFishF
+    rev_primer_id: MiFishR
+    pretrained_classifier:
+  - id: addJ-test
+    refseqs_file: 00-data/tax-credit-test/addJ-test-seqs.fasta
+    taxa_file: 00-data/tax-credit-test/addJ-test-taxa.tsv
+    fwd_primer: GCCGGTAAAACTCGTGCCAGC
+    rev_primer: CATAGTGGGGTATCTAATCCCAGTTTG
+    fwd_primer_id: MiFishF
+    rev_primer_id: MiFishR
+    pretrained_classifier:
+
+## --- EVALUATION METHODS (one or more) ---
+# cross-validated | cross-validated-trad | novel-taxa | self-validated | mock-community
+evaluation_methods:
+  - mock-community
+
+## --- SIMULATION PARAMETERS (not used by mock-community) ---
+iterations: 2
+novel_taxa_levels: [6]
+cv_recall_max_level: 6
+novel_recall_min_level: 5
+force_regenerate: false
+format_reference_databases: false #not implemented yet
+
+## --- TAXONOMIC ASSIGNMENT (shared) ---
+classify_methods:
+  - naive-bayes
+  - consensus-vsearch
+  - bt2-blca
+classify_threads: 2
+
+## --- NAIVE-BAYES OPTIONS ---
+nb_confidence_values: [0.7, 0.9]
+skl_confidence: 0.7
+fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
+naive_bayes_classify_params: ""
+pretrained_classifier:
+
+## --- CONSENSUS BLAST/VSEARCH OPTIONS ---
+perc_identity: [0.9, 0.97]
+query_cov: 0.8
+min_consensus: 0.51
+consensus_classify_params: ""
+
+## --- BT2-BLCA OPTIONS ---
+blca_perc_identity: 0.8
+blca_query_cov: 0.8
+blca_confidence_values: [0.8]
+taxa_ranks: kingdom,phylum,class,order,family,genus,species
+
+## --- OUTPUT LAYOUT ---
+data_subdir: data
+results_subdir: results
+
+## --- PLOTTING ---
+generate_plots: true
+plots_subdir: plots
+plot_types:
+  - boxplot
+  - pointplot
+  - heatmap
+  - stacked_bar
+  - best_run_stacked_bar
+plot_metrics:
+  - Precision
+  - Recall
+  - F-measure
+plot_color_palette:
+plot_heatmap_rows: [Method, Parameters]
+plot_heatmap_cols: [Dataset, level]
+plot_ranks: [genus, species]
+best_run_rank: species
+
+## --- LOG ANALYSIS (not produced for mock-community) ---
+generate_log_analysis: true
+log_analysis_rank: species
+log_analysis_ranks: [species, genus, family]
+log_analysis_min_obvs: 1
+log_analysis_top_n: 25
+
+## --- MOCK COMMUNITY (when mock-community is in evaluation_methods) ---
+mock_community:
+  datasets:
+    - id: mifish-mock-test
+      feature_table: 00-data/tax-credit-test/mock/mock-feature-table.tsv
+      rep_seqs: 00-data/tax-credit-test/mock/mock-rep-seqs.fasta
+      samples:
+  expected_sets:
+    - id: gom-backbone
+      databases: [mifishGom-test]
+      composition: 00-data/tax-credit-test/mock/mock-composition-gom.tsv
+      asv_taxonomy:
+      ranks:
+    - id: addJ-backbone
+      databases: [addJ-test]
+      composition:
+      asv_taxonomy: 00-data/tax-credit-test/mock/mock-asv-taxonomy-addJ.tsv
+      ranks:
+  eval_ranks: [order, family, genus, species]
+  min_relative_abundance: 0
+  legacy_unresolved_taxa: false
+  backbone_check: warn
+  plot_metrics:
+  # auto = F-measure where the expected set has an asv_taxonomy, else Bray-Curtis
+  best_run_metric: auto
+  composition_top_n: 12
+
+## --- ADVANCED ---
+force_evaluation: false
+exclude_databases: []
+summary_filenames:
+  cross-validated: evaluate_classification_summary_CV.csv
+  novel-taxa: evaluate_classification_summary_novel.csv
+  cross-validated-trad: evaluate_classification_summary_CV_trad.csv
+  self-validated: evaluate_classification_summary_self_validated.csv
