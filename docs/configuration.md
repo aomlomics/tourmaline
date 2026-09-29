@@ -176,6 +176,7 @@ skl_confidence: 0.7                              # confidence threshold
 perc_identity: 0.8
 query_cov: 0.8
 min_consensus: 0.51
+max_accepts: 10   # QIIME2 --p-maxaccepts; `all` is accepted by consensus-vsearch only
 ```
 
 **BT2-BLCA options**
@@ -288,6 +289,7 @@ classify_method: naive-bayes
 classify_threads: 5
 nb_confidence_values: [0.7]
 blca_confidence_values: [0.8]
+max_accepts: 10                 # or a list, e.g. [10, 100]
 blca_perc_identity: 0.8
 blca_query_cov: 0.8
 skl_confidence: 0.7
@@ -296,7 +298,7 @@ fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
 generate_plots: true
 ```
 
-`classify_methods` accepts `naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca` and `revamp`. Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, and `min_consensus` expand into parameter sweeps for consensus methods. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
+`classify_methods` accepts `naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca` and `revamp`. Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, `min_consensus`, and `max_accepts` expand into parameter sweeps for consensus methods. `max_accepts` (QIIME2 `--p-maxaccepts`, default `10`) only appears in a job's parameter id when it differs from that default, so directory names for runs that leave it alone are unchanged; `all` is accepted by consensus-vsearch but not consensus-blast. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
 
 **REVAMP options (mock-community only)**
 

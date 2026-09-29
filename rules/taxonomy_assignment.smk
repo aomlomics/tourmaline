@@ -140,7 +140,9 @@ elif config["classify_method"] == "consensus-blast":
             searchout=taxonomy_dir + "search_results.qza",
             percID=config["perc_identity"],
             querycov=config["query_cov"],
-            consensus=config["min_consensus"]
+            consensus=config["min_consensus"],
+            # Read with .get so configs written before this option still parse.
+            maxaccepts=config.get("max_accepts") or 10
         conda:
             "qiime2-amplicon-2024.10"
         threads: config["classify_threads"]
@@ -153,6 +155,7 @@ elif config["classify_method"] == "consensus-blast":
             --p-perc-identity {params.percID} \
             --p-query-cov {params.querycov} \
             --p-min-consensus {params.consensus} \
+            --p-maxaccepts {params.maxaccepts} \
             --o-classification {output} \
             --o-search-results {params.searchout} \
             {params.classifyparams};
@@ -171,7 +174,9 @@ elif config["classify_method"] == "consensus-vsearch":
             searchout=taxonomy_dir + "search_results.qza",
             percID=config["perc_identity"],
             querycov=config["query_cov"],
-            consensus=config["min_consensus"]
+            consensus=config["min_consensus"],
+            # Read with .get so configs written before this option still parse.
+            maxaccepts=config.get("max_accepts") or 10
         conda:
             "qiime2-amplicon-2024.10"
         threads: config["classify_threads"]
@@ -184,6 +189,7 @@ elif config["classify_method"] == "consensus-vsearch":
             --p-perc-identity {params.percID} \
             --p-query-cov {params.querycov} \
             --p-min-consensus {params.consensus} \
+            --p-maxaccepts {params.maxaccepts} \
             --o-classification {output} \
             --o-search-results {params.searchout} \
             --p-threads {threads} \

@@ -175,6 +175,7 @@ def assign_consensus_blast(
         f"--p-perc-identity {cfg['perc_identity']} "
         f"--p-query-cov {cfg['query_cov']} "
         f"--p-min-consensus {cfg['min_consensus']} "
+        f"--p-maxaccepts {cfg['max_accepts']} "
         f"--o-classification {taxonomy_qza} "
         f"--o-search-results {out_dir / 'search_results.qza'} "
         f"{classify_params}"
@@ -210,6 +211,7 @@ def assign_consensus_vsearch(
         f"--p-perc-identity {cfg['perc_identity']} "
         f"--p-query-cov {cfg['query_cov']} "
         f"--p-min-consensus {cfg['min_consensus']} "
+        f"--p-maxaccepts {cfg['max_accepts']} "
         f"--o-classification {taxonomy_qza} "
         f"--o-search-results {out_dir / 'search_results.qza'} "
         f"--p-threads {threads} "
@@ -414,6 +416,8 @@ def main() -> int:
     parser.add_argument("--perc-identity", type=float, default=0.8)
     parser.add_argument("--query-cov", type=float, default=0.8)
     parser.add_argument("--min-consensus", type=float, default=0.51)
+    # Kept as a string: consensus-vsearch also accepts "all" (consensus-blast does not).
+    parser.add_argument("--max-accepts", default="10")
     parser.add_argument("--skip-fit", action="store_true")
     parser.add_argument("--fit-only", action="store_true")
     parser.add_argument("--classifier-qza", default=None)
@@ -440,6 +444,7 @@ def main() -> int:
         "perc_identity": args.perc_identity,
         "query_cov": args.query_cov,
         "min_consensus": args.min_consensus,
+        "max_accepts": args.max_accepts or "10",
         "taxa_ranks": args.taxa_ranks,
         "revamp_dir": args.revamp_dir,
         "revamp_blastdb": args.revamp_blastdb,

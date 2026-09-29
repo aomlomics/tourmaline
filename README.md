@@ -376,6 +376,7 @@ skl_confidence: 0.7      # confidence threshold limiting assignment depth
 perc_identity: 0.8       # minimum percent identity for a hit (0–1)
 query_cov: 0.8           # minimum query coverage for a hit (0–1)
 min_consensus: 0.51      # fraction of hits that must agree
+max_accepts: 10          # max hits kept per query; `all` for consensus-vsearch only
 
 # bt2-blca
 confidence_thres: 0.8    # bootstrap confidence threshold limiting assignment depth

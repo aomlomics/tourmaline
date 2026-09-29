@@ -74,6 +74,9 @@ perc_identity: 0.8
 query_cov: 0.8
 # Optional: minimum consensus fraction (0–1); single value or list to sweep
 min_consensus: 0.51
+# Optional: maximum hits kept per query (QIIME2 --p-maxaccepts, default 10); single value
+# or list to sweep. consensus-vsearch also accepts `all`; consensus-blast does not.
+max_accepts: 10
 # Optional: extra parameters passed to consensus-blast or consensus-vsearch
 consensus_classify_params: ""
 

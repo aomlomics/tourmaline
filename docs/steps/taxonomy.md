@@ -33,6 +33,7 @@ skl_confidence: 0.7          # naive-bayes confidence cutoff
 perc_identity: 0.8           # consensus BLAST/VSEARCH identity threshold
 query_cov: 0.8               # consensus BLAST/VSEARCH query coverage
 min_consensus: 0.51          # consensus BLAST/VSEARCH agreement fraction
+max_accepts: 10              # consensus BLAST/VSEARCH max hits per query (`all` for vsearch)
 confidence_thres: 0.8        # bt2-blca confidence cutoff
 classify_params: --verbose   # optional extra args for the classifier
 

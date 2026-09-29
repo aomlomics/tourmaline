@@ -48,6 +48,9 @@ perc_identity: 0.8
 query_cov: 0.8
 # Optional: minimum consensus fraction required to assign taxonomy (0–1).
 min_consensus: 0.51
+# Optional: maximum number of hits kept per query (QIIME2 --p-maxaccepts, default 10).
+# consensus-vsearch also accepts `all` to keep every hit above perc_identity.
+max_accepts: 10
 
 ## --- BT2-BLCA OPTIONS ---
 # Optional: directory containing prebuilt bowtie2 index; leave blank to auto-build from refseqs_file and taxa_file.

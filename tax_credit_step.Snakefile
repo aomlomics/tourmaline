@@ -62,6 +62,20 @@ def _row_optional_float(row, field):
     return float(s)
 
 
+def _config_max_accepts(row):
+    """maxaccepts for a consensus job; blank manifest cell falls back to config.
+
+    Kept as a string: consensus-vsearch also accepts ``all``.
+    """
+    val = _row_str(row, "max_accepts", "")
+    if not val:
+        cfg_val = config.get("max_accepts", 10)
+        if isinstance(cfg_val, (list, tuple)):
+            cfg_val = cfg_val[0]
+        val = str(cfg_val if cfg_val is not None else 10).strip()
+    return val if val.lower() == "all" else str(int(float(val)))
+
+
 def _config_float(key, default):
     val = config.get(key, default)
     if isinstance(val, (list, tuple)):
@@ -83,6 +97,8 @@ def _assign_params(wildcards):
         "classify_params": _row_str(row, "classify_params", ""),
         "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
         "confidence": _row_str(row, "confidence", ""),
+        # consensus methods only; overwritten below (blank for every other method)
+        "max_accepts": "",
         # revamp (mock-community only); blank for every other method
         "revamp_dir": _row_str(row, "revamp_dir", ""),
         "revamp_blastdb": _row_str(row, "revamp_blastdb", ""),
@@ -97,6 +113,7 @@ def _assign_params(wildcards):
         params["perc_identity"] = _row_optional_float(row, "perc_identity")
         params["query_cov"] = _row_optional_float(row, "query_cov")
         params["min_consensus"] = _row_optional_float(row, "min_consensus")
+        params["max_accepts"] = _config_max_accepts(row)
         params["taxa_ranks"] = ""
     elif method == "revamp":
         # nt is the reference database: the shared cutoff columns are unused, and the
@@ -298,6 +315,10 @@ rule tax_credit_assign_fold:
         if [ -n "$ROW_BT2" ] && [ "$ROW_BT2" != "nan" ] && [ "$ROW_BT2" != "" ]; then
             EXTRA_BT2="--bowtie-index-dir $ROW_BT2"
         fi
+        EXTRA_CONSENSUS=""
+        if [ "{params.assign[classify_method]}" = "consensus-blast" ] || [ "{params.assign[classify_method]}" = "consensus-vsearch" ]; then
+            EXTRA_CONSENSUS="--max-accepts {params.assign[max_accepts]}"
+        fi
         EXTRA_REVAMP=""
         if [ "{params.assign[classify_method]}" = "revamp" ]; then
             EXTRA_REVAMP="--revamp-dir {params.assign[revamp_dir]} \
@@ -337,7 +358,7 @@ rule tax_credit_assign_fold:
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
             --taxa-ranks '{params.assign[taxa_ranks]}' \
-            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_REVAMP $FIT_ONLY
+            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_REVAMP $FIT_ONLY
 
         touch {output}
         """

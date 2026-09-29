@@ -272,6 +272,9 @@ _MOCK_ONLY_CLASSIFY_METHODS = frozenset({"revamp"})
 _SHARED_FIT_METHODS = frozenset({"naive-bayes", "bt2-blca"})
 
 _REVAMP_DEFAULT_CUTOFFS = "97,95,90,80,70,60"
+
+# QIIME2's classify-consensus-blast / -vsearch default for --p-maxaccepts.
+_DEFAULT_MAX_ACCEPTS = 10
 _revamp_skip_notice = {"printed": False}
 
 
@@ -405,6 +408,24 @@ def _param_value_list(cfg: dict, key: str, default: float | None = None) -> list
     return [float(val)]
 
 
+def _max_accepts_value_list(cfg: dict) -> list[str]:
+    """Return maxaccepts values to sweep, as strings.
+
+    Kept as strings rather than ints because consensus-vsearch also accepts
+    ``all`` (consensus-blast does not; QIIME2 rejects it there).
+    """
+    val = cfg.get("max_accepts", _DEFAULT_MAX_ACCEPTS)
+    if val is None:
+        val = _DEFAULT_MAX_ACCEPTS
+    if not isinstance(val, (list, tuple)):
+        val = [val]
+    out = []
+    for v in val:
+        v = str(v).strip()
+        out.append(v if v.lower() == "all" else str(int(float(v))))
+    return out
+
+
 def _confidence_value_list(cfg: dict, method: str) -> list[float]:
     """Return confidence thresholds to sweep for naive-bayes or bt2-blca."""
     if method == "naive-bayes":
@@ -435,9 +456,10 @@ def consensus_param_combinations(cfg: dict) -> list[dict[str, float]]:
     perc = _param_value_list(cfg, "perc_identity", 0.8)
     qc = _param_value_list(cfg, "query_cov", 0.8)
     mc = _param_value_list(cfg, "min_consensus", 0.51)
+    ma = _max_accepts_value_list(cfg)
     return [
-        {"perc_identity": pi, "query_cov": q, "min_consensus": m}
-        for pi, q, m in itertools.product(perc, qc, mc)
+        {"perc_identity": pi, "query_cov": q, "min_consensus": m, "max_accepts": a}
+        for pi, q, m, a in itertools.product(perc, qc, mc, ma)
     ]
 
 
@@ -460,12 +482,18 @@ def _format_sweep_param(value: float) -> str:
     return format(float(value), "g")
 
 
-def consensus_param_id(combo: dict[str, float]) -> str:
-    return (
+def consensus_param_id(combo: dict) -> str:
+    param_id = (
         f"pi{_format_sweep_param(combo['perc_identity'])}-"
         f"qc{_format_sweep_param(combo['query_cov'])}-"
         f"mc{_format_sweep_param(combo['min_consensus'])}"
     )
+    # Only labelled when it differs from the QIIME2 default, so directory names
+    # (and the summaries keyed on them) stay the same for runs that don't set it.
+    max_accepts = str(combo.get("max_accepts", _DEFAULT_MAX_ACCEPTS))
+    if max_accepts != str(_DEFAULT_MAX_ACCEPTS):
+        param_id += f"-ma{max_accepts}"
+    return param_id
 
 
 def bt2_param_id(combo: dict[str, float]) -> str:
@@ -557,6 +585,7 @@ def _manifest_assign_params(
         "perc_identity": na,
         "query_cov": na,
         "min_consensus": na,
+        "max_accepts": na,
         "taxa_ranks": na,
         "revamp_dir": na,
         "revamp_blastdb": na,
@@ -575,6 +604,9 @@ def _manifest_assign_params(
         params["perc_identity"] = float(consensus_combo["perc_identity"])
         params["query_cov"] = float(consensus_combo["query_cov"])
         params["min_consensus"] = float(consensus_combo["min_consensus"])
+        params["max_accepts"] = str(
+            consensus_combo.get("max_accepts", _DEFAULT_MAX_ACCEPTS)
+        )
     elif method == "bt2-blca":
         if bt2_combo is None:
             return params
