@@ -135,7 +135,23 @@ Tourmaline 2 is modular. Each step has its own Snakefile and its own config file
 ### Required
 
 * [Conda (Miniconda works well)](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
-* [QIIME 2 (2024.10) amplicon distribution](https://docs.qiime2.org/2024.10/install/) — **the environment must be named exactly `qiime2-amplicon-2024.10`**, because the Snakemake rules request it by name.
+* [QIIME 2 (2024.10) amplicon distribution](https://docs.qiime2.org/2024.10/install/) — **the environment must be named exactly `qiime2-amplicon-2024.10`**, because the Snakemake rules request it by name. Make sure to select the **2024.10** version for your system.
+
+#### MacOS (Apple Silicon chip)
+```bash
+CONDA_SUBDIR=osx-64 conda env create \
+  --name qiime2-amplicon-2024.10 \
+  --file https://raw.githubusercontent.com/qiime2/distributions/refs/heads/dev/2024.10/amplicon/released/qiime2-amplicon-macos-latest-conda.yml
+conda activate qiime2-amplicon-2024.10
+conda config --env --set subdir osx-64
+```
+#### Linux / Windows WSL
+```bash
+conda env create \
+  --name qiime2-amplicon-2024.10 \
+  --file https://raw.githubusercontent.com/qiime2/distributions/refs/heads/dev/2024.10/amplicon/released/qiime2-amplicon-ubuntu-latest-conda.yml
+```
+
 * A Snakemake environment with a few extra packages:
 
    ```bash
