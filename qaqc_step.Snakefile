@@ -101,7 +101,7 @@ if config["sample_manifest_file"] != None:
             input:
                 config["sample_manifest_file"],
             output:
-                output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza",
+                output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza",
             conda:
                 "qiime2-amplicon-2024.10"
             shell:
@@ -200,7 +200,7 @@ else:
             pre_output = output_dir+config["run_name"]+"-qaqc/raw_fastq.qza"
         else:
             print(f"Demultiplexed .qza file provided. No trimming.\n")
-            pre_output = output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+            pre_output = output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza"
             ruleorder: import_preexisting_qza > cutadapt
         rule import_preexisting_qza:
             input:
@@ -240,7 +240,7 @@ if config.get("to_merge", True):
     rule merge_paired_reads:
         input:
             #merge_input
-            output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+            output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza"
         output:
             output_dir+config["run_name"]+"-qaqc/merged_fastq.qza",
             output_dir+config["run_name"]+"-qaqc/unmerged_fastq.qza",
@@ -283,7 +283,7 @@ rule cutadapt:
     input:
         output_dir+config["run_name"]+"-qaqc/raw_fastq.qza"
     output:
-        output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza",
+        output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza",
         output_dir+config["run_name"]+"-qaqc/stats/cutadapt_summary.txt",
     params:
         discard=config['discard_untrimmed'],
@@ -418,7 +418,7 @@ rule import_fastq_demux:
     input:
         output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_manifest"
     output:
-        output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+        output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza"
     conda:
         "qiime2-amplicon-2024.10"
     shell:
@@ -431,7 +431,7 @@ rule import_fastq_demux:
 # Summarize quality metrics for the trimmed demultiplexed artifact.
 rule summarize_fastq_demux:
     input:
-        output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+        output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza"
     output:
         output_dir+config["run_name"]+"-qaqc/stats/fastq_summary.qzv",
     conda:
