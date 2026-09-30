@@ -319,6 +319,27 @@ fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
 generate_plots: true
 ```
 
+**Sweeping `bt2-blca` costs less than it looks.** The method runs in three stages, and each is
+shared as widely as its inputs allow, so a sweep never repeats work its parameters cannot change:
+
+| Stage | Depends on | Runs |
+|---|---|---|
+| bowtie2 index + alignment | the fold's reference and query | once per fold |
+| BLCA (muscle, 100 bootstraps) | the alignment, `blca_perc_identity`, `blca_query_cov` | once per parameter set |
+| confidence threshold | the BLCA output, `blca_confidence_values` | once per confidence |
+
+Only `reformat_summary_for_r.py` reads the confidence, so adding confidence values multiplies
+only the cheapest stage. With `blca_confidence_values: [0.8, 0.95]` the alignment and BLCA each
+run once per fold rather than twice.
+
+The stages appear as separate jobs in `assignment_manifest.tsv`, marked by a `blca_stage` column
+and chained through `fit_job_id`. Their shared outputs live one level above the per-parameter
+directories: `<dataset>/<reference>/bt2-blca/bt2_blca/` holds the bowtie2 index, `bowtie2_all.sam`
+and the reject FASTA, and `bt2_blca-<params>/raw-taxonomy.tsv` holds the BLCA output. The
+per-confidence directories keep only `taxonomy.tsv` and `query_tax_assignments.txt`. A fold with a
+single parameter set and a single confidence still runs as one job, with everything under that
+one directory.
+
 `classify_methods` accepts `naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca` and `revamp`. Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, `min_consensus`, and `max_accepts` expand into parameter sweeps for consensus methods. `max_accepts` (QIIME2 `--p-maxaccepts`, default `10`) only appears in a job's parameter id when it differs from that default, so directory names for runs that leave it alone are unchanged; `all` is accepted by consensus-vsearch but not consensus-blast. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
 
 **REVAMP options (mock-community only)**

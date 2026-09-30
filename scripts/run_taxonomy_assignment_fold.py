@@ -16,6 +16,12 @@ BT2_CONDA_ENV = "bt2-blca"
 BT2_INDEX_MARKER = "bowtie2_index.1.bt2"
 REVAMP_CONDA_ENV = "revamp"
 
+# Shared bt2-blca artifact names. The alignment and the reject FASTA live in the
+# stage-1 directory; the raw taxonomy is per parameter set (stage 2).
+BLCA_SAM_NAME = "bowtie2_all.sam"
+BLCA_REJECT_NAME = "end_to_end_and_local_reject.fasta"
+BLCA_RAW_TAXONOMY_NAME = "raw-taxonomy.tsv"
+
 
 def run_cmd(cmd: str, check: bool = True) -> None:
     print(cmd, flush=True)
@@ -227,36 +233,35 @@ def assign_consensus_vsearch(
     return assignments
 
 
-def assign_bt2_blca(
+def blca_align(
     query_qza: Path,
     ref_seqs: Path,
     ref_taxa: Path,
-    out_dir: Path,
+    shared_dir: Path,
     cfg: dict,
-    confidence: float,
-    skip_fit: bool = False,
     bowtie_index_dir: Path | None = None,
 ) -> Path:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    staging_dir = out_dir / "staging"
+    """bt2-blca stage 1: build the bowtie2 index and align the query against it.
+
+    Neither the index nor the alignment depends on ``blca_perc_identity``,
+    ``blca_query_cov`` or the confidence threshold, so one run of this stage
+    serves every sweep combination for a fold. Stages 2 and 3 read the SAM,
+    the reject FASTA and the staged FASTA / taxonomy back out of *shared_dir*.
+    """
+    shared_dir.mkdir(parents=True, exist_ok=True)
+    staging_dir = shared_dir / "staging"
     query_fasta = ensure_fasta(query_qza, staging_dir)
     ref_fasta = ensure_fasta(ref_seqs, staging_dir)
-    ref_taxonomy = ensure_taxonomy_tsv(ref_taxa, staging_dir)
+    # Staged here too so stage 2 gets a cache hit instead of re-exporting.
+    ensure_taxonomy_tsv(ref_taxa, staging_dir)
 
-    index_dir = bowtie_index_dir or out_dir / "bowtie2_index"
-    if skip_fit and bowtie_index_dir is None:
-        raise ValueError("bt2-blca --skip-fit requires --bowtie-index-dir")
-    if not skip_fit:
-        build_bowtie_index(ref_fasta, index_dir, int(cfg.get("classify_threads", 1)))
-
+    index_dir = bowtie_index_dir or shared_dir / "bowtie2_index"
+    build_bowtie_index(ref_fasta, index_dir, int(cfg.get("classify_threads", 1)))
     index_prefix = index_dir / "bowtie2_index"
-    temp_dir = out_dir / "temp"
+
+    temp_dir = shared_dir / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
-    sam_path = out_dir / "bowtie2_all.sam"
-    raw_taxonomy = out_dir / "raw-taxonomy.tsv"
-    taxonomy_tsv = out_dir / "taxonomy.tsv"
-    assignments = out_dir / "query_tax_assignments.txt"
-    taxa_ranks = cfg.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species")
+    sam_path = shared_dir / BLCA_SAM_NAME
     threads = int(cfg.get("classify_threads", 1))
 
     run_bt2_cmd(
@@ -271,16 +276,42 @@ def assign_bt2_blca(
         f"-x '{index_prefix}' -f -U '{temp_dir}/end_to_end_reject.fasta' "
         f"-S '{temp_dir}/local.sam' "
         f"--no-hd --no-sq --very-sensitive --local --no-unal "
-        f"-p {threads} -k 100 --un '{temp_dir}/end_to_end_and_local_reject.fasta'"
+        f"-p {threads} -k 100 --un '{temp_dir}/{BLCA_REJECT_NAME}'"
     )
     with sam_path.open("w", encoding="utf-8") as out_sam:
         for part in ("end_to_end.sam", "local.sam"):
             part_path = temp_dir / part
             if part_path.exists():
                 out_sam.write(part_path.read_text(encoding="utf-8", errors="replace"))
+    return sam_path
 
+
+def blca_classify(
+    ref_seqs: Path,
+    ref_taxa: Path,
+    shared_dir: Path,
+    raw_taxonomy: Path,
+    cfg: dict,
+) -> Path:
+    """bt2-blca stage 2: BLCA over the shared SAM -> per-read raw taxonomy.
+
+    Depends on ``blca_perc_identity`` / ``blca_query_cov`` (BLCA's -b / -l) but
+    **not** on the confidence threshold, so one run serves every confidence
+    value. This is the expensive stage: muscle plus 100 bootstraps per query.
+    """
+    staging_dir = shared_dir / "staging"
+    # Cache hits when stage 1 staged these; re-exported only if run standalone.
+    ref_fasta = ensure_fasta(ref_seqs, staging_dir)
+    ref_taxonomy = ensure_taxonomy_tsv(ref_taxa, staging_dir)
+    sam_path = shared_dir / BLCA_SAM_NAME
+    if not sam_path.exists():
+        raise FileNotFoundError(
+            f"bt2-blca stage 2 needs the shared alignment {sam_path}; "
+            "stage 1 (--blca-stage align) has not run for this fold"
+        )
+    taxa_ranks = cfg.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species")
+    raw_taxonomy.parent.mkdir(parents=True, exist_ok=True)
     blca_script = SCRIPT_DIR / "blca_from_bowtie.py"
-    reformat_script = SCRIPT_DIR / "reformat_summary_for_r.py"
     run_cmd(
         "python "
         f"'{blca_script}' "
@@ -289,13 +320,38 @@ def assign_bt2_blca(
         f"-p muscle -n 100 -m 1.0 -f 2.5 -g -2 "
         f"-tr '{taxa_ranks}' -o '{raw_taxonomy}'"
     )
+    return raw_taxonomy
+
+
+def blca_reformat(
+    raw_taxonomy: Path,
+    shared_dir: Path,
+    out_dir: Path,
+    cfg: dict,
+    confidence: float,
+) -> Path:
+    """bt2-blca stage 3: apply the confidence threshold to the raw taxonomy.
+
+    The only stage that reads *confidence*, so it is the only one that has to
+    repeat per ``blca_confidence_values`` entry.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if not raw_taxonomy.exists():
+        raise FileNotFoundError(
+            f"bt2-blca stage 3 needs the raw taxonomy {raw_taxonomy}; "
+            "stage 2 (--blca-stage blca) has not run for this parameter set"
+        )
+    taxa_ranks = cfg.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species")
+    taxonomy_tsv = out_dir / "taxonomy.tsv"
+    assignments = out_dir / "query_tax_assignments.txt"
+    reformat_script = SCRIPT_DIR / "reformat_summary_for_r.py"
     run_cmd(
         "python "
         f"'{reformat_script}' '{raw_taxonomy}' '{taxonomy_tsv}' "
         f"{confidence} '{taxa_ranks}'"
     )
 
-    reject_fasta = temp_dir / "end_to_end_and_local_reject.fasta"
+    reject_fasta = shared_dir / "temp" / BLCA_REJECT_NAME
     if reject_fasta.exists() and reject_fasta.stat().st_size > 0:
         with taxonomy_tsv.open("a", encoding="utf-8") as out_tsv, reject_fasta.open(
             encoding="utf-8", errors="replace"
@@ -307,6 +363,33 @@ def assign_bt2_blca(
 
     shutil.copyfile(taxonomy_tsv, assignments)
     return assignments
+
+
+def assign_bt2_blca(
+    query_qza: Path,
+    ref_seqs: Path,
+    ref_taxa: Path,
+    out_dir: Path,
+    cfg: dict,
+    confidence: float,
+    skip_fit: bool = False,
+    bowtie_index_dir: Path | None = None,
+) -> Path:
+    """All three bt2-blca stages in one job, everything under *out_dir*.
+
+    Used when a fold has a single parameter set and single confidence, so there
+    is nothing to share. Sweeps split these stages across jobs instead; see
+    ``--blca-stage``.
+    """
+    if skip_fit and bowtie_index_dir is None:
+        raise ValueError("bt2-blca --skip-fit requires --bowtie-index-dir")
+    blca_align(
+        query_qza, ref_seqs, ref_taxa, out_dir, cfg,
+        bowtie_index_dir=bowtie_index_dir,
+    )
+    raw_taxonomy = out_dir / BLCA_RAW_TAXONOMY_NAME
+    blca_classify(ref_seqs, ref_taxa, out_dir, raw_taxonomy, cfg)
+    return blca_reformat(raw_taxonomy, out_dir, out_dir, cfg, confidence)
 
 
 def _revamp_workdir(out_dir: Path, query_qza: Path) -> Path:
@@ -422,6 +505,22 @@ def main() -> int:
     parser.add_argument("--fit-only", action="store_true")
     parser.add_argument("--classifier-qza", default=None)
     parser.add_argument("--bowtie-index-dir", default=None)
+    # bt2-blca sweep sharing: run one stage of the pipeline instead of all three.
+    #   align    bowtie2 index + alignment   (per fold; confidence- and param-free)
+    #   blca     BLCA over the shared SAM    (per blca_perc_identity/query_cov)
+    #   reformat confidence threshold only   (per blca_confidence_values entry)
+    # Omitted, all three run in one job under --output-dir.
+    parser.add_argument(
+        "--blca-stage", choices=("align", "blca", "reformat"), default=None
+    )
+    parser.add_argument(
+        "--blca-shared-dir", default=None,
+        help="stage-1 directory holding the shared SAM, reject FASTA and staging",
+    )
+    parser.add_argument(
+        "--blca-raw-taxonomy", default=None,
+        help="stage-2 raw taxonomy: written by 'blca', read by 'reformat'",
+    )
     parser.add_argument(
         "--taxa-ranks",
         default="kingdom,phylum,class,order,family,genus,species",
@@ -459,6 +558,31 @@ def main() -> int:
     classifier = Path(args.classifier_qza) if args.classifier_qza else None
     bowtie_index_dir = Path(args.bowtie_index_dir) if args.bowtie_index_dir else None
     method = args.classify_method
+
+    # bt2-blca sweeps split the pipeline across jobs so the index, the alignment
+    # and BLCA itself are not repeated for every confidence threshold.
+    if args.blca_stage:
+        if method != "bt2-blca":
+            print(
+                f"--blca-stage applies to bt2-blca only, not {method}",
+                file=sys.stderr,
+            )
+            return 1
+        shared_dir = Path(args.blca_shared_dir) if args.blca_shared_dir else out_dir
+        raw_taxonomy = (
+            Path(args.blca_raw_taxonomy) if args.blca_raw_taxonomy
+            else out_dir / BLCA_RAW_TAXONOMY_NAME
+        )
+        if args.blca_stage == "align":
+            blca_align(
+                query, ref_seqs, ref_taxa, shared_dir, cfg,
+                bowtie_index_dir=bowtie_index_dir,
+            )
+        elif args.blca_stage == "blca":
+            blca_classify(ref_seqs, ref_taxa, shared_dir, raw_taxonomy, cfg)
+        else:
+            blca_reformat(raw_taxonomy, shared_dir, out_dir, cfg, args.confidence)
+        return 0
 
     if args.fit_only:
         if method == "naive-bayes":

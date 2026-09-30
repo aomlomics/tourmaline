@@ -637,6 +637,10 @@ def _empty_manifest_artifact_fields() -> dict:
     return {
         "classifier_qza": "",
         "bowtie_index_dir": "",
+        # bt2-blca stage split (sweeps only); blank means "run all stages here"
+        "blca_stage": "",
+        "blca_shared_dir": "",
+        "blca_raw_taxonomy": "",
     }
 
 
@@ -794,13 +798,20 @@ def _append_fold_assignment_rows(
         bt2_combos = bt2_param_combinations(cfg)
         multi_shared = len(confidences) > 1 or len(bt2_combos) > 1
         if multi_shared:
+            # Three tiers, keyed by what each stage actually depends on, so a
+            # sweep does not repeat work that its parameters cannot change:
+            #   1. align    bowtie2 index + alignment  -> once per fold
+            #   2. blca     BLCA over the shared SAM   -> once per bt2 combo
+            #   3. reformat confidence threshold       -> once per confidence
+            # Chained through fit_job_id, which names only the immediate
+            # predecessor; Snakemake resolves the rest transitively.
             shared_dir = join(
                 results_root, subdir, dataset_id, reference_id, method,
                 fit_param_id(method, method_cfg),
             )
-            fit_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
+            align_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
             rows.append({
-                "job_id": fit_job_id,
+                "job_id": align_job_id,
                 "evaluation_method": eval_method,
                 "dataset_id": dataset_id,
                 "reference_id": reference_id,
@@ -811,16 +822,46 @@ def _append_fold_assignment_rows(
                 "confidence": _manifest_na(),
                 "skip_fit": False,
                 "trad_fit": False,
+                # fit_only keeps these rows out of scoring and evaluation; the
+                # blca_stage column says which stage to actually run.
                 "fit_only": True,
                 "fit_job_id": "",
                 **_empty_manifest_artifact_fields(),
+                "blca_stage": "align",
+                "blca_shared_dir": shared_dir,
                 **_manifest_assign_params(method, method_cfg),
             })
-            shared_artifacts = {
-                **_empty_manifest_artifact_fields(),
-                "bowtie_index_dir": join(shared_dir, "bowtie2_index"),
-            }
             for combo in bt2_combos:
+                combo_id = bt2_param_id(combo)
+                raw_dir = join(
+                    results_root, subdir, dataset_id, reference_id, method,
+                    f"{fit_param_id(method, method_cfg)}-{combo_id}",
+                )
+                raw_taxonomy = join(raw_dir, "raw-taxonomy.tsv")
+                blca_job_id = f"{job_id_prefix}-{combo_id}-blca"
+                combo_params = _manifest_assign_params(
+                    method, method_cfg, bt2_combo=combo)
+                rows.append({
+                    "job_id": blca_job_id,
+                    "evaluation_method": eval_method,
+                    "dataset_id": dataset_id,
+                    "reference_id": reference_id,
+                    "query_qza": query,
+                    "ref_seqs": ref_seqs,
+                    "ref_taxa": ref_taxa,
+                    "output_dir": raw_dir,
+                    "confidence": _manifest_na(),
+                    "skip_fit": True,
+                    "trad_fit": False,
+                    "fit_only": True,
+                    "fit_job_id": align_job_id,
+                    **_empty_manifest_artifact_fields(),
+                    "bowtie_index_dir": join(shared_dir, "bowtie2_index"),
+                    "blca_stage": "blca",
+                    "blca_shared_dir": shared_dir,
+                    "blca_raw_taxonomy": raw_taxonomy,
+                    **combo_params,
+                })
                 for conf in confidences:
                     p = param_id(method, method_cfg, conf, bt2_combo=combo)
                     assign_dir = join(
@@ -839,9 +880,13 @@ def _append_fold_assignment_rows(
                         "skip_fit": True,
                         "trad_fit": False,
                         "fit_only": False,
-                        "fit_job_id": fit_job_id,
-                        **shared_artifacts,
-                        **_manifest_assign_params(method, method_cfg, bt2_combo=combo),
+                        "fit_job_id": blca_job_id,
+                        **_empty_manifest_artifact_fields(),
+                        "bowtie_index_dir": join(shared_dir, "bowtie2_index"),
+                        "blca_stage": "reformat",
+                        "blca_shared_dir": shared_dir,
+                        "blca_raw_taxonomy": raw_taxonomy,
+                        **combo_params,
                     })
             return
         combo = bt2_combos[0]

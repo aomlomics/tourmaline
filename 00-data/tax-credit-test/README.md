@@ -78,7 +78,7 @@ methods, 2 CV folds, novel-taxa levels 5 and 6, two values per parameter sweep):
 
 | Check | Expected |
 |---|---|
-| Snakemake log | `145 of 145 steps (100%) done` |
+| Snakemake log | `N of N steps (100%) done`, no failed jobs (the total changed with the bt2-blca stage split; re-measure it) |
 | Datasets | 14: 2 self-validated, 4 cross-validated, 8 novel-taxa |
 | `assignment_manifest.tsv` / `assignment-done/` | 140 jobs = 14 datasets × 10 (2 naive-bayes, 2 consensus-vsearch, 4 bt2-blca, plus a naive-bayes fit and a bowtie2 index per dataset) |
 | `summaries/` | `evaluate_classification_summary_{CV,novel,self_validated}.csv`, every database × method × parameter set present, no NaN F-measures |

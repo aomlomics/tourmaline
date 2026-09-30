@@ -96,6 +96,10 @@ def _assign_params(wildcards):
         "fit_params": _row_str(row, "fit_params", ""),
         "classify_params": _row_str(row, "classify_params", ""),
         "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
+        # bt2-blca stage split; blank for every other method and for single-job folds
+        "blca_stage": _row_str(row, "blca_stage", ""),
+        "blca_shared_dir": _row_str(row, "blca_shared_dir", ""),
+        "blca_raw_taxonomy": _row_str(row, "blca_raw_taxonomy", ""),
         "confidence": _row_str(row, "confidence", ""),
         # consensus methods only; overwritten below (blank for every other method)
         "max_accepts": "",
@@ -302,6 +306,9 @@ rule tax_credit_assign_fold:
         ROW_SKIP=$(echo "{params.row.skip_fit}" | tr -d '"')
         ROW_CLS=$(echo "{params.row.classifier_qza}" | tr -d '"')
         ROW_BT2=$(echo "{params.assign[bowtie_index_dir]}" | tr -d '"')
+        ROW_BLCA_STAGE=$(echo "{params.assign[blca_stage]}" | tr -d '"')
+        ROW_BLCA_SHARED=$(echo "{params.assign[blca_shared_dir]}" | tr -d '"')
+        ROW_BLCA_RAW=$(echo "{params.assign[blca_raw_taxonomy]}" | tr -d '"')
         ROW_RVBLAST=$(echo "{params.assign[revamp_blast_results]}" | tr -d '"')
         TRAD_FIT=$(echo "{params.row.trad_fit}" | tr -d '"')
         ROW_FIT_ONLY=$(echo "{params.row.fit_only}" | tr -d '"')
@@ -338,10 +345,25 @@ rule tax_credit_assign_fold:
         if [ "$ROW_SKIP" = "True" ] || [ "$ROW_SKIP" = "true" ]; then
             SKIP_FLAG="--skip-fit"
         fi
+        EXTRA_BLCA=""
+        if [ -n "$ROW_BLCA_STAGE" ] && [ "$ROW_BLCA_STAGE" != "nan" ]; then
+            EXTRA_BLCA="--blca-stage $ROW_BLCA_STAGE"
+            if [ -n "$ROW_BLCA_SHARED" ] && [ "$ROW_BLCA_SHARED" != "nan" ]; then
+                EXTRA_BLCA="$EXTRA_BLCA --blca-shared-dir $ROW_BLCA_SHARED"
+            fi
+            if [ -n "$ROW_BLCA_RAW" ] && [ "$ROW_BLCA_RAW" != "nan" ]; then
+                EXTRA_BLCA="$EXTRA_BLCA --blca-raw-taxonomy $ROW_BLCA_RAW"
+            fi
+        fi
         FIT_ONLY=""
         if [ "$TRAD_FIT" = "True" ] || [ "$TRAD_FIT" = "true" ] || [ "$ROW_FIT_ONLY" = "True" ] || [ "$ROW_FIT_ONLY" = "true" ]; then
-            FIT_ONLY="--fit-only"
-            ROW_QUERY="$ROW_REFS"
+            # --blca-stage takes over dispatch, so don't add --fit-only for it.
+            # The align stage needs the real query, so don't substitute the
+            # reference either (a naive-bayes fit ignores the query).
+            if [ -z "$EXTRA_BLCA" ]; then
+                FIT_ONLY="--fit-only"
+                ROW_QUERY="$ROW_REFS"
+            fi
         fi
 
         python scripts/run_taxonomy_assignment_fold.py \
@@ -358,7 +380,7 @@ rule tax_credit_assign_fold:
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
             --taxa-ranks '{params.assign[taxa_ranks]}' \
-            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_REVAMP $FIT_ONLY
+            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_REVAMP $EXTRA_BLCA $FIT_ONLY
 
         touch {output}
         """
