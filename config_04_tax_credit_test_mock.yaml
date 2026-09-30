@@ -43,13 +43,18 @@ evaluation_methods:
 
 ## --- SIMULATION PARAMETERS (not used by mock-community) ---
 iterations: 2
-# Size of each cross-validated-trad query (test) set.
-#   FLOAT in (0,1) = FRACTION of the database   -> 0.1 means 10% of sequences
-#   INT            = ABSOLUTE NUMBER of sequences -> 10 means 10 sequences, NOT 10%
-# Leave blank for the default: an even split of the database across `iterations`
-# folds (each query set holds n_sequences / iterations sequences).
-# Only affects cross-validated-trad. Changing this on a run whose folds already
-# exist requires force_regenerate: true, or the old folds are reused as-is.
+# TOTAL pool of cross-validated-trad query sequences, divided evenly between
+# the `iterations` folds. This is the total across all folds, NOT one fold.
+#   FLOAT in (0,1] = FRACTION of the database  -> 0.2 means 20% of the database
+#                                                 queried in total
+#   INT            = NUMBER of sequences       -> 8000 means 8000 sequences in
+#                                                 total, not 8000 per fold
+# e.g. trad_cv_query_size: 0.2 with iterations: 8 -> each fold is 20%/8 = 2.5%
+# of the database. Leave blank for the default: the whole database divided
+# between the folds (n_sequences / iterations per fold; same as 1.0).
+# Folds are disjoint in every case. Only affects cross-validated-trad. Changing
+# this on a run whose folds already exist requires force_regenerate: true, or
+# the old folds are reused as-is.
 trad_cv_query_size:
 novel_taxa_levels: [6]
 cv_recall_max_level: 6

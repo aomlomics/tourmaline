@@ -272,24 +272,26 @@ evaluation_methods:
 
 ```yaml
 iterations: 10
-trad_cv_query_size:            # blank = even split; float = fraction; int = count
+trad_cv_query_size:            # blank = whole database; float = fraction; int = count
 novel_taxa_levels: [6, 5, 4, 3]
 cv_recall_max_level: 6
 novel_recall_min_level: 3
 force_regenerate: false
 ```
 
-`trad_cv_query_size` sets how many sequences land in each **cross-validated-trad** query (test) set. It has two readings, and they are easy to confuse:
+`trad_cv_query_size` sets the **total pool** of sequences queried by **cross-validated-trad**, which is then divided evenly between the `iterations` folds. It is the total across all folds, **not** the size of one fold:
 
-| Value | Type | Meaning |
-|---|---|---|
-| *(blank)* | — | Default. Even split: each of the `iterations` query sets holds `n_sequences / iterations` sequences, the folds are disjoint, and together they cover the database exactly once. |
-| `0.1` | float in (0, 1) | A **fraction** of the database — 10% of sequences per query set. |
-| `10` | int | An **absolute number** of sequences — 10 sequences per query set, **not** 10%. |
+| Value | Type | Total pool | Per fold, with `iterations: 8` |
+|---|---|---|---|
+| *(blank)* | — | The whole database. | `n_sequences / 8` — 12.5% of the database. |
+| `0.2` | float in (0, 1] | A **fraction** of the database — 20% of sequences. | 20%/8 = **2.5%** of the database. |
+| `8000` | int | An **absolute number** of sequences — 8000 in total. | 8000/8 = **1000** sequences. |
 
-Anything else (a float at or above 1, an int larger than the database, a quoted string) is rejected with an error naming both readings. The key affects `cross-validated-trad` only; other evaluation methods ignore it.
+`1.0` is accepted and means the whole database, so it behaves exactly like leaving the key blank.
 
-Setting it switches fold generation from `KFold` to `ShuffleSplit`, so each fold becomes an **independent random draw**: query sets may overlap between folds and need not cover the whole database. Nothing leaks as a result, because the reference is the full database in every fold either way (see below).
+A random pool of the requested size is drawn with a fixed seed, then split with `KFold`, so folds are always **disjoint** and together cover the pool exactly once (differing by at most one sequence when it does not divide evenly).
+
+Rejected with an error naming both readings: a float at or below 0 or above 1, an int below 1 or larger than the database, a quoted string, and any value whose pool would be smaller than `iterations` (some fold would get no sequences). The key affects `cross-validated-trad` only; other evaluation methods ignore it.
 
 > **Changing `trad_cv_query_size` on a run whose folds already exist requires `force_regenerate: true`.** Nothing keys off the query size, so existing `data/cross-validated-trad/` fold directories are otherwise reused at their old size and the new value is silently ignored.
 
