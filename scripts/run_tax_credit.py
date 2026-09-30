@@ -995,6 +995,7 @@ def prepare_datasets(cfg: dict) -> None:
                 levelrange=levelrange,
                 force=force,
                 simulation_method=sim_methods,
+                trad_cv_query_size=cfg.get("trad_cv_query_size"),
                 **sim_params,
             )
 

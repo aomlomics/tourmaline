@@ -262,7 +262,7 @@ Primers and the simulation settings are only needed by the simulated evaluation 
 ```yaml
 evaluation_methods:
   - cross-validated          # taxonomy-aware CV folds
-  - cross-validated-trad     # traditional KFold CV
+  - cross-validated-trad     # random split; reference keeps all sequences
   - novel-taxa               # novel-taxa simulation
   - self-validated           # full database classified against itself
   # - mock-community         # see Mock community evaluation below
@@ -272,11 +272,28 @@ evaluation_methods:
 
 ```yaml
 iterations: 10
+trad_cv_query_size:            # blank = even split; float = fraction; int = count
 novel_taxa_levels: [6, 5, 4, 3]
 cv_recall_max_level: 6
 novel_recall_min_level: 3
 force_regenerate: false
 ```
+
+`trad_cv_query_size` sets how many sequences land in each **cross-validated-trad** query (test) set. It has two readings, and they are easy to confuse:
+
+| Value | Type | Meaning |
+|---|---|---|
+| *(blank)* | — | Default. Even split: each of the `iterations` query sets holds `n_sequences / iterations` sequences, the folds are disjoint, and together they cover the database exactly once. |
+| `0.1` | float in (0, 1) | A **fraction** of the database — 10% of sequences per query set. |
+| `10` | int | An **absolute number** of sequences — 10 sequences per query set, **not** 10%. |
+
+Anything else (a float at or above 1, an int larger than the database, a quoted string) is rejected with an error naming both readings. The key affects `cross-validated-trad` only; other evaluation methods ignore it.
+
+Setting it switches fold generation from `KFold` to `ShuffleSplit`, so each fold becomes an **independent random draw**: query sets may overlap between folds and need not cover the whole database. Nothing leaks as a result, because the reference is the full database in every fold either way (see below).
+
+> **Changing `trad_cv_query_size` on a run whose folds already exist requires `force_regenerate: true`.** Nothing keys off the query size, so existing `data/cross-validated-trad/` fold directories are otherwise reused at their old size and the new value is silently ignored.
+
+**What cross-validated-trad actually holds out.** Only the query *list* is held out, not the reference. Each fold's `ref_seqs.fasta` and `ref_taxa.tsv` are symlinks to the full simulated-reads FASTA and cleaned taxonomy, so **every fold is classified against the entire database, queries included** — each query sequence has an exact self-match in the reference. That makes this mode closer to `self-validated` measured on a random subset than to a held-out cross-validation: scores sit near the ceiling and are optimistically biased, and because a single classifier is fitted per database and reused across folds, fold-to-fold spread understates real variance. Use `cross-validated` (taxonomy-aware) for a genuine held-out split, where query sequences are removed from the fold's reference.
 
 In novel-taxa folds the expected taxonomy of each query is truncated to the deepest rank still present in that fold's reference. Removing the novel taxon can remove its parent as well (a monotypic genus goes with its only species), and a rank the reference no longer holds cannot be returned by any classifier, so grading against it would count every method as wrong whatever it did. Queries with no rank left in the reference are dropped from the fold. Dataset generation reports how many queries this affects per fold; novel-taxa scores are therefore not comparable with runs generated before this behaviour.
 

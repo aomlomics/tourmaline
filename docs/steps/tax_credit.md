@@ -22,7 +22,7 @@ wrong.
 | Method | What it does | Answers |
 |---|---|---|
 | `cross-validated` | Taxonomy-aware K-fold splits of a database; classify held-out sequences. | How well does this database classify sequences like the ones it contains? |
-| `cross-validated-trad` | Traditional random K-fold splits. | The same, without taxonomy-aware stratification. |
+| `cross-validated-trad` | Random splits of the query list only; the reference keeps every sequence. | A near-best-case ceiling on a random subset (see the caveat below). |
 | `novel-taxa` | Hold out whole taxa, so the query's own taxon is absent from the reference. | What happens to organisms your database has never seen? |
 | `self-validated` | Classify the full database against itself. | Best case ceiling; catches internal inconsistencies. |
 | `mock-community` | Classify real sequencing data from communities of known composition. | How does it do on real reads, including PCR and abundance effects? |
@@ -30,6 +30,19 @@ wrong.
 The first four are simulated from the reference database itself. `mock-community` needs real
 data you supply: a feature table, ASV sequences, and the expected composition and/or the known
 taxonomy of each ASV.
+
+> **`cross-validated-trad` does not hold sequences out of the reference.** Each fold's
+> `ref_seqs.fasta` and `ref_taxa.tsv` are symlinks to the full database, so every query is
+> classified against a reference that still contains it, exact self-match included. Only the
+> query *list* changes between folds, and a single classifier is fitted per database and reused
+> across all of them. Read its scores as a ceiling on a random subset rather than as
+> cross-validated performance, and use `cross-validated` when you want a genuine held-out split.
+
+By default each `cross-validated-trad` fold queries `n_sequences / iterations` sequences, and the
+folds together cover the database exactly once. Set `trad_cv_query_size` to size the query sets
+yourself — a float in (0, 1) is a fraction of the database, an int is an absolute number of
+sequences. Changing it on a run whose folds already exist requires `force_regenerate: true`. See
+[Configuration](../configuration.md) for the details.
 
 ### Requirements
 
