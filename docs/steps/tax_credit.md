@@ -43,7 +43,9 @@ By default `cross-validated-trad` divides the whole database between the folds, 
 instead, which is then divided the same way: a float in (0, 1] is a fraction of the database, an
 int is an absolute number of sequences, and both describe the total across all folds rather than
 one fold. With `trad_cv_query_size: 0.2` and `iterations: 8`, 20% of the database is queried in
-total and each fold holds 2.5% of it. Folds stay disjoint either way. Changing it on a run whose
+total and each fold holds 2.5% of it. Folds stay disjoint either way. An int larger than a given
+database warns and uses that whole database instead, which makes one int a convenient way to
+equalize query counts across databases of different sizes. Changing it on a run whose
 folds already exist requires `force_regenerate: true`. See
 [Configuration](../configuration.md) for the details.
 

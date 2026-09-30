@@ -289,9 +289,11 @@ force_regenerate: false
 
 `1.0` is accepted and means the whole database, so it behaves exactly like leaving the key blank.
 
+Because the key is applied **per database**, a float means "this fraction of *this* database" — so databases of different sizes contribute different query counts. Using an **int** equalizes them instead. An int larger than a given database is not an error: a `WARNING:` is printed and that whole database is used as the pool, so one int works across a mixed set of databases (the smaller ones contribute everything they have, and the warning notes that their query counts will not match).
+
 A random pool of the requested size is drawn with a fixed seed, then split with `KFold`, so folds are always **disjoint** and together cover the pool exactly once (differing by at most one sequence when it does not divide evenly).
 
-Rejected with an error naming both readings: a float at or below 0 or above 1, an int below 1 or larger than the database, a quoted string, and any value whose pool would be smaller than `iterations` (some fold would get no sequences). The key affects `cross-validated-trad` only; other evaluation methods ignore it.
+Rejected with an error naming both readings: a float at or below 0 or above 1, an int below 1, a quoted string, and any value whose resolved pool would be smaller than `iterations` (some fold would get no sequences) — including a database holding fewer sequences than `iterations`. The key affects `cross-validated-trad` only; other evaluation methods ignore it.
 
 > **Changing `trad_cv_query_size` on a run whose folds already exist requires `force_regenerate: true`.** Nothing keys off the query size, so existing `data/cross-validated-trad/` fold directories are otherwise reused at their old size and the new value is silently ignored.
 

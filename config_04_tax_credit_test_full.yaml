@@ -59,6 +59,9 @@ iterations: 3
 # e.g. trad_cv_query_size: 0.2 with iterations: 8 -> each fold is 20%/8 = 2.5%
 # of the database. Leave blank for the default: the whole database divided
 # between the folds (n_sequences / iterations per fold; same as 1.0).
+# An INT larger than a given database prints a warning and uses that entire
+# database instead, so one int can be shared across databases of different
+# sizes (useful for equalizing query counts when comparing them).
 # Folds are disjoint in every case. Only affects cross-validated-trad. Changing
 # this on a run whose folds already exist requires force_regenerate: true, or
 # the old folds are reused as-is.
