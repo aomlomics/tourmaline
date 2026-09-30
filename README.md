@@ -8,7 +8,7 @@ Tourmaline 2 is an amplicon sequence processing workflow for Illumina sequence d
 
 You describe your analysis in YAML configuration files, and Tourmaline runs the right QIIME 2 commands in the right order, keeping a copy of the config next to every set of results so a run can always be traced back to its parameters.
 
-📖 **Full documentation:** [docs/index.md](docs/index.md) (built as an mkdocs site — run `mkdocs serve` locally to browse it)
+📖 **Full documentation:** [Tourmaline ReadTheDocs]([docs/index.md](https://tourmalinedocs.readthedocs.io/en/latest/index.html)) 
 
 ---
 
