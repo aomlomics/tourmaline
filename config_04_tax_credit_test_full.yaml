@@ -47,6 +47,10 @@ evaluation_methods:
   - self-validated
   - novel-taxa
   - cross-validated
+  # cross-validated-trad builds its assignment manifest in its own code path
+  # (shared trad-fit classifier per database), so keep it in this config to
+  # exercise that path -- it is not covered by any other evaluation method.
+  - cross-validated-trad
 
 ## --- SIMULATION PARAMETERS ---
 iterations: 3

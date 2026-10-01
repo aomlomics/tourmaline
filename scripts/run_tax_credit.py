@@ -1170,9 +1170,20 @@ def prepare_manifest(cfg: dict) -> str:
                             **_empty_manifest_artifact_fields(),
                             **assign_params,
                         })
+                    bt2_combos = (
+                        bt2_param_combinations(cfg)
+                        if classify_method == "bt2-blca" else [None]
+                    )
                     for dataset_id, reference_id in combos:
                         fold_dir = join(sim_dir, dataset_id)
                         query = join(fold_dir, "query.qza")
+                        trad_fit_job = (
+                            f"trad-fit-{reference_id}-{classify_method}-{fit_id}"
+                        )
+                        method_root = join(
+                            results_root, subdir, dataset_id, reference_id,
+                            classify_method,
+                        )
                         shared_artifacts = _empty_manifest_artifact_fields()
                         if classify_method == "naive-bayes":
                             shared_artifacts["classifier_qza"] = join(
@@ -1192,16 +1203,98 @@ def prepare_manifest(cfg: dict) -> str:
                                 fit_id,
                                 "bowtie2_index",
                             )
+                        if classify_method == "bt2-blca":
+                            # Same stage split as the other evaluation methods, but
+                            # the bowtie2 index comes from the shared trad-fit job
+                            # (the reference is the full database in every fold), so
+                            # the chain is trad-fit -> align -> blca -> reformat.
+                            # Alignment is still per fold: the query differs.
+                            blca_shared_dir = join(method_root, fit_id)
+                            align_job = (
+                                f"trad-{dataset_id}-{classify_method}-{fit_id}-align"
+                            )
+                            rows.append({
+                                "job_id": align_job,
+                                "evaluation_method": eval_method,
+                                "dataset_id": dataset_id,
+                                "reference_id": reference_id,
+                                "query_qza": query,
+                                "ref_seqs": ref_dbs[dataset_id][0],
+                                "ref_taxa": ref_dbs[dataset_id][1],
+                                "output_dir": blca_shared_dir,
+                                "confidence": _manifest_na(),
+                                "skip_fit": True,
+                                "trad_fit": False,
+                                "fit_only": True,
+                                "fit_job_id": trad_fit_job,
+                                **shared_artifacts,
+                                "blca_stage": "align",
+                                "blca_shared_dir": blca_shared_dir,
+                                **assign_params,
+                            })
+                            for combo in bt2_combos:
+                                combo_id = bt2_param_id(combo)
+                                raw_dir = join(
+                                    method_root, f"{fit_id}-{combo_id}")
+                                raw_taxonomy = join(raw_dir, "raw-taxonomy.tsv")
+                                blca_job = (
+                                    f"trad-{dataset_id}-{classify_method}-"
+                                    f"{combo_id}-blca"
+                                )
+                                combo_params = _manifest_assign_params(
+                                    classify_method, method_cfg, bt2_combo=combo)
+                                rows.append({
+                                    "job_id": blca_job,
+                                    "evaluation_method": eval_method,
+                                    "dataset_id": dataset_id,
+                                    "reference_id": reference_id,
+                                    "query_qza": query,
+                                    "ref_seqs": ref_dbs[dataset_id][0],
+                                    "ref_taxa": ref_dbs[dataset_id][1],
+                                    "output_dir": raw_dir,
+                                    "confidence": _manifest_na(),
+                                    "skip_fit": True,
+                                    "trad_fit": False,
+                                    "fit_only": True,
+                                    "fit_job_id": align_job,
+                                    **shared_artifacts,
+                                    "blca_stage": "blca",
+                                    "blca_shared_dir": blca_shared_dir,
+                                    "blca_raw_taxonomy": raw_taxonomy,
+                                    **combo_params,
+                                })
+                                for conf in confidences:
+                                    p = param_id(
+                                        classify_method, method_cfg, conf,
+                                        bt2_combo=combo)
+                                    rows.append({
+                                        "job_id": (
+                                            f"trad-{dataset_id}-"
+                                            f"{classify_method}-{p}"
+                                        ),
+                                        "evaluation_method": eval_method,
+                                        "dataset_id": dataset_id,
+                                        "reference_id": reference_id,
+                                        "query_qza": query,
+                                        "ref_seqs": ref_dbs[dataset_id][0],
+                                        "ref_taxa": ref_dbs[dataset_id][1],
+                                        "output_dir": join(method_root, p),
+                                        "confidence": _manifest_confidence(
+                                            classify_method, conf),
+                                        "skip_fit": True,
+                                        "trad_fit": False,
+                                        "fit_only": False,
+                                        "fit_job_id": blca_job,
+                                        **shared_artifacts,
+                                        "blca_stage": "reformat",
+                                        "blca_shared_dir": blca_shared_dir,
+                                        "blca_raw_taxonomy": raw_taxonomy,
+                                        **combo_params,
+                                    })
+                            continue
                         for conf in confidences:
                             p = param_id(classify_method, method_cfg, conf)
-                            assign_dir = join(
-                                results_root,
-                                subdir,
-                                dataset_id,
-                                reference_id,
-                                classify_method,
-                                p,
-                            )
+                            assign_dir = join(method_root, p)
                             rows.append({
                                 "job_id": f"trad-{dataset_id}-{classify_method}-{p}",
                                 "evaluation_method": eval_method,
@@ -1215,7 +1308,9 @@ def prepare_manifest(cfg: dict) -> str:
                                 "skip_fit": True,
                                 "trad_fit": False,
                                 "fit_only": False,
-                                "fit_job_id": "",
+                                # Without this the assignment could start before
+                                # its shared classifier finished fitting.
+                                "fit_job_id": trad_fit_job,
                                 **shared_artifacts,
                                 **assign_params,
                             })
