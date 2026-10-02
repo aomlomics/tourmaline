@@ -1137,6 +1137,11 @@ def prepare_manifest(cfg: dict) -> str:
                 )
             elif eval_method == "cross-validated-trad":
                 from tax_credit.framework_functions import trad_cv_shared_reference_qzas
+                # recall_simulated_taxa_dirs returns (dataset_id, reference_id)
+                # with BOTH set to the fold name "<db>-iter<n>", so the database
+                # id -- which is what the shared trad-fit job is keyed by -- has
+                # to be parsed back out of it.
+                from tax_credit.simulation_names import parse_cv_dataset_id
 
                 combos, ref_dbs = recall_simulated_taxa_dirs(
                     sim_dir, db_ids, cfg["iterations"],
@@ -1177,8 +1182,13 @@ def prepare_manifest(cfg: dict) -> str:
                     for dataset_id, reference_id in combos:
                         fold_dir = join(sim_dir, dataset_id)
                         query = join(fold_dir, "query.qza")
+                        # reference_id is the fold ("<db>-iter<n>"), which is
+                        # right for the per-fold output paths below but wrong for
+                        # the shared trad-fit job: that one exists once per
+                        # database, so key it by the parsed database id.
+                        trad_db = parse_cv_dataset_id(dataset_id).database
                         trad_fit_job = (
-                            f"trad-fit-{reference_id}-{classify_method}-{fit_id}"
+                            f"trad-fit-{trad_db}-{classify_method}-{fit_id}"
                         )
                         method_root = join(
                             results_root, subdir, dataset_id, reference_id,
@@ -1189,7 +1199,7 @@ def prepare_manifest(cfg: dict) -> str:
                             shared_artifacts["classifier_qza"] = join(
                                 results_root,
                                 "trad-fit",
-                                reference_id,
+                                trad_db,
                                 classify_method,
                                 fit_id,
                                 "classifier.qza",
@@ -1198,7 +1208,7 @@ def prepare_manifest(cfg: dict) -> str:
                             shared_artifacts["bowtie_index_dir"] = join(
                                 results_root,
                                 "trad-fit",
-                                reference_id,
+                                trad_db,
                                 classify_method,
                                 fit_id,
                                 "bowtie2_index",
