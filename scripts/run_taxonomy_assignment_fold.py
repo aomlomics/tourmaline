@@ -22,6 +22,9 @@ BLCA_SAM_NAME = "bowtie2_all.sam"
 BLCA_REJECT_NAME = "end_to_end_and_local_reject.fasta"
 BLCA_RAW_TAXONOMY_NAME = "raw-taxonomy.tsv"
 
+# Shared consensus-blast artifact: one pre-indexed BLAST database per fold.
+BLASTDB_NAME = "blastdb.qza"
+
 
 def run_cmd(cmd: str, check: bool = True) -> None:
     print(cmd, flush=True)
@@ -114,6 +117,27 @@ def param_id_from_config(cfg: dict, confidence: float) -> str:
     return f"{base}-conf{confidence}"
 
 
+def build_blast_db(ref_seqs: Path, db_dir: Path) -> Path:
+    """makeblastdb for consensus-blast; cached like the bowtie2 index.
+
+    blastn only honours ``-num_threads`` against a pre-indexed database. Given
+    ``--i-reference-reads`` instead, q2-feature-classifier falls back to
+    ``blastn -subject``, which is single-threaded and warns that num_threads is
+    ignored. None of the swept consensus parameters change the database, so one
+    build per fold serves every combination.
+    """
+    db_dir.mkdir(parents=True, exist_ok=True)
+    blastdb_qza = db_dir / BLASTDB_NAME
+    if blastdb_qza.exists():
+        return blastdb_qza
+    run_cmd(
+        "qiime feature-classifier makeblastdb "
+        f"--i-sequences {ref_seqs} "
+        f"--o-database {blastdb_qza}"
+    )
+    return blastdb_qza
+
+
 def assign_naive_bayes(
     query_qza: Path,
     ref_seqs: Path,
@@ -167,21 +191,36 @@ def assign_consensus_blast(
     ref_taxa: Path,
     out_dir: Path,
     cfg: dict,
+    skip_fit: bool = False,
+    blastdb_qza: Path | None = None,
 ) -> Path:
+    """classify-consensus-blast against a pre-indexed database.
+
+    ``--i-blastdb`` rather than ``--i-reference-reads``: only the former makes
+    blastn honour ``--p-num-threads``. The two are mutually exclusive inputs.
+    Sweeps build the database in a shared fit job and pass it in; a fold with a
+    single parameter set builds it here.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     taxonomy_qza = out_dir / "taxonomy.qza"
     taxonomy_tsv = out_dir / "taxonomy.tsv"
     assignments = out_dir / "query_tax_assignments.txt"
     classify_params = (cfg.get("classify_params") or "").strip()
+    threads = int(cfg.get("classify_threads", 1))
+    if blastdb_qza is None:
+        if skip_fit:
+            raise ValueError("consensus-blast --skip-fit requires --blastdb-qza")
+        blastdb_qza = build_blast_db(ref_seqs, out_dir / "blastdb")
     run_cmd(
         "qiime feature-classifier classify-consensus-blast "
-        f"--i-reference-reads {ref_seqs} "
+        f"--i-blastdb {blastdb_qza} "
         f"--i-reference-taxonomy {ref_taxa} "
         f"--i-query {query_qza} "
         f"--p-perc-identity {cfg['perc_identity']} "
         f"--p-query-cov {cfg['query_cov']} "
         f"--p-min-consensus {cfg['min_consensus']} "
         f"--p-maxaccepts {cfg['max_accepts']} "
+        f"--p-num-threads {threads} "
         f"--o-classification {taxonomy_qza} "
         f"--o-search-results {out_dir / 'search_results.qza'} "
         f"{classify_params}"
@@ -505,6 +544,10 @@ def main() -> int:
     parser.add_argument("--fit-only", action="store_true")
     parser.add_argument("--classifier-qza", default=None)
     parser.add_argument("--bowtie-index-dir", default=None)
+    parser.add_argument(
+        "--blastdb-qza", default=None,
+        help="shared consensus-blast database built by the fold's fit job",
+    )
     # bt2-blca sweep sharing: run one stage of the pipeline instead of all three.
     #   align    bowtie2 index + alignment   (per fold; confidence- and param-free)
     #   blca     BLCA over the shared SAM    (per blca_perc_identity/query_cov)
@@ -557,6 +600,7 @@ def main() -> int:
     out_dir = Path(args.output_dir)
     classifier = Path(args.classifier_qza) if args.classifier_qza else None
     bowtie_index_dir = Path(args.bowtie_index_dir) if args.bowtie_index_dir else None
+    blastdb_qza = Path(args.blastdb_qza) if args.blastdb_qza else None
     method = args.classify_method
 
     # bt2-blca sweeps split the pipeline across jobs so the index, the alignment
@@ -604,12 +648,16 @@ def main() -> int:
                 int(cfg.get("classify_threads", 1)),
             )
             return 0
+        if method == "consensus-blast":
+            build_blast_db(ref_seqs, blastdb_qza.parent if blastdb_qza else out_dir)
+            return 0
         if method == "revamp":
             # The shared "fit" for REVAMP is the BLAST search; sweeps reuse its btab.
             revamp_blast(query, out_dir, cfg)
             return 0
         print(
-            f"--fit-only supports naive-bayes, bt2-blca and revamp only, not {method}",
+            "--fit-only supports naive-bayes, bt2-blca, consensus-blast and "
+            f"revamp only, not {method}",
             file=sys.stderr,
         )
         return 1
@@ -625,7 +673,10 @@ def main() -> int:
             skip_fit=args.skip_fit, bowtie_index_dir=bowtie_index_dir,
         )
     elif method == "consensus-blast":
-        assign_consensus_blast(query, ref_seqs, ref_taxa, out_dir, cfg)
+        assign_consensus_blast(
+            query, ref_seqs, ref_taxa, out_dir, cfg,
+            skip_fit=args.skip_fit, blastdb_qza=blastdb_qza,
+        )
     elif method == "consensus-vsearch":
         assign_consensus_vsearch(query, ref_seqs, ref_taxa, out_dir, cfg)
     elif method == "revamp":

@@ -83,6 +83,39 @@ parameter sets × folds is hundreds of assignment jobs. Start with a reduced mat
 > **Keep `classify_threads` well below `--cores`.** Assignment jobs run in parallel, and a
 > large `classify_threads` lets a single job claim every core, serializing the run.
 
+Not every stage uses the threads it reserves, so `tax_credit_assign_fold` sizes each job
+individually rather than giving every job `classify_threads`:
+
+| job | threads |
+|---|---|
+| `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 index + alignment, the REVAMP BLAST | `classify_threads` |
+| `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
+| `fit-classifier-naive-bayes` | `classify_threads` — see below |
+
+The naive-bayes fit takes no thread option and runs on one core, but keeps its full slot
+deliberately: it is the most memory-hungry job in a run, more so with a wide
+`fit_params` ngram-range, and that reservation is currently the only thing limiting how
+many fit at once. Lowering it needs a memory resource on the rule first.
+
+### consensus-blast builds a BLAST database per fold
+
+`classify-consensus-blast` only honours `--p-num-threads` against a pre-indexed database.
+Given `--i-reference-reads` it falls back to `blastn -subject`, which is single-threaded and
+warns that the thread count is ignored. Tourmaline therefore runs `makeblastdb` for each fold
+and classifies with `--i-blastdb`.
+
+None of the swept consensus parameters change the database, so a sweep builds it once per fold
+in a fit job that every parameter combination then reuses — the same sharing bt2-blca uses for
+its bowtie2 index. A fold with a single parameter combination builds it in-job instead. The
+databases land in `data/results/<evaluation-method>/<fold>/<reference>/consensus-blast/consensus_blast/blastdb.qza`
+and are roughly the size of the reference, so a large sweep over many folds needs the disk for
+one copy per fold.
+
+> **Scores shift slightly versus runs made before this change.** BLAST computes E-values from
+> the effective size of the search space, and `-db` and `-subject` mode size it differently, so
+> a borderline hit can fall on either side of the `evalue` cutoff. Re-run consensus-blast
+> rather than comparing new numbers against old ones.
+
 ### Smoke tests
 
 Small subsampled MiFish databases in `00-data/tax-credit-test/` exercise every code path

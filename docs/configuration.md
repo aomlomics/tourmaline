@@ -177,7 +177,34 @@ perc_identity: 0.8
 query_cov: 0.8
 min_consensus: 0.51
 max_accepts: 10   # QIIME2 --p-maxaccepts; `all` is accepted by consensus-vsearch only
+blast_database:            # consensus-blast only; prebuilt BLAST database directory
+build_blast_database: false  # consensus-blast only; build one from refseqs_file
 ```
+
+**Threading consensus-blast.** `classify-consensus-blast` honours `--p-num-threads` only
+against a pre-indexed database. With neither key below set, QIIME 2 is given
+`--i-reference-reads` and runs `blastn -subject`, which is single-threaded no matter what
+`classify_threads` says — this is the default, and it is unchanged from earlier releases.
+
+Set **`blast_database`** to a directory holding a prebuilt database, or
+**`build_blast_database: true`** to have Tourmaline run `makeblastdb` on `refseqs_file`
+first; either one switches the search to `--i-blastdb` and makes `classify_threads`
+effective. `blast_database` wins if both are set. Neither key affects consensus-vsearch,
+which already threads.
+
+A supplied database must be **single-volume, version 5, from BLAST 2.13.0 or newer**:
+QIIME 2's `BLASTDB` type requires `.ndb .nhr .nin .not .nsq .ntf .nto .njs` under one
+basename and cannot represent multi-volume databases (those with a `.nal` file). The
+directory is checked before the run starts, with an error naming the specific problem.
+Build one with `makeblastdb -blastdb_version 5 -dbtype nucl -in refs.fasta -out <dir>/refdb`,
+or just set `build_blast_database: true`.
+
+> **Enabling either key shifts results slightly.** BLAST derives E-values from the
+> effective size of the search space, and sizes it differently in `-db` and `-subject`
+> mode. More importantly, `max_accepts` keeps the *first* N hits above `perc_identity` in
+> database order rather than the top N, so a different traversal order can change which
+> hits survive — most visibly at `max_accepts: 1`. Don't mix old and new results in one
+> comparison.
 
 **BT2-BLCA options**
 
@@ -304,6 +331,8 @@ In novel-taxa folds the expected taxonomy of each query is truncated to the deep
 `cv_recall_max_level` controls cross-validated assignment manifest generation (default `6`; `min_level` is always `max_level - 1` so each CV fold is listed once). Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
 
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
+
+`classify_threads` is passed to `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 and the REVAMP BLAST. Jobs whose tool takes no thread option — `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment — ask Snakemake for one core instead, so more of them run at once. `fit-classifier-naive-bayes` is single-threaded too but keeps a full slot on purpose, because the reservation is what currently caps how many memory-hungry fits run together. consensus-blast reaches its threads through a per-fold `makeblastdb`; see [Tax-credit step](steps/tax_credit.md#consensus-blast-builds-a-blast-database-per-fold) for the sharing and the effect on scores.
 
 ```yaml
 classify_method: naive-bayes

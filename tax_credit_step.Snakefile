@@ -96,6 +96,9 @@ def _assign_params(wildcards):
         "fit_params": _row_str(row, "fit_params", ""),
         "classify_params": _row_str(row, "classify_params", ""),
         "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
+        # consensus-blast shared database; blank for every other method and for
+        # single-combination folds, which build it in-job
+        "blastdb_qza": _row_str(row, "blastdb_qza", ""),
         # bt2-blca stage split; blank for every other method and for single-job folds
         "blca_stage": _row_str(row, "blca_stage", ""),
         "blca_shared_dir": _row_str(row, "blca_shared_dir", ""),
@@ -153,6 +156,50 @@ def _assign_params(wildcards):
         if params.get(field) is None:
             params[field] = _config_float(field, 0.8 if field != "min_consensus" else 0.51)
     return params
+
+
+def _row_is_true(row, field):
+    return _row_str(row, field, "").lower() == "true"
+
+
+# One rule dispatches every kind of assignment work, but only some of the tools
+# it reaches are multithreaded (see scripts/run_taxonomy_assignment_fold.py), so
+# the thread count is decided per job rather than per rule. Jobs running a
+# single-threaded tool ask for one core, letting Snakemake pack more of them
+# into the same --cores.
+#
+# NOTE: this rule declares no memory resource, so threads are also what limits
+# how many jobs run at once. fit-classifier-naive-bayes is the memory-hungry
+# one -- especially with a wide fit_params ngram-range -- and at 1 thread
+# Snakemake will start as many fits as there are cores. Cap --cores (or add
+# resources: mem_mb) if a run gets OOM-killed during the fitting phase.
+def _assign_threads(wildcards):
+    row = _manifest_row(wildcards.job_id)
+    method = _row_str(row, "classify_method", "")
+    blca_stage = _row_str(row, "blca_stage", "")
+    fit_only = _row_is_true(row, "fit_only")
+    trad_fit = _row_is_true(row, "trad_fit")
+
+    # BLCA itself (muscle + 100 bootstraps per query) and the confidence
+    # reformat take no thread option; the align stage before them does.
+    if blca_stage in ("blca", "reformat"):
+        return 1
+    # fit-classifier-naive-bayes has no thread option. The bt2-blca fit jobs
+    # that share this flag build a bowtie2 index, which does.
+    if method == "naive-bayes" and (fit_only or trad_fit):
+        return 1
+    # makeblastdb, the shared consensus-blast fit
+    if method == "consensus-blast" and fit_only:
+        return 1
+    # revamp assignment is the post-BLAST LCA; BLAST is its own fit job, whose
+    # btab this row names. Without one it would BLAST here and need the threads.
+    if (
+        method == "revamp"
+        and not fit_only
+        and _row_str(row, "revamp_blast_results", "")
+    ):
+        return 1
+    return config["classify_threads"]
 
 
 def _summary_targets():
@@ -294,7 +341,7 @@ rule tax_credit_assign_fold:
         assign=lambda wildcards: _assign_params(wildcards),
     conda:
         "qiime2-amplicon-2024.10"
-    threads: config["classify_threads"]
+    threads: _assign_threads
     shell:
         """
         set -euo pipefail
@@ -306,6 +353,7 @@ rule tax_credit_assign_fold:
         ROW_SKIP=$(echo "{params.row.skip_fit}" | tr -d '"')
         ROW_CLS=$(echo "{params.row.classifier_qza}" | tr -d '"')
         ROW_BT2=$(echo "{params.assign[bowtie_index_dir]}" | tr -d '"')
+        ROW_BLASTDB=$(echo "{params.assign[blastdb_qza]}" | tr -d '"')
         ROW_BLCA_STAGE=$(echo "{params.assign[blca_stage]}" | tr -d '"')
         ROW_BLCA_SHARED=$(echo "{params.assign[blca_shared_dir]}" | tr -d '"')
         ROW_BLCA_RAW=$(echo "{params.assign[blca_raw_taxonomy]}" | tr -d '"')
@@ -325,6 +373,10 @@ rule tax_credit_assign_fold:
         EXTRA_CONSENSUS=""
         if [ "{params.assign[classify_method]}" = "consensus-blast" ] || [ "{params.assign[classify_method]}" = "consensus-vsearch" ]; then
             EXTRA_CONSENSUS="--max-accepts {params.assign[max_accepts]}"
+        fi
+        EXTRA_BLASTDB=""
+        if [ -n "$ROW_BLASTDB" ] && [ "$ROW_BLASTDB" != "nan" ] && [ "$ROW_BLASTDB" != "" ]; then
+            EXTRA_BLASTDB="--blastdb-qza $ROW_BLASTDB"
         fi
         EXTRA_REVAMP=""
         if [ "{params.assign[classify_method]}" = "revamp" ]; then
@@ -380,7 +432,7 @@ rule tax_credit_assign_fold:
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
             --taxa-ranks '{params.assign[taxa_ranks]}' \
-            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_REVAMP $EXTRA_BLCA $FIT_ONLY
+            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_BLASTDB $EXTRA_REVAMP $EXTRA_BLCA $FIT_ONLY
 
         touch {output}
         """

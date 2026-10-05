@@ -51,6 +51,20 @@ min_consensus: 0.51
 # Optional: maximum number of hits kept per query (QIIME2 --p-maxaccepts, default 10).
 # consensus-vsearch also accepts `all` to keep every hit above perc_identity.
 max_accepts: 10
+# Optional (consensus-blast only): directory holding a prebuilt BLAST nucleotide
+# database. Supplying one — or setting build_blast_database below — lets
+# classify-consensus-blast use classify_threads; without either, QIIME2 runs
+# `blastn -subject`, which is single-threaded whatever classify_threads says.
+# Must be a single-volume version-5 database from BLAST 2.13.0+: QIIME2's BLASTDB
+# type requires .ndb .nhr .nin .not .nsq .ntf .nto .njs under one basename, and
+# cannot represent multi-volume databases (those with a .nal file). Checked before
+# the run starts.
+blast_database: 
+# Optional (consensus-blast only): build a BLAST database from refseqs_file instead
+# of running `blastn -subject`. Ignored when blast_database is set. Note this changes
+# results slightly versus the -subject default: BLAST sizes its effective search
+# space differently, and maxaccepts keeps the first N hits in database order.
+build_blast_database: false
 
 ## --- BT2-BLCA OPTIONS ---
 # Optional: directory containing prebuilt bowtie2 index; leave blank to auto-build from refseqs_file and taxa_file.

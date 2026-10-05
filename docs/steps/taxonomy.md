@@ -34,6 +34,8 @@ perc_identity: 0.8           # consensus BLAST/VSEARCH identity threshold
 query_cov: 0.8               # consensus BLAST/VSEARCH query coverage
 min_consensus: 0.51          # consensus BLAST/VSEARCH agreement fraction
 max_accepts: 10              # consensus BLAST/VSEARCH max hits per query (`all` for vsearch)
+blast_database:              # consensus-blast: prebuilt BLAST db dir; enables classify_threads
+build_blast_database: false  # consensus-blast: build one from refseqs_file instead
 confidence_thres: 0.8        # bt2-blca confidence cutoff
 classify_params: --verbose   # optional extra args for the classifier
 

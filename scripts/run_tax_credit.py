@@ -637,6 +637,8 @@ def _empty_manifest_artifact_fields() -> dict:
     return {
         "classifier_qza": "",
         "bowtie_index_dir": "",
+        # consensus-blast sweeps only; blank means "build the database in-job"
+        "blastdb_qza": "",
         # bt2-blca stage split (sweeps only); blank means "run all stages here"
         "blca_stage": "",
         "blca_shared_dir": "",
@@ -700,7 +702,42 @@ def _append_fold_assignment_rows(
         return
 
     if method in ("consensus-blast", "consensus-vsearch"):
-        for combo in consensus_param_combinations(cfg):
+        combos = consensus_param_combinations(cfg)
+        # consensus-blast reaches blastn through a pre-indexed database so that
+        # --p-num-threads is honoured (blastn -subject ignores it). The database
+        # depends on the reference alone, not on any swept parameter, so a sweep
+        # builds it once per fold in a fit job and every combination reuses it.
+        # A single-combination fold builds it in-job instead; vsearch has no
+        # equivalent and is unaffected.
+        shared_blastdb = ""
+        fit_job_id = ""
+        if method == "consensus-blast" and len(combos) > 1:
+            shared_dir = join(
+                results_root, subdir, dataset_id, reference_id, method,
+                fit_param_id(method, method_cfg),
+            )
+            fit_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
+            rows.append({
+                "job_id": fit_job_id,
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": shared_dir,
+                "confidence": _manifest_na(),
+                "skip_fit": False,
+                "trad_fit": False,
+                "fit_only": True,
+                "fit_job_id": "",
+                **_empty_manifest_artifact_fields(),
+                # makeblastdb reads only the reference; the swept values on this
+                # row are placeholders so the manifest stays rectangular.
+                **_manifest_assign_params(method, method_cfg, combos[0]),
+            })
+            shared_blastdb = join(shared_dir, "blastdb.qza")
+        for combo in combos:
             assign_params = _manifest_assign_params(method, method_cfg, combo)
             p = param_id(method, method_cfg, 0.0, combo)
             assign_dir = join(results_root, subdir, dataset_id, reference_id, method, p)
@@ -714,11 +751,12 @@ def _append_fold_assignment_rows(
                 "ref_taxa": ref_taxa,
                 "output_dir": assign_dir,
                 "confidence": _manifest_na(),
-                "skip_fit": False,
+                "skip_fit": bool(shared_blastdb),
                 "trad_fit": False,
                 "fit_only": False,
-                "fit_job_id": "",
+                "fit_job_id": fit_job_id,
                 **_empty_manifest_artifact_fields(),
+                "blastdb_qza": shared_blastdb,
                 **assign_params,
             })
         return
