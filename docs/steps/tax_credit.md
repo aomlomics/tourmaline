@@ -92,10 +92,45 @@ individually rather than giving every job `classify_threads`:
 | `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
 | `fit-classifier-naive-bayes` | `classify_threads` — see below |
 
-The naive-bayes fit takes no thread option and runs on one core, but keeps its full slot
-deliberately: it is the most memory-hungry job in a run, more so with a wide
-`fit_params` ngram-range, and that reservation is currently the only thing limiting how
-many fit at once. Lowering it needs a memory resource on the rule first.
+`fit-classifier-naive-bayes` also takes no thread option and gets one core.
+
+### Memory: you must opt in, or nothing is throttled
+
+Because single-threaded jobs ask for one core, **threads no longer limit how many run at
+once — memory does.** These jobs are not comparable in size: the BLCA stage loads the
+whole fold reference into memory before running muscle, and a naive-bayes fit over a full
+database with a wide `fit_params` ngram-range is larger still. Sixteen of either on a
+16-core box will exhaust the machine.
+
+The rule therefore reserves memory per job type, from the `mem_mb_*` config keys. But
+**Snakemake only enforces a resource when you pass its ceiling on the command line**:
+
+```bash
+snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit \
+  --configfile config_04_tax_credit.yaml --cores 16 --latency-wait 15 \
+  --resources mem_mb=120000 --retries 2
+```
+
+Set `mem_mb` to roughly the RAM you are willing to give the run (`free -m`). Without the
+flag the reservations are recorded and ignored, and the run can OOM. `--retries` helps
+because each attempt multiplies a job's reservation, so a job killed for memory gets more
+on the next try.
+
+The shipped defaults are starting points, not measurements — memory scales with the
+reference. Measure one job and set the matching key:
+
+```bash
+/usr/bin/time -v <the command Snakemake printed>   # read "Maximum resident set size"
+```
+
+> **`--resources mem_mb` must be at least as large as the biggest single job.** A run
+> whose ceiling is below some job's reservation fails at execution with that job, and a
+> dry run will not catch it: Snakemake evaluates neither threads nor resources under `-n`.
+
+When a run dies during the fitting or BLCA phase, the signature is an OOM one level down
+rather than a clean error — `muscle: error while loading shared libraries: libc.so.6:
+cannot map zero-fill pages`, `*** OUT OF MEMORY ***` after only tens of MB, then
+`ValueError: No records found in handle` where BLCA read muscle's empty output.
 
 ### consensus-blast builds a BLAST database per fold
 

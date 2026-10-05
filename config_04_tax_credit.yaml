@@ -217,6 +217,30 @@ mock_community:
   # Taxa coloured individually in composition plots
   composition_top_n: 12
 
+## --- MEMORY ---
+## Peak RSS reserved per job type, in MB. Only ENFORCED when snakemake is run with
+## --resources mem_mb=<total available>; without that flag these are recorded and
+## ignored, and nothing stops single-threaded jobs filling every core and running
+## the machine out of memory. Pair with --retries 2: a job killed for memory is
+## retried with its reservation multiplied by the attempt number.
+##
+## These defaults are starting points, not measurements. Memory scales with the
+## reference, so large databases need larger values. Measure with
+## `/usr/bin/time -v <the command Snakemake printed>` and read "Maximum resident
+## set size". Leave a key blank to use the default shown.
+# fit-classifier-naive-bayes; the largest job, and larger again with a wide
+# fit_params ngram-range
+mem_mb_naive_bayes_fit: 16000
+# BLCA stage: loads the whole fold reference into memory, then runs muscle
+mem_mb_blca: 4000
+# bowtie2-build and the bt2-blca align stage
+mem_mb_align: 4000
+# makeblastdb for the shared consensus-blast database
+mem_mb_makeblastdb: 2000
+# everything else (classification against a prebuilt classifier/index/database,
+# the confidence reformat, REVAMP's post-BLAST assignment)
+mem_mb_default: 2000
+
 ## --- ADVANCED ---
 force_evaluation: false
 exclude_databases: []

@@ -332,6 +332,8 @@ In novel-taxa folds the expected taxonomy of each query is truncated to the deep
 
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
 
+**Memory.** `mem_mb_naive_bayes_fit`, `mem_mb_blca`, `mem_mb_align`, `mem_mb_makeblastdb` and `mem_mb_default` set the peak RSS reserved per job type (MB). Snakemake only enforces them when the run passes `--resources mem_mb=<total>`; without that flag they are recorded and ignored, and single-threaded jobs will fill every core and can exhaust memory. Pair with `--retries`, which multiplies each reservation by the attempt number. Defaults are starting points — memory scales with the reference, so measure with `/usr/bin/time -v` and read "Maximum resident set size". See [Tax-credit step](steps/tax_credit.md#memory-you-must-opt-in-or-nothing-is-throttled).
+
 `classify_threads` is passed to `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 and the REVAMP BLAST. Jobs whose tool takes no thread option — `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment — ask Snakemake for one core instead, so more of them run at once. `fit-classifier-naive-bayes` is single-threaded too but keeps a full slot on purpose, because the reservation is what currently caps how many memory-hungry fits run together. consensus-blast reaches its threads through a per-fold `makeblastdb`; see [Tax-credit step](steps/tax_credit.md#consensus-blast-builds-a-blast-database-per-fold) for the sharing and the effect on scores.
 
 ```yaml

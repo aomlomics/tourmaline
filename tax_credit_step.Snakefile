@@ -167,12 +167,8 @@ def _row_is_true(row, field):
 # the thread count is decided per job rather than per rule. Jobs running a
 # single-threaded tool ask for one core, letting Snakemake pack more of them
 # into the same --cores.
-#
-# NOTE: this rule declares no memory resource, so threads are also what limits
-# how many jobs run at once. fit-classifier-naive-bayes is the memory-hungry
-# one -- especially with a wide fit_params ngram-range -- and at 1 thread
-# Snakemake will start as many fits as there are cores. Cap --cores (or add
-# resources: mem_mb) if a run gets OOM-killed during the fitting phase.
+# Concurrency is bounded by mem_mb (below), not by threads, so a job running a
+# single-threaded tool can safely ask for one core.
 def _assign_threads(wildcards):
     row = _manifest_row(wildcards.job_id)
     method = _row_str(row, "classify_method", "")
@@ -200,6 +196,65 @@ def _assign_threads(wildcards):
     ):
         return 1
     return config["classify_threads"]
+
+
+# Peak RSS per job type, in MB. These jobs differ by more than an order of
+# magnitude, and threads alone do not bound them: the BLCA stage loads the whole
+# fold reference into a dict (blca_from_bowtie.py), and a naive-bayes fit over a
+# full database with a wide fit_params ngram-range is larger again. Running a
+# single-threaded job on every core therefore exhausts memory long before CPU.
+#
+# Snakemake only ENFORCES this when the run passes --resources mem_mb=<total>;
+# without that the numbers are recorded and ignored. See docs/steps/tax_credit.md.
+#
+# The defaults are starting points, not measurements -- memory scales with the
+# reference, so a large database needs larger values. Measure one job with
+#   /usr/bin/time -v <the command Snakemake printed>
+# and read "Maximum resident set size", then set the matching config key.
+_MEM_MB_DEFAULTS = {
+    "naive_bayes_fit": 16000,
+    "blca": 4000,
+    "align": 4000,
+    "makeblastdb": 2000,
+    "default": 2000,
+}
+
+
+def _mem_mb(key):
+    return int(config.get(f"mem_mb_{key}", _MEM_MB_DEFAULTS[key]))
+
+
+def _assign_mem_mb(wildcards, attempt):
+    """Memory reservation for one assignment job.
+
+    Scaled by *attempt* so a job killed for memory asks for more on each retry
+    (snakemake --retries N), which matters because the right number depends on
+    a reference size this cannot know.
+    """
+    row = _manifest_row(wildcards.job_id)
+    method = _row_str(row, "classify_method", "")
+    blca_stage = _row_str(row, "blca_stage", "")
+    fit_only = _row_is_true(row, "fit_only")
+    trad_fit = _row_is_true(row, "trad_fit")
+
+    if blca_stage == "blca":
+        base = _mem_mb("blca")
+    elif blca_stage == "align":
+        # bowtie2-build over the fold reference
+        base = _mem_mb("align")
+    elif blca_stage == "reformat":
+        # reads one raw-taxonomy TSV; nothing reference-sized
+        base = _mem_mb("default")
+    elif method == "naive-bayes" and (fit_only or trad_fit):
+        base = _mem_mb("naive_bayes_fit")
+    elif method == "bt2-blca" and (fit_only or trad_fit):
+        # a single-job bt2-blca fold, or the trad shared index: bowtie2-build
+        base = _mem_mb("align")
+    elif method == "consensus-blast" and fit_only:
+        base = _mem_mb("makeblastdb")
+    else:
+        base = _mem_mb("default")
+    return base * int(attempt)
 
 
 def _summary_targets():
@@ -342,6 +397,8 @@ rule tax_credit_assign_fold:
     conda:
         "qiime2-amplicon-2024.10"
     threads: _assign_threads
+    resources:
+        mem_mb=_assign_mem_mb,
     shell:
         """
         set -euo pipefail
