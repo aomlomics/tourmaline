@@ -103,18 +103,24 @@ database with a wide `fit_params` ngram-range is larger still. Sixteen of either
 16-core box will exhaust the machine.
 
 The rule therefore reserves memory per job type, from the `mem_mb_*` config keys. But
-**Snakemake only enforces a resource when you pass its ceiling on the command line**:
+**Snakemake only enforces a resource when the run declares its ceiling**, so pass `--mem`:
+
+```bash
+./tourmaline.sh -s tax-credit -c config_04_tax_credit.yaml -n 16 --mem 120000
+```
+
+Set it to roughly the RAM you are willing to give the run (`free -m`). Without `--mem` the
+reservations are recorded and ignored, and the run can OOM. The wrapper always passes
+`--retries 2`, which helps because each attempt multiplies a job's reservation, so a job
+killed for memory gets more on the next try.
+
+Driving Snakemake directly, the equivalent is:
 
 ```bash
 snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit \
   --configfile config_04_tax_credit.yaml --cores 16 --latency-wait 15 \
   --resources mem_mb=120000 --retries 2
 ```
-
-Set `mem_mb` to roughly the RAM you are willing to give the run (`free -m`). Without the
-flag the reservations are recorded and ignored, and the run can OOM. `--retries` helps
-because each attempt multiplies a job's reservation, so a job killed for memory gets more
-on the next try.
 
 The shipped defaults are starting points, not measurements — memory scales with the
 reference. Measure one job and set the matching key:

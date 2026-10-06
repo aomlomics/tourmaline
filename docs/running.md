@@ -7,17 +7,26 @@ rules invoke `scripts/...` by relative path. Outputs can go anywhere, via `outpu
 
 ```bash
 conda activate snakemake-tour2
-./tourmaline.sh --step [qaqc,repseqs,taxonomy,tax-credit] --configfile [config1,config2,...] --cores N
+./tourmaline.sh --step [qaqc,repseqs,taxonomy,tax-credit] --configfile [config1,config2,...] --cores N [--mem MB]
 ```
 
-Short flags: `-s` / `-c` / `-n`.
+Short flags: `-s` / `-c` / `-n` / `-m`.
 
 Notes:
 
 - The number of `--step` entries must match the number of `--configfile` entries.
 - Provide steps and configs in the same order.
 - Each Snakemake call uses `--use-conda` to pull the `qiime2-amplicon-2024.10` env as needed,
-  plus `--latency-wait 15` for shared filesystems.
+  plus `--latency-wait 15` for shared filesystems and `--retries 2`.
+- `--mem` is optional and sets `--resources mem_mb`, the total memory Snakemake may schedule
+  against. **The tax-credit step's per-job memory reservations do nothing without it** —
+  Snakemake records a rule's `resources: mem_mb` but only enforces it when the run declares
+  a total. Set it to roughly the RAM you will give the run (`free -m`), and at least as large
+  as the biggest single job (`mem_mb_naive_bayes_fit`, 16000 by default). See
+  [Tax-credit step](steps/tax_credit.md#memory-you-must-opt-in-or-nothing-is-throttled).
+- `--retries 2` is always passed, so a job killed for memory is retried with a larger
+  reservation. It also means a reproducibly broken job is attempted three times before the
+  run stops.
 
 ### Examples
 
