@@ -237,9 +237,17 @@ mem_mb_blca: 4000
 mem_mb_align: 4000
 # makeblastdb for the shared consensus-blast database
 mem_mb_makeblastdb: 2000
-# classifying against a classifier, index or database a fit job already built:
-# classify-sklearn (loads the fitted classifier, large with a wide fit_params
-# ngram-range), consensus-blast, consensus-vsearch
+# classify-sklearn, PER WORKER PROCESS. It parallelises with joblib's loky
+# backend, which forks classify_threads separate interpreters that each load
+# their own copy of the fitted classifier, plus the parent's -- so the job
+# reserves this value x (classify_threads + 1). With classify_threads: 1 no
+# workers are spawned and it reserves this value once. Measure one worker's
+# Pss, not Rss: joblib memmaps large arrays, so Rss counts shared pages in
+# every worker. A wide fit_params ngram-range makes each copy much larger.
+mem_mb_classify_per_worker: 4000
+# single-process classification against a prebuilt index or database:
+# consensus-blast, consensus-vsearch. These are thread-parallel inside one
+# process and share the index, so this is a flat total, not per thread.
 mem_mb_classify: 4000
 # everything else (the bt2-blca confidence reformat, REVAMP's BLAST and its
 # post-BLAST assignment)

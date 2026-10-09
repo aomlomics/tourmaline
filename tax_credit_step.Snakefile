@@ -211,10 +211,19 @@ def _assign_threads(wildcards):
 # reference, so a large database needs larger values. Measure one job with
 #   /usr/bin/time -v <the command Snakemake printed>
 # and read "Maximum resident set size", then set the matching config key.
+# Only one job type's memory scales with its thread count. classify-sklearn
+# parallelises through joblib's loky backend (q2_feature_classifier/_skl.py:89),
+# which forks n_jobs separate interpreters, each loading its own copy of the
+# fitted classifier -- so its reservation is per worker and multiplied below.
+# Everything else is thread-parallel inside one process, sharing the one large
+# structure it holds: blastn (-num_threads), vsearch (--threads) and bowtie2
+# (-p / --threads) all keep a single database/index and give each thread only
+# scratch space, so their reservations stay flat. The rest run single-threaded.
 _MEM_MB_DEFAULTS = {
     "naive_bayes_fit": 16000,
     "blca": 4000,
     "align": 4000,
+    "classify_per_worker": 4000,
     "classify": 4000,
     "makeblastdb": 2000,
     "default": 2000,
@@ -225,12 +234,13 @@ def _mem_mb(key):
     return int(config.get(f"mem_mb_{key}", _MEM_MB_DEFAULTS[key]))
 
 
-def _assign_mem_mb(wildcards, attempt):
+def _assign_mem_mb(wildcards, threads, attempt):
     """Memory reservation for one assignment job.
 
     Scaled by *attempt* so a job killed for memory asks for more on each retry
     (snakemake --retries N), which matters because the right number depends on
-    a reference size this cannot know.
+    a reference size this cannot know. *threads* is used only by
+    classify-sklearn, the one job whose memory scales with its own parallelism.
     """
     row = _manifest_row(wildcards.job_id)
     method = _row_str(row, "classify_method", "")
@@ -251,7 +261,16 @@ def _assign_mem_mb(wildcards, attempt):
         # reads one raw-taxonomy TSV; nothing reference-sized
         base = _mem_mb("default")
     elif method == "naive-bayes":
-        base = _mem_mb("classify") if skip_fit else _mem_mb("naive_bayes_fit")
+        if skip_fit:
+            # classify-sklearn: n_jobs loky workers each hold a classifier
+            # copy, and so does the parent that dispatched to them. joblib
+            # memmaps large arrays, so some of that is shared and RSS
+            # over-reports it -- but the reservation has to assume it is not.
+            # n_jobs=1 runs in-process, spawning no workers at all.
+            workers = threads + 1 if threads > 1 else 1
+            base = _mem_mb("classify_per_worker") * workers
+        else:
+            base = _mem_mb("naive_bayes_fit")
     elif method == "bt2-blca":
         if fit_only or trad_fit:
             base = _mem_mb("align")
