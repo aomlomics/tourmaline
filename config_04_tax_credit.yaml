@@ -237,8 +237,12 @@ mem_mb_blca: 4000
 mem_mb_align: 4000
 # makeblastdb for the shared consensus-blast database
 mem_mb_makeblastdb: 2000
-# everything else (classification against a prebuilt classifier/index/database,
-# the confidence reformat, REVAMP's post-BLAST assignment)
+# classifying against a classifier, index or database a fit job already built:
+# classify-sklearn (loads the fitted classifier, large with a wide fit_params
+# ngram-range), consensus-blast, consensus-vsearch
+mem_mb_classify: 4000
+# everything else (the bt2-blca confidence reformat, REVAMP's BLAST and its
+# post-BLAST assignment)
 mem_mb_default: 2000
 
 ## --- ADVANCED ---

@@ -215,6 +215,7 @@ _MEM_MB_DEFAULTS = {
     "naive_bayes_fit": 16000,
     "blca": 4000,
     "align": 4000,
+    "classify": 4000,
     "makeblastdb": 2000,
     "default": 2000,
 }
@@ -236,6 +237,10 @@ def _assign_mem_mb(wildcards, attempt):
     blca_stage = _row_str(row, "blca_stage", "")
     fit_only = _row_is_true(row, "fit_only")
     trad_fit = _row_is_true(row, "trad_fit")
+    # skip_fit means some fit job already built this job's classifier, index or
+    # database, so this job only classifies against it. Without it the job
+    # builds its own first, which dominates the reservation.
+    skip_fit = _row_is_true(row, "skip_fit")
 
     if blca_stage == "blca":
         base = _mem_mb("blca")
@@ -245,15 +250,30 @@ def _assign_mem_mb(wildcards, attempt):
     elif blca_stage == "reformat":
         # reads one raw-taxonomy TSV; nothing reference-sized
         base = _mem_mb("default")
-    elif method == "naive-bayes" and (fit_only or trad_fit):
-        base = _mem_mb("naive_bayes_fit")
-    elif method == "bt2-blca" and (fit_only or trad_fit):
-        # a single-job bt2-blca fold, or the trad shared index: bowtie2-build
-        base = _mem_mb("align")
-    elif method == "consensus-blast" and fit_only:
-        base = _mem_mb("makeblastdb")
-    else:
+    elif method == "naive-bayes":
+        base = _mem_mb("classify") if skip_fit else _mem_mb("naive_bayes_fit")
+    elif method == "bt2-blca":
+        if fit_only or trad_fit:
+            base = _mem_mb("align")
+        else:
+            # No blca_stage and not a fit job: a fold with one parameter set
+            # and one confidence runs all three stages here, so it needs the
+            # largest of them.
+            base = max(_mem_mb("align"), _mem_mb("blca"))
+    elif method == "consensus-blast":
+        if fit_only:
+            base = _mem_mb("makeblastdb")
+        elif skip_fit:
+            base = _mem_mb("classify")
+        else:
+            # single-combination fold: makeblastdb then classify, in one job
+            base = max(_mem_mb("makeblastdb"), _mem_mb("classify"))
+    elif method == "revamp":
+        # BLAST against nt, or the post-BLAST LCA over its btab
         base = _mem_mb("default")
+    else:
+        # consensus-vsearch: loads the reference and classifies against it
+        base = _mem_mb("classify")
     return base * int(attempt)
 
 
