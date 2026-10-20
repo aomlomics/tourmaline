@@ -370,6 +370,10 @@ print("> 3 > Read in bowtie2 output!")
 
 count = 0
 self_id_queries = 0
+# Write to a per-process temp file and rename on success, so a killed run never
+# leaves a partial file behind and two concurrent runs can't interleave writes.
+final_outfile_name = outfile_name
+outfile_name = f"{final_outfile_name}.tmp{os.getpid()}"
 outfile = open(outfile_name, 'w')
 outfile.write("featureid\ttaxonomy\ttaxonomy_confidence\taccessions\n")
 for seqn, info in input_sequences.items():
@@ -506,3 +510,4 @@ if self_id_queries:
     )
 
 outfile.close()
+os.replace(outfile_name, final_outfile_name)
