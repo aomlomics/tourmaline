@@ -1490,9 +1490,11 @@ def _per_level_plot_table(
 ) -> pd.DataFrame:
     """One row per Dataset / iteration / Method / Parameters / level.
 
-    Precision, Recall and F-measure come from the summary's per-level lists; the
-    four classification ratios come from the per-read logs. Every metric is
-    therefore reported for the same fold and taxonomic level.
+    Scores come from the summary's per-level lists; the classification ratios
+    and outcome counts come from each fold's metrics sidecar (or its per-read
+    log). Every metric is therefore reported for the same fold and taxonomic
+    level. The two sources are computed from the same tallies, so where they
+    overlap the summary wins and the duplicate is dropped.
     """
     from tax_credit.novel_evaluation import (
         extract_per_level_accuracy,
@@ -1500,9 +1502,7 @@ def _per_level_plot_table(
     )
 
     keys = ["Dataset", "iteration", "Method", "Parameters", "level"]
-    table = extract_per_level_accuracy(
-        summary_df, columns=["Precision", "Recall", "F-measure"],
-    )
+    table = extract_per_level_accuracy(summary_df)
     table["iteration"] = table["iteration"].astype(str)
     table["level"] = table["level"].astype(int)
     ratios = extract_per_level_classification_ratios_by_fold(assignment_dirs)
@@ -1510,7 +1510,10 @@ def _per_level_plot_table(
         ratios = ratios.drop(columns="novel_level")
         ratios["iteration"] = ratios["iteration"].astype(str)
         ratios["level"] = ratios["level"].astype(int)
-        table = table.merge(ratios, on=keys, how="left")
+        # keep the join keys plus only what the summary does not already carry
+        new_cols = [column for column in ratios.columns
+                    if column in keys or column not in table.columns]
+        table = table.merge(ratios[new_cols], on=keys, how="left")
     table["rank"] = table["level"].map(_rank_name)
     return table
 
@@ -1833,7 +1836,12 @@ def plot_results(cfg: dict) -> None:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.novel_evaluation import extract_per_level_classification_ratios
     from tax_credit.paths import list_assignment_result_dirs
-    from tax_credit.plot_theme import eval_method_label, method_palette, metric_label
+    from tax_credit.plot_theme import (
+        eval_method_label,
+        method_palette,
+        metric_label,
+        plottable_metrics,
+    )
     from tax_credit.plotting_functions import (
         faceted_boxplot_from_data_frame,
         heatmap_from_data_frame,
@@ -1949,8 +1957,8 @@ def plot_results(cfg: dict) -> None:
             box_panels = level_order
         palette = method_palette(table["Method"].unique(), palette_override)
         metrics = [
-            metric for metric in plot_metrics
-            if metric in table.columns and table[metric].notna().any()
+            metric for metric in plottable_metrics(plot_metrics, table.columns)
+            if table[metric].notna().any()
         ]
 
         if "boxplot" in plot_types and box_panels:

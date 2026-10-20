@@ -57,8 +57,9 @@ DEFAULT_PLOT_METRICS = [
 ]
 BACKBONE_MODES = ("warn", "error")
 AUTO_METRIC = "auto"
-# tax_credit.mock_community.METRIC_COLUMNS; duplicated so the config can be
-# validated before the tax-credit package is on sys.path
+# tax_credit.mock_community.METRIC_COLUMNS, minus the audit-only columns;
+# duplicated so the config can be validated before the tax-credit package is
+# on sys.path. Keep in step with tax_credit.plot_theme.NON_PLOT_METRICS.
 SELECTABLE_METRICS = (
     "Taxon Accuracy Rate",
     "Taxon Detection Rate",
@@ -74,6 +75,20 @@ SELECTABLE_METRICS = (
     "overclassification_ratio",
     "misclassification_ratio",
 )
+
+# Accepted in configs as alternative spellings of the taxon rates; mirrors
+# tax_credit.plot_theme.METRIC_ALIASES.
+METRIC_ALIASES = {
+    "precision_pa": "Taxon Accuracy Rate",
+    "recall_pa": "Taxon Detection Rate",
+    "TAR": "Taxon Accuracy Rate",
+    "TDR": "Taxon Detection Rate",
+}
+
+
+def _resolve_metric(metric: str) -> str:
+    return METRIC_ALIASES.get(str(metric).strip(), str(metric).strip())
+
 
 METRICS_SUMMARY = "mock_community_metrics.tsv"
 COMPOSITION_SUMMARY = "mock_community_composition.tsv"
@@ -229,11 +244,13 @@ def mock_settings(cfg: dict) -> dict:
     if backbone_check not in BACKBONE_MODES:
         errors.append(f"mock_community.backbone_check must be one of {BACKBONE_MODES}.")
 
-    best_run_metric = str(block.get("best_run_metric") or AUTO_METRIC).strip()
+    best_run_metric = _resolve_metric(
+        block.get("best_run_metric") or AUTO_METRIC)
     if best_run_metric != AUTO_METRIC and best_run_metric not in SELECTABLE_METRICS:
         errors.append(
             f"mock_community.best_run_metric must be {AUTO_METRIC!r} or one of: "
-            f"{', '.join(SELECTABLE_METRICS)}.")
+            f"{', '.join(SELECTABLE_METRICS)} "
+            f"(aliases: {', '.join(sorted(METRIC_ALIASES))}).")
 
     for db in cfg.get("reference_databases") or []:
         if db.get("pretrained_classifier"):
@@ -254,7 +271,9 @@ def mock_settings(cfg: dict) -> dict:
         "legacy_unresolved_taxa": bool(block.get("legacy_unresolved_taxa")),
         "backbone_check": backbone_check,
         "best_run_metric": best_run_metric,
-        "plot_metrics": _as_list(block.get("plot_metrics")) or DEFAULT_PLOT_METRICS,
+        "plot_metrics": [_resolve_metric(m) for m in
+                         _as_list(block.get("plot_metrics"))]
+                        or DEFAULT_PLOT_METRICS,
         "composition_top_n": int(block.get("composition_top_n") or 12),
     }
 
@@ -766,7 +785,12 @@ def plot_mock(cfg: dict, run_output: str, plots_dir: str, plot_types: set,
     """Metric plots and best-run composition bars for mock communities."""
     import matplotlib.pyplot as plt
     from tax_credit.novel_evaluation import select_best_runs
-    from tax_credit.plot_theme import method_palette, metric_label
+    from tax_credit.mock_community import CLASSIFICATION_RATIO_COLUMNS
+    from tax_credit.plot_theme import (
+        method_palette,
+        metric_label,
+        plottable_metrics,
+    )
     from tax_credit.plotting_functions import (
         composition_barplot_from_data_frame,
         faceted_boxplot_from_data_frame,
@@ -791,11 +815,11 @@ def plot_mock(cfg: dict, run_output: str, plots_dir: str, plot_types: set,
     box_ranks = [r for r in _as_list(cfg.get("plot_ranks")) if r in eval_ranks] or eval_ranks
     best_rank = str(cfg.get("best_run_rank") or "").strip().lower()
     best_rank = best_rank if best_rank in eval_ranks else eval_ranks[-1]
-    metrics = [m for m in settings["plot_metrics"]
-               if m in table.columns and table[m].notna().any()]
+    metrics = [m for m in plottable_metrics(settings["plot_metrics"],
+                                            table.columns)
+               if table[m].notna().any()]
     palette = method_palette(table["Method"].unique(), palette_override)
-    ratio_cols = ["match_ratio", "underclassification_ratio",
-                  "overclassification_ratio", "misclassification_ratio"]
+    ratio_cols = list(CLASSIFICATION_RATIO_COLUMNS)
 
     # best parameter set per dataset, database and method: plotted on their own
     # and used for the composition bars
