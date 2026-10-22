@@ -280,9 +280,27 @@ reference_databases:
     trim_primers: true          # false for pre-trimmed amplicon references (e.g. rCRUX)
     truncate: true
     pretrained_classifier:      # optional, mock-community naive-bayes only
+    taxa_ranks:                 # optional; every rank in this database's taxonomy
 ```
 
 Primers and the simulation settings are only needed by the simulated evaluation methods.
+
+Evaluation scores seven ranks, named by the top-level `taxa_ranks`. Without a per-database
+`taxa_ranks`, those are the first seven fields of each taxonomy string, which is wrong for a
+database with more ranks: PR2 v5 has nine (Domain, Supergroup, Division, Subdivision, Class,
+Order, Family, Genus, Species), so "genus" would be scored on PR2's Order and "species" on its
+Family. Set `taxa_ranks` on such a database to list all of its ranks, naming the ones to score
+with the top-level names; the others are skipped:
+
+```yaml
+  - id: pr2_v5
+    taxa_ranks: kingdom,supergroup,phylum,subdivision,class,order,family,genus,species
+```
+
+This applies to cross-validated, cross-validated-trad and self-validated evaluation. bt2-blca
+also labels its output with it: BLCA pairs rank names with taxonomy fields by position and drops
+fields beyond the last name, so a nine-rank database classified with seven names loses genus and
+species. novel-taxa ignores it, because its folds are still generated on the first seven ranks.
 
 **Evaluation methods (one or more)**
 

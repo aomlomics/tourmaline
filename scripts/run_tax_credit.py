@@ -257,6 +257,91 @@ def _cv_recall_levels(cfg: dict) -> tuple[int, int]:
     return max_level, max_level - 1
 
 
+_DEFAULT_TAXA_RANKS = "kingdom,phylum,class,order,family,genus,species"
+
+
+def _parse_ranks(value) -> list[str]:
+    """Rank names from a comma-separated string or a YAML list."""
+    if isinstance(value, (list, tuple)):
+        items = value
+    else:
+        items = str(value).split(",")
+    return [str(rank).strip() for rank in items if str(rank).strip()]
+
+
+def _database_taxa_ranks(cfg: dict) -> dict[str, str]:
+    """Comma-separated ranks for each database that declares its own ``taxa_ranks``."""
+    return {
+        db["id"]: ",".join(_parse_ranks(db["taxa_ranks"]))
+        for db in cfg.get("reference_databases") or []
+        if db.get("taxa_ranks")
+    }
+
+
+def database_rank_positions(cfg: dict) -> dict[str, list[int]]:
+    """Rank positions to score for databases whose taxonomy is not the standard seven.
+
+    The top-level ``taxa_ranks`` names the seven ranks evaluation scores. A
+    database's own ``taxa_ranks`` lists every rank its taxonomy holds, in order;
+    the ranks whose names appear in the top-level list are scored and the rest
+    skipped. For PR2, ``kingdom,supergroup,phylum,subdivision,class,order,family,
+    genus,species`` scores Domain as kingdom and Division as phylum.
+
+    Only cross-validated, cross-validated-trad and self-validated use this: novel-taxa
+    folds are generated on the first seven ranks, so they are scored that way too.
+    """
+    scored = _parse_ranks(cfg.get("taxa_ranks") or _DEFAULT_TAXA_RANKS)
+    positions = {}
+    for db_id, ranks in _database_taxa_ranks(cfg).items():
+        db_ranks = _parse_ranks(ranks)
+        if db_ranks == scored:
+            continue
+        if len(scored) != 7:
+            raise ValueError(
+                f"taxa_ranks must name seven ranks to score when a reference database "
+                f"declares its own taxa_ranks; got {scored}"
+            )
+        missing = [rank for rank in scored if rank not in db_ranks]
+        if missing:
+            raise ValueError(
+                f"reference_databases '{db_id}': taxa_ranks {db_ranks} has no {missing}. "
+                f"Name the ranks to score with the top-level taxa_ranks names {scored}."
+            )
+        db_positions = [db_ranks.index(rank) for rank in scored]
+        if db_positions != sorted(db_positions):
+            raise ValueError(
+                f"reference_databases '{db_id}': taxa_ranks {db_ranks} must list the "
+                f"scored ranks in the same order as the top-level taxa_ranks {scored}."
+            )
+        positions[db_id] = db_positions
+    return positions
+
+
+def _database_for_reference(reference_id: str, db_ids) -> str | None:
+    """Database id a manifest ``reference_id`` (``<db>``, ``<db>-iter<n>``, ...) belongs to."""
+    if reference_id in db_ids:
+        return reference_id
+    matches = [db_id for db_id in db_ids if reference_id.startswith(db_id + "-")]
+    return max(matches, key=len) if matches else None
+
+
+def _apply_database_taxa_ranks(rows: list, cfg: dict) -> None:
+    """Give rows that pass ``taxa_ranks`` to a tool (bt2-blca) their database's own ranks.
+
+    BLCA pairs rank names with taxonomy fields by position and drops the extras, so
+    a nine-rank database classified with seven names silently loses genus and species.
+    """
+    overrides = _database_taxa_ranks(cfg)
+    if not overrides:
+        return
+    for row in rows:
+        if not row.get("taxa_ranks"):
+            continue
+        db_id = _database_for_reference(str(row["reference_id"]), overrides)
+        if db_id is not None:
+            row["taxa_ranks"] = overrides[db_id]
+
+
 _SUPPORTED_CLASSIFY_METHODS = frozenset({
     "naive-bayes",
     "consensus-blast",
@@ -1411,6 +1496,7 @@ def prepare_manifest(cfg: dict) -> str:
                     job_id_prefix=f"{subdir}-{dataset_id}-{classify_method}",
                 )
 
+    _apply_database_taxa_ranks(rows, cfg)
     manifest = pd.DataFrame(rows)
     manifest.to_csv(manifest_fp, sep="\t", index=False)
     return manifest_fp
@@ -1428,6 +1514,7 @@ def evaluate(cfg: dict) -> None:
     results_root = results_dir(cfg)
     force = cfg.get("force_evaluation", False)
     summary_names = cfg.get("summary_filenames") or {}
+    rank_positions = database_rank_positions(cfg)
 
     for eval_method in cfg.get("evaluation_methods", []):
         if eval_method == "mock-community":
@@ -1461,11 +1548,18 @@ def evaluate(cfg: dict) -> None:
         elif eval_method == "self-validated":
             test_type = "self-validated"
 
+        if test_type == "novel-taxa" and rank_positions:
+            print(
+                "novel-taxa ignores per-database taxa_ranks "
+                f"({', '.join(rank_positions)}): its folds are built on the first "
+                "seven ranks, so they are scored on the first seven ranks."
+            )
         novel_taxa_classification_evaluation(
             results_dirs,
             expected,
             summary_fp,
             test_type=test_type,
+            rank_positions=None if test_type == "novel-taxa" else rank_positions,
         )
 
 

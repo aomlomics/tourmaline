@@ -23,6 +23,12 @@ reference_databases:
     # Optional (mock-community, naive-bayes only): classify mock ASVs with this
     # classifier .qza instead of fitting one on the full database
     pretrained_classifier:
+    # Optional: every rank in this database's taxonomy, in order, when it differs
+    # from the top-level taxa_ranks. Ranks named like the top-level ones are scored;
+    # the rest are skipped. PR2 v5 (9 ranks), scoring Domain as kingdom and Division
+    # as phylum: kingdom,supergroup,phylum,subdivision,class,order,family,genus,species
+    # bt2-blca also uses this list to label the taxonomy. novel-taxa ignores it.
+    taxa_ranks:
   # The local NCBI nt database used by the `revamp` classify method. It has no
   # refseqs_file / taxa_file: revamp reaches nt through BLAST, not QIIME artifacts.
   # Only mock-community evaluates it, and only revamp classifies against it. List its
@@ -68,7 +74,9 @@ classify_methods:
   - consensus-vsearch
   - bt2-blca
 classify_threads: 5
-# Taxonomy ranks for bt2-blca output (comma-separated, no spaces)
+# Taxonomy ranks for bt2-blca output (comma-separated, no spaces). Also the seven
+# ranks evaluation scores; a database with a different taxonomy sets its own
+# taxa_ranks under reference_databases.
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
 
 ## --- NAIVE-BAYES OPTIONS ---
