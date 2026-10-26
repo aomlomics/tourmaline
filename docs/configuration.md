@@ -306,15 +306,14 @@ In novel-taxa folds the expected taxonomy of each query is truncated to the deep
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
 
 ```yaml
-classify_method: naive-bayes
+classify_methods:
+  - naive-bayes
+  - bt2-blca
 classify_threads: 5
-nb_confidence_values: [0.7]
-blca_confidence_values: [0.8]
-max_accepts: 10                 # or a list, e.g. [10, 100]
-blca_perc_identity: 0.8
+nb_confidence_values: [0.7,0.9]
+blca_confidence_values: [0.5,0.7,0.9]
+blca_perc_identity: [0.8,0.9]
 blca_query_cov: 0.8
-skl_confidence: 0.7
-confidence_thres: 0.8
 fit_params: "--p-feat-ext--ngram-range '[7,7]' --p-classify--alpha 0.001"
 generate_plots: true
 ```
