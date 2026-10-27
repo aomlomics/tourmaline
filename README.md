@@ -4,7 +4,7 @@
 
 # Tourmaline 2
 
-Tourmaline 2 is an amplicon sequence processing workflow for Illumina sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline 2 manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
+Tourmaline 2 is an amplicon sequence processing workflow for sequence data that uses [QIIME 2](https://qiime2.org) and the software packages it wraps. Tourmaline 2 manages commands, inputs, and outputs using the [Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow management system.
 
 You describe your analysis in YAML configuration files, and Tourmaline runs the right QIIME 2 commands in the right order, keeping a copy of the config next to every set of results so a run can always be traced back to its parameters.
 
