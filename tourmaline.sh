@@ -8,7 +8,9 @@
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --step qaqc,repseqs,taxonomy,tax-credit --configfile config1,config2,... --cores N"
+    echo "Usage: $0 --step qaqc,repseqs,taxonomy,tax-credit --configfile config1,config2,... --cores N [--mem MB]"
+    echo "  --mem MB   total memory Snakemake may schedule against (--resources mem_mb)."
+    echo "             Without it, a rule's resources: mem_mb is recorded and ignored."
     exit 1
 }
 
@@ -18,6 +20,7 @@ while [[ "$#" -gt 0 ]]; do
         --step|-s) steps="$2"; shift ;;
         --configfile|-c) configfiles="$2"; shift ;;
         --cores|-n) cores="$2"; shift ;;
+        --mem|-m) mem="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; usage ;;
     esac
     shift
@@ -26,6 +29,16 @@ done
 # Check if required parameters are provided
 if [ -z "$steps" ] || [ -z "$configfiles" ] || [ -z "$cores" ]; then
     usage
+fi
+
+# Snakemake only enforces a rule's `resources: mem_mb` when the run declares how
+# much memory is available, so without --mem those reservations are recorded and
+# ignored -- single-threaded jobs then fill every core and can exhaust the machine.
+# --retries is always on: a job killed for memory comes back with a larger
+# reservation, because _assign_mem_mb scales by attempt number.
+extra_args="--retries 2"
+if [ -n "$mem" ]; then
+    extra_args="$extra_args --resources mem_mb=$mem"
 fi
 
 # Split the steps and configfiles into arrays
@@ -51,19 +64,19 @@ for index in "${!step_array[@]}"; do
             #else
                 #snakemake --use-conda -s qaqc_step.Snakefile no_trim_all --configfile $CONFIG --cores $cores --latency-wait 15
             #fi;
-            snakemake --use-conda -s qaqc_step.Snakefile qaqc_all --configfile $CONFIG --cores $cores --latency-wait 15
+            snakemake --use-conda -s qaqc_step.Snakefile qaqc_all --configfile $CONFIG --cores $cores --latency-wait 15 $extra_args
             ;;
         repseqs)
             echo "Running repseqs step with configfile $CONFIG and cores $cores"
-            snakemake --use-conda -s repseqs_step.Snakefile run_denoise --configfile $CONFIG --cores $cores  --latency-wait 15
+            snakemake --use-conda -s repseqs_step.Snakefile run_denoise --configfile $CONFIG --cores $cores  --latency-wait 15 $extra_args
             ;;
         taxonomy)
             echo "Running taxonomy step with configfile $CONFIG and cores $cores"
-            snakemake --use-conda -s taxonomy_step.Snakefile --configfile $CONFIG --cores $cores  --latency-wait 15
+            snakemake --use-conda -s taxonomy_step.Snakefile --configfile $CONFIG --cores $cores  --latency-wait 15 $extra_args
             ;;
         tax-credit)
             echo "Running tax-credit step with configfile $CONFIG and cores $cores"
-            snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit --configfile $CONFIG --cores $cores --latency-wait 15
+            snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit --configfile $CONFIG --cores $cores --latency-wait 15 $extra_args
             ;;
         *)
             echo "Unknown step: $step"

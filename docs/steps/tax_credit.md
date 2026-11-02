@@ -83,6 +83,81 @@ parameter sets × folds is hundreds of assignment jobs. Start with a reduced mat
 > **Keep `classify_threads` well below `--cores`.** Assignment jobs run in parallel, and a
 > large `classify_threads` lets a single job claim every core, serializing the run.
 
+Not every stage uses the threads it reserves, so `tax_credit_assign_fold` sizes each job
+individually rather than giving every job `classify_threads`:
+
+| job | threads |
+|---|---|
+| `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 index + alignment, the REVAMP BLAST | `classify_threads` |
+| `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
+| `fit-classifier-naive-bayes`, as a shared fit job (confidence sweeps, `cross-validated-trad`) | 1 |
+
+`fit-classifier-naive-bayes` takes no thread option. A fold with a single confidence fits and
+classifies in one job, which gets `classify_threads` for the classify step.
+
+### Memory: you must opt in, or nothing is throttled
+
+Because single-threaded jobs ask for one core, **threads no longer limit how many run at
+once — memory does.** These jobs are not comparable in size: the BLCA stage loads the
+whole fold reference into memory before running muscle, and a naive-bayes fit over a full
+database with a wide `fit_params` ngram-range is larger still. Sixteen of either on a
+16-core box will exhaust the machine.
+
+The rule therefore reserves memory per job type, from the `mem_mb_*` config keys. But
+**Snakemake only enforces a resource when the run declares its ceiling**, so pass `--mem`:
+
+```bash
+./tourmaline.sh -s tax-credit -c config_04_tax_credit.yaml -n 16 --mem 120000
+```
+
+Set it to roughly the RAM you are willing to give the run (`free -m`). Without `--mem` the
+reservations are recorded and ignored, and the run can OOM. The wrapper always passes
+`--retries 2`, which helps because each attempt multiplies a job's reservation, so a job
+killed for memory gets more on the next try.
+
+Driving Snakemake directly, the equivalent is:
+
+```bash
+snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit \
+  --configfile config_04_tax_credit.yaml --cores 16 --latency-wait 15 \
+  --resources mem_mb=120000 --retries 2
+```
+
+The shipped defaults are starting points, not measurements — memory scales with the
+reference. Measure one job and set the matching key:
+
+```bash
+/usr/bin/time -v <the command Snakemake printed>   # read "Maximum resident set size"
+```
+
+> **`--resources mem_mb` must be at least as large as the biggest single job.** A run
+> whose ceiling is below some job's reservation fails at execution with that job, and a
+> dry run will not catch it: Snakemake evaluates neither threads nor resources under `-n`.
+
+When a run dies during the fitting or BLCA phase, the signature is an OOM one level down
+rather than a clean error — `muscle: error while loading shared libraries: libc.so.6:
+cannot map zero-fill pages`, `*** OUT OF MEMORY ***` after only tens of MB, then
+`ValueError: No records found in handle` where BLCA read muscle's empty output.
+
+### consensus-blast builds a BLAST database per fold
+
+`classify-consensus-blast` only honours `--p-num-threads` against a pre-indexed database.
+Given `--i-reference-reads` it falls back to `blastn -subject`, which is single-threaded and
+warns that the thread count is ignored. Tourmaline therefore runs `makeblastdb` for each fold
+and classifies with `--i-blastdb`.
+
+None of the swept consensus parameters change the database, so a sweep builds it once per fold
+in a fit job that every parameter combination then reuses — the same sharing bt2-blca uses for
+its bowtie2 index. A fold with a single parameter combination builds it in-job instead. The
+databases land in `data/results/<evaluation-method>/<fold>/<reference>/consensus-blast/consensus_blast/blastdb.qza`
+and are roughly the size of the reference, so a large sweep over many folds needs the disk for
+one copy per fold.
+
+> **Scores shift slightly versus runs made before this change.** BLAST computes E-values from
+> the effective size of the search space, and `-db` and `-subject` mode size it differently, so
+> a borderline hit can fall on either side of the `evalue` cutoff. Re-run consensus-blast
+> rather than comparing new numbers against old ones.
+
 ### Smoke tests
 
 Small subsampled MiFish databases in `00-data/tax-credit-test/` exercise every code path
@@ -141,6 +216,24 @@ Phases are `datasets`, `manifest`, `evaluate`, `plot` and `post-assign`.
 ├── summaries/      # metric tables, per-job scores, best-run selections
 └── plots/          # one folder per evaluation method
 ```
+
+Each assignment result directory under `data/` also holds `classification_accuracy_log.tsv`
+(one line per query) and `classification_metrics.tsv` (one row per rank).
+
+### How assignments are scored
+
+Every query, or every mock ASV, is a *match*, an *underclassification* (correct but too
+shallow), an *overclassification* (deeper than the reference knows) or a *misclassification*.
+Precision, Recall and F-measure are computed from those tallies, with one change from the
+original tax-credit: **overclassification is a false positive but no longer a false negative**,
+so it lowers precision and F-measure but not recall. The original scoring is still reported,
+as `Recall_original` and `F-measure_original`, for comparison; `match_ratio` equals
+`Recall_original`. Scores that have nothing to score are NaN rather than 0.
+
+Results scored before this change are not comparable with new ones. Re-score a finished run
+with `--forcerun tax_credit_evaluate`; no classification is repeated. See
+[Configuration](../configuration.md), *Scoring* and *Mock community evaluation*, for every
+column and the full definitions.
 
 ### Full configuration reference
 

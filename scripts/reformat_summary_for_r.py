@@ -34,8 +34,19 @@ def reformat_summary(summary_file_name, output_file_name, cutoff, output_levels)
     output = open(output_file_name + '.tmp', 'w')
     output.write('\t'.join(header) + '\n')
 
-    for line in summary[1:]:
+    for line_number, line in enumerate(summary[1:], start=2):
+        if not line.strip():
+            continue
         fields = line.strip('\n').split('\t')
+        # every BLCA row has at least "featureid<TAB>taxonomy"; anything shorter
+        # means the raw file was truncated or written by two processes at once
+        if len(fields) <= taxonomy_index:
+            output.close()
+            raise SystemExit(
+                f"Malformed line {line_number} in {summary_file_name}: {line[:200]!r}\n"
+                "The BLCA raw taxonomy looks corrupt (truncated, or written by two "
+                "BLCA processes at once). Delete it and its -blca.done marker and rerun."
+            )
         # a colon in the taxonomy means that something was found
         if ':' in fields[taxonomy_index]:
             taxonomy, confidence = truncate_taxonomy(fields[taxonomy_index], fields[confidence_index], cutoff, output_levels)

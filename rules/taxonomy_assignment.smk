@@ -1,7 +1,10 @@
-## Shared taxonomy assignment rules for Tourmaline taxonomy and tax-credit steps.
+## Taxonomy assignment rules, included by taxonomy_step.Snakefile.
+## (The tax-credit step does not include this file: it runs its own per-fold
+## assignments through scripts/run_taxonomy_assignment_fold.py.)
 ## Parent Snakefile must define: output_dir, config, input_repseqs, output_seq, output_tax,
 ## use_classifier, classify_method, fasta_repseqs (bt2-blca), input_table (revamp),
-## taxonomy_dir, taxonomy_qza, taxonomy_tsv, classifier_qza, fit_params (optional string).
+## taxonomy_dir, taxonomy_qza, taxonomy_tsv, classifier_qza, fit_params (optional string),
+## blastdb_qza and blastdb_source (consensus-blast).
 
 fit_params = config.get("fit_params", "") or ""
 
@@ -15,7 +18,9 @@ if config["classify_method"] == "naive-bayes":
                 classifier_qza
             conda:
                 "qiime2-amplicon-2024.10"
-            threads: config["classify_threads"]
+            # fit-classifier-naive-bayes has no thread option and runs on one
+            # core; claiming classify_threads would reserve the rest for nothing.
+            threads: 1
             params:
                 fitparams=fit_params
             shell:
@@ -103,8 +108,8 @@ elif config["classify_method"] == "bt2-blca":
         shell:
             """
             mkdir -p {params.temp_dir};
-            bowtie2 -x {params.prefix} -f -U {input.repseqs} -S {params.temp_dir}/end_to_end.sam --no-hd --no-sq --very-sensitive --end-to-end --no-unal -p 120 -k 100 --un {params.temp_dir}/end_to_end_reject.fasta
-            bowtie2 -x {params.prefix}  -f -U {params.temp_dir}/end_to_end_reject.fasta -S {params.temp_dir}/local.sam --no-hd --no-sq --very-sensitive --local --no-unal -p 120 -k 100 --un {params.temp_dir}/end_to_end_and_local_reject.fasta
+            bowtie2 -x {params.prefix} -f -U {input.repseqs} -S {params.temp_dir}/end_to_end.sam --no-hd --no-sq --very-sensitive --end-to-end --no-unal -p {threads} -k 100 --un {params.temp_dir}/end_to_end_reject.fasta
+            bowtie2 -x {params.prefix}  -f -U {params.temp_dir}/end_to_end_reject.fasta -S {params.temp_dir}/local.sam --no-hd --no-sq --very-sensitive --local --no-unal -p {threads} -k 100 --un {params.temp_dir}/end_to_end_and_local_reject.fasta
             cat {params.temp_dir}/*.sam > {output.sam}
             python scripts/blca_from_bowtie.py -i {output.sam} -r {input.reftax} -q {input.refseq} -b {params.percID} -l {params.querycov} -p muscle -n 100 -m 1.0 -f 2.5 -g -2 -tr {params.taxaranks} -o {output.raw_taxonomy}
             python scripts/reformat_summary_for_r.py {output.raw_taxonomy} {output.taxonomy} {params.conf} {params.taxaranks}
@@ -128,11 +133,49 @@ elif config["classify_method"] == "bt2-blca":
             "--output-path {output}"
 
 elif config["classify_method"] == "consensus-blast":
+    # blastn honours --p-num-threads only against a pre-indexed database, so a
+    # supplied or built one is passed as --i-blastdb; without either, the
+    # --i-reference-reads path below runs single-threaded as it always has.
+    # blastdb_source is set by the parent Snakefile.
+    if blastdb_source == "import":
+        rule import_blastdb:
+            input:
+                config["blast_database"]
+            output:
+                blastdb_qza
+            conda:
+                "qiime2-amplicon-2024.10"
+            shell:
+                "qiime tools import "
+                "--type BLASTDB "
+                "--input-path {input} "
+                "--output-path {output}"
+
+    elif blastdb_source == "build":
+        rule make_blastdb:
+            input:
+                refseq=output_seq
+            output:
+                blastdb_qza
+            conda:
+                "qiime2-amplicon-2024.10"
+            # makeblastdb is single-threaded; claiming classify_threads here
+            # would reserve cores it cannot use.
+            threads: 1
+            shell:
+                "qiime feature-classifier makeblastdb "
+                "--i-sequences {input.refseq} "
+                "--o-database {output}"
+
     rule feature_classifier_cb:
         input:
-            repseqs=input_repseqs,
-            refseq=output_seq,
-            reftax=output_tax
+            unpack(lambda wildcards: (
+                {"repseqs": input_repseqs, "reftax": output_tax,
+                 "blastdb": blastdb_qza}
+                if blastdb_source else
+                {"repseqs": input_repseqs, "reftax": output_tax,
+                 "refseq": output_seq}
+            ))
         output:
             taxonomy_qza,
         params:
@@ -142,20 +185,30 @@ elif config["classify_method"] == "consensus-blast":
             querycov=config["query_cov"],
             consensus=config["min_consensus"],
             # Read with .get so configs written before this option still parse.
-            maxaccepts=config.get("max_accepts") or 10
+            maxaccepts=config.get("max_accepts") or 10,
+            refflag=(
+                "--i-blastdb " + blastdb_qza if blastdb_source
+                else "--i-reference-reads " + str(output_seq)
+            ),
+            # Only meaningful with --i-blastdb; blastn warns and ignores it
+            # when a subject is given, so leave it off entirely in that case.
+            threadflag=lambda wildcards, threads: (
+                f"--p-num-threads {threads}" if blastdb_source else ""
+            )
         conda:
             "qiime2-amplicon-2024.10"
         threads: config["classify_threads"]
         shell:
             """
             qiime feature-classifier classify-consensus-blast \
-            --i-reference-reads {input.refseq} \
+            {params.refflag} \
             --i-reference-taxonomy {input.reftax} \
             --i-query {input.repseqs} \
             --p-perc-identity {params.percID} \
             --p-query-cov {params.querycov} \
             --p-min-consensus {params.consensus} \
             --p-maxaccepts {params.maxaccepts} \
+            {params.threadflag} \
             --o-classification {output} \
             --o-search-results {params.searchout} \
             {params.classifyparams};

@@ -177,7 +177,34 @@ perc_identity: 0.8
 query_cov: 0.8
 min_consensus: 0.51
 max_accepts: 10   # QIIME2 --p-maxaccepts; `all` is accepted by consensus-vsearch only
+blast_database:            # consensus-blast only; prebuilt BLAST database directory
+build_blast_database: false  # consensus-blast only; build one from refseqs_file
 ```
+
+**Threading consensus-blast.** `classify-consensus-blast` honours `--p-num-threads` only
+against a pre-indexed database. With neither key below set, QIIME 2 is given
+`--i-reference-reads` and runs `blastn -subject`, which is single-threaded no matter what
+`classify_threads` says — this is the default, and it is unchanged from earlier releases.
+
+Set **`blast_database`** to a directory holding a prebuilt database, or
+**`build_blast_database: true`** to have Tourmaline run `makeblastdb` on `refseqs_file`
+first; either one switches the search to `--i-blastdb` and makes `classify_threads`
+effective. `blast_database` wins if both are set. Neither key affects consensus-vsearch,
+which already threads.
+
+A supplied database must be **single-volume, version 5, from BLAST 2.13.0 or newer**:
+QIIME 2's `BLASTDB` type requires `.ndb .nhr .nin .not .nsq .ntf .nto .njs` under one
+basename and cannot represent multi-volume databases (those with a `.nal` file). The
+directory is checked before the run starts, with an error naming the specific problem.
+Build one with `makeblastdb -blastdb_version 5 -dbtype nucl -in refs.fasta -out <dir>/refdb`,
+or just set `build_blast_database: true`.
+
+> **Enabling either key shifts results slightly.** BLAST derives E-values from the
+> effective size of the search space, and sizes it differently in `-db` and `-subject`
+> mode. More importantly, `max_accepts` keeps the *first* N hits above `perc_identity` in
+> database order rather than the top N, so a different traversal order can change which
+> hits survive — most visibly at `max_accepts: 1`. Don't mix old and new results in one
+> comparison.
 
 **BT2-BLCA options**
 
@@ -253,9 +280,27 @@ reference_databases:
     trim_primers: true          # false for pre-trimmed amplicon references (e.g. rCRUX)
     truncate: true
     pretrained_classifier:      # optional, mock-community naive-bayes only
+    taxa_ranks:                 # optional; every rank in this database's taxonomy
 ```
 
 Primers and the simulation settings are only needed by the simulated evaluation methods.
+
+Evaluation scores seven ranks, named by the top-level `taxa_ranks`. Without a per-database
+`taxa_ranks`, those are the first seven fields of each taxonomy string, which is wrong for a
+database with more ranks: PR2 v5 has nine (Domain, Supergroup, Division, Subdivision, Class,
+Order, Family, Genus, Species), so "genus" would be scored on PR2's Order and "species" on its
+Family. Set `taxa_ranks` on such a database to list all of its ranks, naming the ones to score
+with the top-level names; the others are skipped:
+
+```yaml
+  - id: pr2_v5
+    taxa_ranks: kingdom,supergroup,phylum,subdivision,class,order,family,genus,species
+```
+
+This applies to cross-validated, cross-validated-trad and self-validated evaluation. bt2-blca
+also labels its output with it: BLCA pairs rank names with taxonomy fields by position and drops
+fields beyond the last name, so a nine-rank database classified with seven names loses genus and
+species. novel-taxa ignores it, because its folds are still generated on the first seven ranks.
 
 **Evaluation methods (one or more)**
 
@@ -295,7 +340,7 @@ A random pool of the requested size is drawn with a fixed seed, then split with 
 
 Rejected with an error naming both readings: a float at or below 0 or above 1, an int below 1, a quoted string, and any value whose resolved pool would be smaller than `iterations` (some fold would get no sequences) — including a database holding fewer sequences than `iterations`. The key affects `cross-validated-trad` only; other evaluation methods ignore it.
 
-> **Changing `trad_cv_query_size` on a run whose folds already exist requires `force_regenerate: true`.** Nothing keys off the query size, so existing `data/cross-validated-trad/` fold directories are otherwise reused at their old size and the new value is silently ignored.
+> **Changing `trad_cv_query_size` on a run that already finished needs the datasets phase to run again.** Fold contents are rewritten every time that phase runs, but Snakemake skips it once `.datasets.done` exists, so the new value is otherwise silently ignored. Delete `.datasets.done` in the run output directory or pass `--forcerun tax_credit_prepare_datasets`. `force_regenerate: true` does neither.
 
 **What cross-validated-trad actually holds out.** Only the query *list* is held out, not the reference. Each fold's `ref_seqs.fasta` and `ref_taxa.tsv` are symlinks to the full simulated-reads FASTA and cleaned taxonomy, so **every fold is classified against the entire database, queries included** — each query sequence has an exact self-match in the reference. That makes this mode closer to `self-validated` measured on a random subset than to a held-out cross-validation: scores sit near the ceiling and are optimistically biased, and because a single classifier is fitted per database and reused across folds, fold-to-fold spread understates real variance. Use `cross-validated` (taxonomy-aware) for a genuine held-out split, where query sequences are removed from the fold's reference.
 
@@ -304,6 +349,12 @@ In novel-taxa folds the expected taxonomy of each query is truncated to the deep
 `cv_recall_max_level` controls cross-validated assignment manifest generation (default `6`; `min_level` is always `max_level - 1` so each CV fold is listed once). Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
 
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
+
+**Memory.** `mem_mb_naive_bayes_fit`, `mem_mb_blca`, `mem_mb_align`, `mem_mb_classify`, `mem_mb_makeblastdb` and `mem_mb_default` set the peak RSS reserved per job type (MB). `mem_mb_classify` covers single-process classification against a prebuilt index or database (`consensus-blast`, `consensus-vsearch`): both are thread-parallel inside one process and share the index, so it is a flat total.
+
+`classify-sklearn` is the one job whose memory scales with its own thread count, so it has its own key, `mem_mb_classify_per_worker`, reserved **per worker process**. It parallelises through joblib's loky backend, which forks `classify_threads` separate interpreters that each load a copy of the fitted classifier, plus the parent's — so the reservation is `mem_mb_classify_per_worker × (classify_threads + 1)`, or one × the value when `classify_threads` is 1 (joblib then runs in-process and spawns no workers). When measuring it, read `Pss` from `/proc/<pid>/smaps_rollup` rather than `Rss`: joblib memmaps large arrays, so `Rss` counts the same shared pages against every worker. `--p-reads-per-batch` and `--p-pre-dispatch`, passed via `naive_bayes_classify_params`, are the two knobs that reduce it without lowering `classify_threads`. Snakemake only enforces them when the run passes `--resources mem_mb=<total>`; without that flag they are recorded and ignored, and single-threaded jobs will fill every core and can exhaust memory. Pair with `--retries`, which multiplies each reservation by the attempt number. Defaults are starting points — memory scales with the reference, so measure with `/usr/bin/time -v` and read "Maximum resident set size". See [Tax-credit step](steps/tax_credit.md#memory-you-must-opt-in-or-nothing-is-throttled).
+
+`classify_threads` is passed to `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 and the REVAMP BLAST. Jobs whose tool takes no thread option — `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment — ask Snakemake for one core instead, so more of them run at once. `fit-classifier-naive-bayes` is single-threaded too, so a shared fit job (a confidence sweep, or a `cross-validated-trad` fit) also gets one core; `mem_mb_naive_bayes_fit` is what caps how many fits run together. A fold with a single confidence fits and classifies in one job, which gets `classify_threads` for the classify step. consensus-blast reaches its threads through a per-fold `makeblastdb`; see [Tax-credit step](steps/tax_credit.md#consensus-blast-builds-a-blast-database-per-fold) for the sharing and the effect on scores.
 
 ```yaml
 classify_methods:
@@ -369,6 +420,45 @@ All three sweep keys accept a single value or a list. `revamp_query_cov_values` 
 
 BLASTing `nt` usually happens on the machine that holds it. Give each mock dataset a `blast_results` btab and no BLAST runs locally; leave it empty and one BLAST job runs per dataset and mode, shared by every parameter combination. See [Taxonomy step](steps/taxonomy.md#revamp) for the BLAST command, the `revamp` conda environment and database preparation.
 
+**Scoring (cross-validated, cross-validated-trad, novel-taxa, self-validated)**
+
+Each query's assignment is compared with its expected taxonomy and given one of four outcomes: a *match*; *underclassification*, a correct but shallower assignment; *overclassification*, an assignment deeper than the expected taxonomy goes; or *misclassification*, a wrong name at some rank. Every score is computed from the tallies of those outcomes:
+
+```
+TP          = match
+FP          = overclassification + misclassification
+FN          = underclassification + misclassification
+FN_original = underclassification + overclassification + misclassification
+
+Precision          = TP / (TP + FP)
+Recall             = TP / (TP + FN)
+Recall_original    = TP / (TP + FN_original)
+F-measure          = 2 · Precision · Recall / (Precision + Recall)
+F-measure_original = the same, using Recall_original
+```
+
+- **Overclassification is a false positive only.** Assigning deeper than the reference knows no longer counts against recall. It is still a false positive, so precision penalises it and F-measure therefore does too. `Recall_original` and `F-measure_original` keep the original tax-credit scoring, in which overclassification was also a false negative; they are reported for comparison and audit only. Precision did not change, so there is no `Precision_original`.
+- **`match_ratio` equals `Recall_original`, not `Recall`.** The four ratios are each outcome's share of the queries scored. The new recall is `match_ratio / (1 − overclassification_ratio)`, so the two agree only when nothing was overclassified.
+- **Per rank.** Cross-validated, cross-validated-trad and self-validated runs are scored separately at each rank from phylum (level 1) to species (level 6), on taxonomies cut after that rank. Kingdom is not scored. Novel-taxa summaries hold one full-depth score per fold.
+- **NaN means nothing to score; 0 means everything was wrong.** A score is NaN when its denominator is empty — Precision when every query was underclassified, Recall when every query was overclassified — and F-measure is NaN whenever either is. Earlier versions reported 0 for all three whenever there were no true positives. Averages over folds, in plots and in best-run selection, skip NaN.
+
+Scores are written to three places:
+
+- The **summary CSV** in `summaries/` (named by `summary_filenames`) has one row per fold and run: `Dataset`, `level`, `iteration`, `Method`, `Parameters`, the four ratios, `mismatch_level_list`, `Precision`, `Recall`, `F-measure`, `Recall_original`, `F-measure_original` and the tallies `TP`, `FP`, `FN`, `FN_original`. For the per-rank methods each score cell holds a list of seven values indexed by level (kingdom first, always NaN); for novel-taxa it holds one value. The ratios describe the full-depth comparison.
+- **`classification_metrics.tsv`**, new, in each assignment result directory: one row per rank 1–6 with `Dataset`, `novel_level`, `iteration`, `Method`, `Parameters`, `level`, `rank`, the outcome counts `n_scored`, `n_match`, `n_under`, `n_over`, `n_mis`, the tallies, the five scores and the four ratios. It is written for every evaluation method, novel-taxa included, and is what the per-rank plots read.
+- **`classification_accuracy_log.tsv`**, beside it: one line per query with its observed and expected taxonomy, outcome and mismatch level, plus the fold's scores (now including `Recall_original` and `F-measure_original`).
+
+Tallies count queries, so `TP / (TP + FP)` reproduces `Precision`. The `*_original` scores and the raw counts are audit-only: listing them in `plot_metrics` has no effect, and they are never used to choose a best run, because counts are not comparable between databases of different sizes.
+
+> **Re-scoring a finished run.** Scores from before this revision are not comparable with new ones: `Recall`, `F-measure` and the NaN handling all changed. `evaluate` rewrites the summaries, logs and `classification_metrics.tsv` each time it runs, but Snakemake will not rerun it on a finished run by itself. Re-score without repeating any classification with
+>
+> ```bash
+> snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit \
+>   --configfile config_04_tax_credit.yaml --cores 8 --forcerun tax_credit_evaluate
+> ```
+>
+> Plots are redrawn afterwards. For mock-community results, also delete `summaries/mock-community/per-job/` first (see *Outputs* under *Mock community evaluation*).
+
 **Plotting and log analysis**
 
 ```yaml
@@ -381,7 +471,7 @@ generate_log_analysis: true
 log_analysis_ranks: [species, genus, family]
 ```
 
-Cross-validated and self-validated metrics are plotted per fold and per taxonomic rank. Precision, Recall and F-measure come from the evaluation summary; the four classification ratios are recomputed from each fold's `classification_accuracy_log.tsv`. Pointplots show each metric across ranks, boxplots show the spread with one panel per rank in `plot_ranks` (optional, default `[genus, species]`). Both group by dataset and method, pooling all folds and parameter sets of a method; heatmaps show parameter sets separately. CSVs keep numeric levels (1 = phylum … 6 = species); plot axes use rank names.
+Cross-validated and self-validated metrics are plotted per fold and per taxonomic rank. Precision, Recall and F-measure come from the evaluation summary; the four classification ratios come from each fold's `classification_metrics.tsv`, or are recomputed from `classification_accuracy_log.tsv` for results scored before that file existed. `plot_metrics` may name any score or ratio; `Recall_original`, `F-measure_original` and the raw counts are skipped (see *Scoring* above). Pointplots show each metric across ranks, boxplots show the spread with one panel per rank in `plot_ranks` (optional, default `[genus, species]`). Both group by dataset and method, pooling all folds and parameter sets of a method; heatmaps show parameter sets separately. CSVs keep numeric levels (1 = phylum … 6 = species); plot axes use rank names.
 
 Plot files are named `<evaluation method>-<metric>-<plot type>.pdf` inside each evaluation method's folder, e.g. `plots/cross-validated/cross-validated-F-measure-heatmap.pdf`, and are read from the summary named in `summary_filenames`. Each classify method keeps the same colourblind-safe colour in every plot unless `plot_color_palette` sets a seaborn palette name or a method → colour mapping. Axes and heatmap colour scales zoom (and say so) when every value is within 0.25 of 0 or 1, so near-zero novel-taxa scores stay visible. `<evaluation method>-classification-ratios-stacked-barplot.pdf` has one row per method + parameter set and one column per reference database. PDF text is embedded as editable TrueType (Arial, or DejaVu Sans where Arial is not installed).
 
@@ -482,12 +572,16 @@ mock_community:
 
 At each rank, taxonomy strings are cut after that rank. A string is *resolved* at a rank if it has a name there, so an ASV assigned only to genus, and an expected taxon only known to genus, are unresolved at species.
 
-- **Taxon Accuracy Rate (TAR)**: the fraction of observed taxa that are expected, |observed ∩ expected| / |observed|. Observed taxa have more than `min_relative_abundance` of the sample's reads; expected taxa have expected abundance above 0. Only resolved taxa count on either side. NaN when no taxa are observed.
-- **Taxon Detection Rate (TDR)**: the fraction of expected taxa that are observed, |observed ∩ expected| / |expected|. NaN when no taxa are expected at that rank.
+- **Taxon Accuracy Rate (TAR)**, also accepted in configs as `precision_pa`: the fraction of observed taxa that are expected, `tp_pa / (tp_pa + fp_pa)` = |observed ∩ expected| / |observed|. Observed taxa have more than `min_relative_abundance` of the sample's reads; expected taxa have expected abundance above 0. Only resolved taxa count on either side. NaN when no taxa are observed.
+- **Taxon Detection Rate (TDR)**, also accepted as `recall_pa`: the fraction of expected taxa that are observed, `tp_pa / (tp_pa + fn_pa)` = |observed ∩ expected| / |expected|. NaN when no taxa are expected at that rank.
+- **Presence/absence counts** behind TAR and TDR: `tp_pa` (taxa both observed and expected), `fp_pa` (observed, not expected), `fn_pa` (expected, not observed), and the totals `tot_val_obs` (= `tp_pa + fp_pa`) and `tot_val_exp` (= `tp_pa + fn_pa`). These count **taxa in the community**, not ASVs.
 - **Bray-Curtis**: dissimilarity between the expected composition and the observed read proportions at that rank (0 = identical, 1 = nothing shared; lower is better). Unresolved assignments keep their truncated taxonomy, and unassigned reads are pooled as `Unassigned`, so reads that are not assigned still count. No abundance threshold is applied. PCR and copy-number bias mean observed proportions rarely match the true mix even with perfect classification, so use Bray-Curtis to compare methods rather than as an absolute score.
-- **Precision, Recall, F-measure** (needs `asv_taxonomy`): each ASV's assignment is compared with its known taxonomy and weighted by its reads in the sample. A match is a true positive; underclassification (a correct but shallower assignment) is a false negative; overclassification and misclassification are a false positive and a false negative. This is the scoring used for the simulated evaluation methods. `ASV Precision`, `ASV Recall` and `ASV F-measure` weight every ASV equally. `match_ratio`, `underclassification_ratio`, `overclassification_ratio` and `misclassification_ratio` are the read-weighted fraction of each outcome. ASVs of unknown taxonomy are left out; `reads_scored_fraction` shows how many reads were scored.
+- **Precision, Recall, F-measure** (needs `asv_taxonomy`): each ASV's assignment is compared with its known taxonomy and weighted by its reads in the sample. A match is a true positive. Underclassification (a correct but shallower assignment) is a false negative. Misclassification is both a false positive and a false negative. **Overclassification** — an assignment deeper than the reference knows — is a false positive **only**: assigning past the end of the reference does not count against recall. Because it is still a false positive, precision penalises it and F-measure therefore does too. This is the scoring used for the simulated evaluation methods.
+- **Recall_original, F-measure_original**: the same scores under the original tax-credit scoring, in which overclassification *also* counted as a false negative. Reported for comparison and audit; they are never plotted and cannot be used for `best_run_metric`. Precision is unaffected by the redefinition, so there is no `Precision_original`.
+- **Tallies**: `TP`, `FP`, `FN` and `FN_original` are **read sums**, so `TP / (TP + FP)` reproduces `Precision`. `ASV Precision`, `ASV Recall`, `ASV F-measure`, `ASV Recall_original` and `ASV F-measure_original` weight every ASV equally, and their tallies `n_match`, `n_under`, `n_over` and `n_mis` are **ASV counts**, so `n_match / (n_match + n_over + n_mis)` reproduces `ASV Precision`.
+- `match_ratio`, `underclassification_ratio`, `overclassification_ratio` and `misclassification_ratio` are the read-weighted fraction of each outcome. Note that `match_ratio` equals `Recall_original`, **not** `Recall`: the new recall is `match_ratio / (1 − overclassification_ratio)`, so the two agree only when nothing was overclassified. ASVs of unknown taxonomy are left out; `reads_scored_fraction` shows how many reads were scored.
 
-Metrics that cannot be computed are left empty (NaN), not `-1`.
+Metrics that cannot be computed are left empty (NaN), not `-1` and not `0`. A `0` means the classifier made predictions and got them all wrong; NaN means there was nothing to score.
 
 **Differences from the original tax-credit mock evaluation**
 
@@ -529,7 +623,11 @@ Metrics that cannot be computed are left empty (NaN), not `-1`.
 
 `unscored_asvs-<dataset>.tsv` lists feature-table ASVs without a known taxonomy (`Feature ID`, `reason` = `not in asv_taxonomy` or `empty or Unassigned in asv_taxonomy`, `reads_in_mock_samples`, `reads_total`), sorted by reads in the evaluated mock samples. It is written only for expected sets with `asv_taxonomy` and pairs that have mock samples.
 
-`mock_community_metrics.tsv` columns: `MockDataset`, `Reference`, `ExpectedSet`, `Method`, `Parameters`, `SampleID`, `rank`, `level`, the metrics above, and the counts `n_expected_taxa`, `n_observed_taxa`, `n_shared_taxa`, `n_asvs_scored`, `reads_scored_fraction`. `mock_community_composition.tsv` has one row per run, sample, rank and taxon, with `expected` and `observed` relative abundance and whether the taxon is `resolved` at that rank.
+`mock_community_metrics.tsv` columns: `MockDataset`, `Reference`, `ExpectedSet`, `Method`, `Parameters`, `SampleID`, `rank`, `level`, the metrics above, and the counts `tp_pa`, `fp_pa`, `fn_pa`, `tot_val_exp`, `tot_val_obs`, `n_asvs_scored`, `reads_scored_fraction`.
+
+> **Results from before the metric revision cannot be reused.** The columns were renamed and the meaning of `Recall` and `F-measure` changed, so old files are neither loadable nor comparable column-by-column against new ones. Delete `summaries/mock-community/per-job/` before re-running: `write_summaries` reuses a per-job `.metrics.tsv` whenever the file exists, so stale files would otherwise be folded into the new summary. For the simulated evaluation methods nothing needs deleting — the accuracy logs, metrics sidecars and summaries are rewritten on every `evaluate` run — but on a finished run `evaluate` must be forced (`--forcerun tax_credit_evaluate`; see *Re-scoring a finished run* above). To compare against an older run, re-score it with the current code rather than reading its old summary.
+
+`mock_community_composition.tsv` has one row per run, sample, rank and taxon, with `expected` and `observed` relative abundance and whether the taxon is `resolved` at that rank.
 
 Plots are drawn per mock dataset, for the metrics in `mock_community.plot_metrics` and the `plot_types` in the config:
 
@@ -539,7 +637,7 @@ Plots are drawn per mock dataset, for the metrics in `mock_community.plot_metric
 - `stacked_bar`: read-weighted classification ratios by rank (needs `asv_taxonomy`).
 - `best_run_stacked_bar`: `mock-community-<dataset>-composition-<rank>.pdf` draws the expected composition next to the observed composition of each method's best parameter set. One figure per mock dataset holds every reference database: databases are rows, mock samples are columns, and all panels share the taxon colours. `summaries/best_runs/mock-community/mock_community_best_runs.csv` also lists the best run per database for every metric in `plot_metrics`.
 
-**Choosing the best run.** `mock_community.best_run_metric` sets the metric that picks each method's best parameter set for the composition plot and the best-run box and point plots. Runs are compared at `best_run_rank` (or the deepest `eval_ranks` entry when `best_run_rank` is not one of them), averaged over the mock samples; Bray-Curtis is minimised and every other metric maximised. The default `auto` uses F-measure for databases whose expected set has an `asv_taxonomy` and Bray-Curtis for the rest, so a run holding both kinds of expected set picks per database. Naming a metric (for example `Taxon Detection Rate`) uses it everywhere; a database with no score for that metric gets no best run and a message says so. The picks are written to `summaries/best_runs/mock-community/mock_community_best_per_method.csv` with the metric, direction, value and number of tied runs.
+**Choosing the best run.** `mock_community.best_run_metric` sets the metric that picks each method's best parameter set for the composition plot and the best-run box and point plots. Runs are compared at `best_run_rank` (or the deepest `eval_ranks` entry when `best_run_rank` is not one of them), averaged over the mock samples; Bray-Curtis is minimised and every other metric maximised. The default `auto` uses F-measure for databases whose expected set has an `asv_taxonomy` and Bray-Curtis for the rest, so a run holding both kinds of expected set picks per database. Naming a metric (for example `Taxon Detection Rate`) uses it everywhere. Here and in `mock_community.plot_metrics`, `precision_pa` or `TAR` may stand for `Taxon Accuracy Rate` and `recall_pa` or `TDR` for `Taxon Detection Rate`; the `*_original` scores and the counts cannot be chosen, and are skipped if listed in `plot_metrics`. A database with no score for that metric gets no best run and a message says so. The picks are written to `summaries/best_runs/mock-community/mock_community_best_per_method.csv` with the metric, direction, value and number of tied runs.
 
 Log analysis (`generate_log_analysis`) applies to the simulated evaluation methods only.
 

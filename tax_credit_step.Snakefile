@@ -96,6 +96,9 @@ def _assign_params(wildcards):
         "fit_params": _row_str(row, "fit_params", ""),
         "classify_params": _row_str(row, "classify_params", ""),
         "bowtie_index_dir": _row_str(row, "bowtie_index_dir", ""),
+        # consensus-blast shared database; blank for every other method and for
+        # single-combination folds, which build it in-job
+        "blastdb_qza": _row_str(row, "blastdb_qza", ""),
         # bt2-blca stage split; blank for every other method and for single-job folds
         "blca_stage": _row_str(row, "blca_stage", ""),
         "blca_shared_dir": _row_str(row, "blca_shared_dir", ""),
@@ -153,6 +156,144 @@ def _assign_params(wildcards):
         if params.get(field) is None:
             params[field] = _config_float(field, 0.8 if field != "min_consensus" else 0.51)
     return params
+
+
+def _row_is_true(row, field):
+    return _row_str(row, field, "").lower() == "true"
+
+
+# One rule dispatches every kind of assignment work, but only some of the tools
+# it reaches are multithreaded (see scripts/run_taxonomy_assignment_fold.py), so
+# the thread count is decided per job rather than per rule. Jobs running a
+# single-threaded tool ask for one core, letting Snakemake pack more of them
+# into the same --cores.
+# Concurrency is bounded by mem_mb (below), not by threads, so a job running a
+# single-threaded tool can safely ask for one core.
+def _assign_threads(wildcards):
+    row = _manifest_row(wildcards.job_id)
+    method = _row_str(row, "classify_method", "")
+    blca_stage = _row_str(row, "blca_stage", "")
+    fit_only = _row_is_true(row, "fit_only")
+    trad_fit = _row_is_true(row, "trad_fit")
+
+    # BLCA itself (muscle + 100 bootstraps per query) and the confidence
+    # reformat take no thread option; the align stage before them does.
+    if blca_stage in ("blca", "reformat"):
+        return 1
+    # fit-classifier-naive-bayes has no thread option. The bt2-blca fit jobs
+    # that share this flag build a bowtie2 index, which does.
+    if method == "naive-bayes" and (fit_only or trad_fit):
+        return 1
+    # makeblastdb, the shared consensus-blast fit
+    if method == "consensus-blast" and fit_only:
+        return 1
+    # revamp assignment is the post-BLAST LCA; BLAST is its own fit job, whose
+    # btab this row names. Without one it would BLAST here and need the threads.
+    if (
+        method == "revamp"
+        and not fit_only
+        and _row_str(row, "revamp_blast_results", "")
+    ):
+        return 1
+    return config["classify_threads"]
+
+
+# Peak RSS per job type, in MB. These jobs differ by more than an order of
+# magnitude, and threads alone do not bound them: the BLCA stage loads the whole
+# fold reference into a dict (blca_from_bowtie.py), and a naive-bayes fit over a
+# full database with a wide fit_params ngram-range is larger again. Running a
+# single-threaded job on every core therefore exhausts memory long before CPU.
+#
+# Snakemake only ENFORCES this when the run passes --resources mem_mb=<total>;
+# without that the numbers are recorded and ignored. See docs/steps/tax_credit.md.
+#
+# The defaults are starting points, not measurements -- memory scales with the
+# reference, so a large database needs larger values. Measure one job with
+#   /usr/bin/time -v <the command Snakemake printed>
+# and read "Maximum resident set size", then set the matching config key.
+# Only one job type's memory scales with its thread count. classify-sklearn
+# parallelises through joblib's loky backend (q2_feature_classifier/_skl.py:89),
+# which forks n_jobs separate interpreters, each loading its own copy of the
+# fitted classifier -- so its reservation is per worker and multiplied below.
+# Everything else is thread-parallel inside one process, sharing the one large
+# structure it holds: blastn (-num_threads), vsearch (--threads) and bowtie2
+# (-p / --threads) all keep a single database/index and give each thread only
+# scratch space, so their reservations stay flat. The rest run single-threaded.
+_MEM_MB_DEFAULTS = {
+    "naive_bayes_fit": 16000,
+    "blca": 4000,
+    "align": 4000,
+    "classify_per_worker": 4000,
+    "classify": 4000,
+    "makeblastdb": 2000,
+    "default": 2000,
+}
+
+
+def _mem_mb(key):
+    return int(config.get(f"mem_mb_{key}", _MEM_MB_DEFAULTS[key]))
+
+
+def _assign_mem_mb(wildcards, threads, attempt):
+    """Memory reservation for one assignment job.
+
+    Scaled by *attempt* so a job killed for memory asks for more on each retry
+    (snakemake --retries N), which matters because the right number depends on
+    a reference size this cannot know. *threads* is used only by
+    classify-sklearn, the one job whose memory scales with its own parallelism.
+    """
+    row = _manifest_row(wildcards.job_id)
+    method = _row_str(row, "classify_method", "")
+    blca_stage = _row_str(row, "blca_stage", "")
+    fit_only = _row_is_true(row, "fit_only")
+    trad_fit = _row_is_true(row, "trad_fit")
+    # skip_fit means some fit job already built this job's classifier, index or
+    # database, so this job only classifies against it. Without it the job
+    # builds its own first, which dominates the reservation.
+    skip_fit = _row_is_true(row, "skip_fit")
+
+    if blca_stage == "blca":
+        base = _mem_mb("blca")
+    elif blca_stage == "align":
+        # bowtie2-build over the fold reference
+        base = _mem_mb("align")
+    elif blca_stage == "reformat":
+        # reads one raw-taxonomy TSV; nothing reference-sized
+        base = _mem_mb("default")
+    elif method == "naive-bayes":
+        if skip_fit:
+            # classify-sklearn: n_jobs loky workers each hold a classifier
+            # copy, and so does the parent that dispatched to them. joblib
+            # memmaps large arrays, so some of that is shared and RSS
+            # over-reports it -- but the reservation has to assume it is not.
+            # n_jobs=1 runs in-process, spawning no workers at all.
+            workers = threads + 1 if threads > 1 else 1
+            base = _mem_mb("classify_per_worker") * workers
+        else:
+            base = _mem_mb("naive_bayes_fit")
+    elif method == "bt2-blca":
+        if fit_only or trad_fit:
+            base = _mem_mb("align")
+        else:
+            # No blca_stage and not a fit job: a fold with one parameter set
+            # and one confidence runs all three stages here, so it needs the
+            # largest of them.
+            base = max(_mem_mb("align"), _mem_mb("blca"))
+    elif method == "consensus-blast":
+        if fit_only:
+            base = _mem_mb("makeblastdb")
+        elif skip_fit:
+            base = _mem_mb("classify")
+        else:
+            # single-combination fold: makeblastdb then classify, in one job
+            base = max(_mem_mb("makeblastdb"), _mem_mb("classify"))
+    elif method == "revamp":
+        # BLAST against nt, or the post-BLAST LCA over its btab
+        base = _mem_mb("default")
+    else:
+        # consensus-vsearch: loads the reference and classifies against it
+        base = _mem_mb("classify")
+    return base * int(attempt)
 
 
 def _summary_targets():
@@ -294,7 +435,9 @@ rule tax_credit_assign_fold:
         assign=lambda wildcards: _assign_params(wildcards),
     conda:
         "qiime2-amplicon-2024.10"
-    threads: config["classify_threads"]
+    threads: _assign_threads
+    resources:
+        mem_mb=_assign_mem_mb,
     shell:
         """
         set -euo pipefail
@@ -306,6 +449,7 @@ rule tax_credit_assign_fold:
         ROW_SKIP=$(echo "{params.row.skip_fit}" | tr -d '"')
         ROW_CLS=$(echo "{params.row.classifier_qza}" | tr -d '"')
         ROW_BT2=$(echo "{params.assign[bowtie_index_dir]}" | tr -d '"')
+        ROW_BLASTDB=$(echo "{params.assign[blastdb_qza]}" | tr -d '"')
         ROW_BLCA_STAGE=$(echo "{params.assign[blca_stage]}" | tr -d '"')
         ROW_BLCA_SHARED=$(echo "{params.assign[blca_shared_dir]}" | tr -d '"')
         ROW_BLCA_RAW=$(echo "{params.assign[blca_raw_taxonomy]}" | tr -d '"')
@@ -325,6 +469,10 @@ rule tax_credit_assign_fold:
         EXTRA_CONSENSUS=""
         if [ "{params.assign[classify_method]}" = "consensus-blast" ] || [ "{params.assign[classify_method]}" = "consensus-vsearch" ]; then
             EXTRA_CONSENSUS="--max-accepts {params.assign[max_accepts]}"
+        fi
+        EXTRA_BLASTDB=""
+        if [ -n "$ROW_BLASTDB" ] && [ "$ROW_BLASTDB" != "nan" ] && [ "$ROW_BLASTDB" != "" ]; then
+            EXTRA_BLASTDB="--blastdb-qza $ROW_BLASTDB"
         fi
         EXTRA_REVAMP=""
         if [ "{params.assign[classify_method]}" = "revamp" ]; then
@@ -380,7 +528,7 @@ rule tax_credit_assign_fold:
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
             --taxa-ranks '{params.assign[taxa_ranks]}' \
-            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_REVAMP $EXTRA_BLCA $FIT_ONLY
+            $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_BLASTDB $EXTRA_REVAMP $EXTRA_BLCA $FIT_ONLY
 
         touch {output}
         """

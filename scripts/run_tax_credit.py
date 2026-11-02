@@ -257,6 +257,91 @@ def _cv_recall_levels(cfg: dict) -> tuple[int, int]:
     return max_level, max_level - 1
 
 
+_DEFAULT_TAXA_RANKS = "kingdom,phylum,class,order,family,genus,species"
+
+
+def _parse_ranks(value) -> list[str]:
+    """Rank names from a comma-separated string or a YAML list."""
+    if isinstance(value, (list, tuple)):
+        items = value
+    else:
+        items = str(value).split(",")
+    return [str(rank).strip() for rank in items if str(rank).strip()]
+
+
+def _database_taxa_ranks(cfg: dict) -> dict[str, str]:
+    """Comma-separated ranks for each database that declares its own ``taxa_ranks``."""
+    return {
+        db["id"]: ",".join(_parse_ranks(db["taxa_ranks"]))
+        for db in cfg.get("reference_databases") or []
+        if db.get("taxa_ranks")
+    }
+
+
+def database_rank_positions(cfg: dict) -> dict[str, list[int]]:
+    """Rank positions to score for databases whose taxonomy is not the standard seven.
+
+    The top-level ``taxa_ranks`` names the seven ranks evaluation scores. A
+    database's own ``taxa_ranks`` lists every rank its taxonomy holds, in order;
+    the ranks whose names appear in the top-level list are scored and the rest
+    skipped. For PR2, ``kingdom,supergroup,phylum,subdivision,class,order,family,
+    genus,species`` scores Domain as kingdom and Division as phylum.
+
+    Only cross-validated, cross-validated-trad and self-validated use this: novel-taxa
+    folds are generated on the first seven ranks, so they are scored that way too.
+    """
+    scored = _parse_ranks(cfg.get("taxa_ranks") or _DEFAULT_TAXA_RANKS)
+    positions = {}
+    for db_id, ranks in _database_taxa_ranks(cfg).items():
+        db_ranks = _parse_ranks(ranks)
+        if db_ranks == scored:
+            continue
+        if len(scored) != 7:
+            raise ValueError(
+                f"taxa_ranks must name seven ranks to score when a reference database "
+                f"declares its own taxa_ranks; got {scored}"
+            )
+        missing = [rank for rank in scored if rank not in db_ranks]
+        if missing:
+            raise ValueError(
+                f"reference_databases '{db_id}': taxa_ranks {db_ranks} has no {missing}. "
+                f"Name the ranks to score with the top-level taxa_ranks names {scored}."
+            )
+        db_positions = [db_ranks.index(rank) for rank in scored]
+        if db_positions != sorted(db_positions):
+            raise ValueError(
+                f"reference_databases '{db_id}': taxa_ranks {db_ranks} must list the "
+                f"scored ranks in the same order as the top-level taxa_ranks {scored}."
+            )
+        positions[db_id] = db_positions
+    return positions
+
+
+def _database_for_reference(reference_id: str, db_ids) -> str | None:
+    """Database id a manifest ``reference_id`` (``<db>``, ``<db>-iter<n>``, ...) belongs to."""
+    if reference_id in db_ids:
+        return reference_id
+    matches = [db_id for db_id in db_ids if reference_id.startswith(db_id + "-")]
+    return max(matches, key=len) if matches else None
+
+
+def _apply_database_taxa_ranks(rows: list, cfg: dict) -> None:
+    """Give rows that pass ``taxa_ranks`` to a tool (bt2-blca) their database's own ranks.
+
+    BLCA pairs rank names with taxonomy fields by position and drops the extras, so
+    a nine-rank database classified with seven names silently loses genus and species.
+    """
+    overrides = _database_taxa_ranks(cfg)
+    if not overrides:
+        return
+    for row in rows:
+        if not row.get("taxa_ranks"):
+            continue
+        db_id = _database_for_reference(str(row["reference_id"]), overrides)
+        if db_id is not None:
+            row["taxa_ranks"] = overrides[db_id]
+
+
 _SUPPORTED_CLASSIFY_METHODS = frozenset({
     "naive-bayes",
     "consensus-blast",
@@ -637,6 +722,8 @@ def _empty_manifest_artifact_fields() -> dict:
     return {
         "classifier_qza": "",
         "bowtie_index_dir": "",
+        # consensus-blast sweeps only; blank means "build the database in-job"
+        "blastdb_qza": "",
         # bt2-blca stage split (sweeps only); blank means "run all stages here"
         "blca_stage": "",
         "blca_shared_dir": "",
@@ -700,7 +787,42 @@ def _append_fold_assignment_rows(
         return
 
     if method in ("consensus-blast", "consensus-vsearch"):
-        for combo in consensus_param_combinations(cfg):
+        combos = consensus_param_combinations(cfg)
+        # consensus-blast reaches blastn through a pre-indexed database so that
+        # --p-num-threads is honoured (blastn -subject ignores it). The database
+        # depends on the reference alone, not on any swept parameter, so a sweep
+        # builds it once per fold in a fit job and every combination reuses it.
+        # A single-combination fold builds it in-job instead; vsearch has no
+        # equivalent and is unaffected.
+        shared_blastdb = ""
+        fit_job_id = ""
+        if method == "consensus-blast" and len(combos) > 1:
+            shared_dir = join(
+                results_root, subdir, dataset_id, reference_id, method,
+                fit_param_id(method, method_cfg),
+            )
+            fit_job_id = f"{job_id_prefix}-{fit_param_id(method, method_cfg)}-fit"
+            rows.append({
+                "job_id": fit_job_id,
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": shared_dir,
+                "confidence": _manifest_na(),
+                "skip_fit": False,
+                "trad_fit": False,
+                "fit_only": True,
+                "fit_job_id": "",
+                **_empty_manifest_artifact_fields(),
+                # makeblastdb reads only the reference; the swept values on this
+                # row are placeholders so the manifest stays rectangular.
+                **_manifest_assign_params(method, method_cfg, combos[0]),
+            })
+            shared_blastdb = join(shared_dir, "blastdb.qza")
+        for combo in combos:
             assign_params = _manifest_assign_params(method, method_cfg, combo)
             p = param_id(method, method_cfg, 0.0, combo)
             assign_dir = join(results_root, subdir, dataset_id, reference_id, method, p)
@@ -714,11 +836,12 @@ def _append_fold_assignment_rows(
                 "ref_taxa": ref_taxa,
                 "output_dir": assign_dir,
                 "confidence": _manifest_na(),
-                "skip_fit": False,
+                "skip_fit": bool(shared_blastdb),
                 "trad_fit": False,
                 "fit_only": False,
-                "fit_job_id": "",
+                "fit_job_id": fit_job_id,
                 **_empty_manifest_artifact_fields(),
+                "blastdb_qza": shared_blastdb,
                 **assign_params,
             })
         return
@@ -1373,6 +1496,7 @@ def prepare_manifest(cfg: dict) -> str:
                     job_id_prefix=f"{subdir}-{dataset_id}-{classify_method}",
                 )
 
+    _apply_database_taxa_ranks(rows, cfg)
     manifest = pd.DataFrame(rows)
     manifest.to_csv(manifest_fp, sep="\t", index=False)
     return manifest_fp
@@ -1390,6 +1514,7 @@ def evaluate(cfg: dict) -> None:
     results_root = results_dir(cfg)
     force = cfg.get("force_evaluation", False)
     summary_names = cfg.get("summary_filenames") or {}
+    rank_positions = database_rank_positions(cfg)
 
     for eval_method in cfg.get("evaluation_methods", []):
         if eval_method == "mock-community":
@@ -1423,11 +1548,18 @@ def evaluate(cfg: dict) -> None:
         elif eval_method == "self-validated":
             test_type = "self-validated"
 
+        if test_type == "novel-taxa" and rank_positions:
+            print(
+                "novel-taxa ignores per-database taxa_ranks "
+                f"({', '.join(rank_positions)}): its folds are built on the first "
+                "seven ranks, so they are scored on the first seven ranks."
+            )
         novel_taxa_classification_evaluation(
             results_dirs,
             expected,
             summary_fp,
             test_type=test_type,
+            rank_positions=None if test_type == "novel-taxa" else rank_positions,
         )
 
 
@@ -1452,9 +1584,11 @@ def _per_level_plot_table(
 ) -> pd.DataFrame:
     """One row per Dataset / iteration / Method / Parameters / level.
 
-    Precision, Recall and F-measure come from the summary's per-level lists; the
-    four classification ratios come from the per-read logs. Every metric is
-    therefore reported for the same fold and taxonomic level.
+    Scores come from the summary's per-level lists; the classification ratios
+    and outcome counts come from each fold's metrics sidecar (or its per-read
+    log). Every metric is therefore reported for the same fold and taxonomic
+    level. The two sources are computed from the same tallies, so where they
+    overlap the summary wins and the duplicate is dropped.
     """
     from tax_credit.novel_evaluation import (
         extract_per_level_accuracy,
@@ -1462,9 +1596,7 @@ def _per_level_plot_table(
     )
 
     keys = ["Dataset", "iteration", "Method", "Parameters", "level"]
-    table = extract_per_level_accuracy(
-        summary_df, columns=["Precision", "Recall", "F-measure"],
-    )
+    table = extract_per_level_accuracy(summary_df)
     table["iteration"] = table["iteration"].astype(str)
     table["level"] = table["level"].astype(int)
     ratios = extract_per_level_classification_ratios_by_fold(assignment_dirs)
@@ -1472,7 +1604,10 @@ def _per_level_plot_table(
         ratios = ratios.drop(columns="novel_level")
         ratios["iteration"] = ratios["iteration"].astype(str)
         ratios["level"] = ratios["level"].astype(int)
-        table = table.merge(ratios, on=keys, how="left")
+        # keep the join keys plus only what the summary does not already carry
+        new_cols = [column for column in ratios.columns
+                    if column in keys or column not in table.columns]
+        table = table.merge(ratios[new_cols], on=keys, how="left")
     table["rank"] = table["level"].map(_rank_name)
     return table
 
@@ -1795,7 +1930,12 @@ def plot_results(cfg: dict) -> None:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.novel_evaluation import extract_per_level_classification_ratios
     from tax_credit.paths import list_assignment_result_dirs
-    from tax_credit.plot_theme import eval_method_label, method_palette, metric_label
+    from tax_credit.plot_theme import (
+        eval_method_label,
+        method_palette,
+        metric_label,
+        plottable_metrics,
+    )
     from tax_credit.plotting_functions import (
         faceted_boxplot_from_data_frame,
         heatmap_from_data_frame,
@@ -1911,8 +2051,8 @@ def plot_results(cfg: dict) -> None:
             box_panels = level_order
         palette = method_palette(table["Method"].unique(), palette_override)
         metrics = [
-            metric for metric in plot_metrics
-            if metric in table.columns and table[metric].notna().any()
+            metric for metric in plottable_metrics(plot_metrics, table.columns)
+            if table[metric].notna().any()
         ]
 
         if "boxplot" in plot_types and box_panels:

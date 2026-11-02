@@ -56,6 +56,105 @@ else:
     if config["refseqs_file"] == None or config["taxa_file"] == None:
         print(f"ERROR: refseqs_file and taxa_file must be provided if pretrained_classifier is not used.\n")
 
+# consensus-blast: blastn only honours --p-num-threads against a pre-indexed
+# database. Given --i-reference-reads, q2-feature-classifier runs
+# `blastn -subject`, which is single-threaded whatever classify_threads says.
+# Three modes, in precedence order:
+#   blast_database set           import that database       (threaded)
+#   build_blast_database: true   makeblastdb from refseqs   (threaded)
+#   neither                      -subject, exactly as before (the default)
+# Read with .get so configs written before these options still parse.
+BLASTDB_SUFFIXES = (".ndb", ".nhr", ".nin", ".not", ".nsq", ".ntf", ".nto", ".njs")
+blastdb_qza = taxonomy_dir + "blastdb.qza"
+
+
+def validate_blast_database(path):
+    """Fail at parse time if *path* is not a QIIME-importable BLAST database.
+
+    QIIME 2's BLASTDBDirFmtV5 requires all of BLASTDB_SUFFIXES under a single
+    basename, with none optional, so the common cases that cannot work are
+    worth naming here rather than surfacing as an import traceback much later.
+    """
+    if not os.path.isdir(path):
+        raise ValueError(
+            f"blast_database is not a directory: {path}\n"
+            "Point it at the directory holding the database files (the ones "
+            "makeblastdb wrote), not at a file or a database basename."
+        )
+    names = os.listdir(path)
+    volumes = sorted(n for n in names if n.endswith((".nal", ".pal")))
+    if volumes:
+        raise ValueError(
+            f"blast_database is a multi-volume BLAST database ({volumes[0]}): {path}\n"
+            "QIIME 2's BLASTDB type cannot represent these. Either rebuild it as "
+            "a single volume (makeblastdb without -max_file_sz splitting), or "
+            "leave blast_database unset and set build_blast_database: true to build one "
+            "from refseqs_file."
+        )
+    basenames = {
+        n[: -len(suffix)]
+        for n in names
+        for suffix in BLASTDB_SUFFIXES
+        if n.endswith(suffix)
+    }
+    if not basenames:
+        raise ValueError(
+            f"blast_database contains no BLAST database files: {path}\n"
+            f"Expected one set of {', '.join(BLASTDB_SUFFIXES)} files."
+        )
+    complete = [
+        b for b in sorted(basenames)
+        if all(b + suffix in names for suffix in BLASTDB_SUFFIXES)
+    ]
+    if len(complete) > 1:
+        raise ValueError(
+            f"blast_database holds more than one BLAST database ({', '.join(complete)}): "
+            f"{path}\nQIIME 2 imports a directory, not a basename, so give each "
+            "database its own directory."
+        )
+    if not complete:
+        base = sorted(basenames)[0]
+        missing = [sfx for sfx in BLASTDB_SUFFIXES if base + sfx not in names]
+        hint = ""
+        if missing == [".njs"]:
+            hint = (
+                "\nOnly .njs is missing, which BLAST writes from 2.13.0 onward: "
+                "this database predates it. Rebuild with a newer makeblastdb, or "
+                "set build_blast_database: true."
+            )
+        elif ".ndb" in missing:
+            hint = (
+                "\nA missing .ndb usually means a version-4 database; rebuild "
+                "with `makeblastdb -blastdb_version 5`."
+            )
+        raise ValueError(
+            f"blast_database is missing required files for database {base!r}: "
+            f"{', '.join(missing)}\n{path}\nQIIME 2's BLASTDB type requires all "
+            f"of {', '.join(BLASTDB_SUFFIXES)}.{hint}"
+        )
+    return complete[0]
+
+
+blast_database = config.get("blast_database") or None
+build_blast_database = bool(config.get("build_blast_database", False))
+blastdb_source = None
+if config["classify_method"] == "consensus-blast":
+    if blast_database:
+        validate_blast_database(blast_database)
+        blastdb_source = "import"
+        if build_blast_database:
+            print(
+                "Both blast_database and build_blast_database are set; using blast_database "
+                "and not building one.\n"
+            )
+    elif build_blast_database:
+        blastdb_source = "build"
+elif blast_database or build_blast_database:
+    print(
+        "blast_database / build_blast_database apply to consensus-blast only; ignoring "
+        f"them for classify_method {config['classify_method']}.\n"
+    )
+
 # Krona plots are opt-in: they need the `krona` conda env, which most runs don't have.
 # Read with .get so configs written before this option still parse.
 make_krona = config.get("make_krona", False)
