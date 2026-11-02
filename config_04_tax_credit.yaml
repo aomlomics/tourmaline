@@ -151,7 +151,9 @@ plot_types:
   - heatmap
   - stacked_bar
   - best_run_stacked_bar
-# Metrics for boxplots, per-level line plots, and heatmaps
+# Metrics for boxplots, per-level line plots, and heatmaps. Recall no longer counts
+# overclassification as a false negative; Recall_original / F-measure_original keep
+# the old scoring in the summaries but are never plotted (see docs/configuration.md)
 plot_metrics:
   - Precision
   - Recall
@@ -216,7 +218,8 @@ mock_community:
   legacy_unresolved_taxa: false
   # warn | error: what to do when expected taxa are missing from, or placed differently in, a database
   backbone_check: warn
-  # Optional: metrics to plot (default Taxon Accuracy Rate, Taxon Detection Rate, Bray-Curtis, Precision, Recall, F-measure)
+  # Optional: metrics to plot (default Taxon Accuracy Rate, Taxon Detection Rate, Bray-Curtis, Precision, Recall, F-measure).
+  # precision_pa / TAR and recall_pa / TDR are accepted as aliases for the two taxon rates
   plot_metrics:
   # Metric that picks each method's best parameter set (at best_run_rank) for the
   # composition plot and the best-run box/point plots. auto = F-measure where the

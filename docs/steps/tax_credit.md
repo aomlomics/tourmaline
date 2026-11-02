@@ -90,9 +90,10 @@ individually rather than giving every job `classify_threads`:
 |---|---|
 | `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 index + alignment, the REVAMP BLAST | `classify_threads` |
 | `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
-| `fit-classifier-naive-bayes` | `classify_threads` — see below |
+| `fit-classifier-naive-bayes`, as a shared fit job (confidence sweeps, `cross-validated-trad`) | 1 |
 
-`fit-classifier-naive-bayes` also takes no thread option and gets one core.
+`fit-classifier-naive-bayes` takes no thread option. A fold with a single confidence fits and
+classifies in one job, which gets `classify_threads` for the classify step.
 
 ### Memory: you must opt in, or nothing is throttled
 
@@ -215,6 +216,24 @@ Phases are `datasets`, `manifest`, `evaluate`, `plot` and `post-assign`.
 ├── summaries/      # metric tables, per-job scores, best-run selections
 └── plots/          # one folder per evaluation method
 ```
+
+Each assignment result directory under `data/` also holds `classification_accuracy_log.tsv`
+(one line per query) and `classification_metrics.tsv` (one row per rank).
+
+### How assignments are scored
+
+Every query, or every mock ASV, is a *match*, an *underclassification* (correct but too
+shallow), an *overclassification* (deeper than the reference knows) or a *misclassification*.
+Precision, Recall and F-measure are computed from those tallies, with one change from the
+original tax-credit: **overclassification is a false positive but no longer a false negative**,
+so it lowers precision and F-measure but not recall. The original scoring is still reported,
+as `Recall_original` and `F-measure_original`, for comparison; `match_ratio` equals
+`Recall_original`. Scores that have nothing to score are NaN rather than 0.
+
+Results scored before this change are not comparable with new ones. Re-score a finished run
+with `--forcerun tax_credit_evaluate`; no classification is repeated. See
+[Configuration](../configuration.md), *Scoring* and *Mock community evaluation*, for every
+column and the full definitions.
 
 ### Full configuration reference
 
