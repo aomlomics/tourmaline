@@ -5,6 +5,8 @@
 ## --- CORE RUN SETTINGS ---
 run_name: silva_tax_credit
 output_dir: "../v2-results"
+# Your tour2-tax-credit clone (branch tour2-tax-credit). Imported directly from here, so it
+# does not need to be pip-installed. Relative paths are resolved from the Tourmaline directory.
 tax_credit_package_dir: "../tax-credit"
 
 ## --- REFERENCE DATABASES (one or more) ---

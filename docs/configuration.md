@@ -261,7 +261,7 @@ The tax-credit step benchmarks reference databases using [tour2-tax-credit](http
 ```yaml
 run_name: mifish_tax_credit
 output_dir: ../v2-results
-tax_credit_package_dir: ../tax-credit   # pip install -e this path in qiime2 env
+tax_credit_package_dir: ../tax-credit   # your tour2-tax-credit clone; imported from here, no install needed
 ```
 
 **Reference databases (one or more)**

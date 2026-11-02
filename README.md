@@ -124,7 +124,7 @@ Tourmaline 2 is modular. Each step has its own Snakefile and its own config file
 
 * Benchmarks reference databases and classify methods against each other using cross-validated, novel-taxa, self-validated, and mock-community evaluations.
 * Produces metric summaries and plots to help you pick a database and confidence threshold.
-* Requires the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package (branch `tour2-tax-credit`).
+* Requires a clone of the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package (branch `tour2-tax-credit`), pointed to by `tax_credit_package_dir`.
 
 📖 [docs/steps/tax_credit.md](docs/steps/tax_credit.md)
 
@@ -182,7 +182,7 @@ conda env create \
 
 REVAMP additionally needs a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP) and a local NCBI `nt` BLAST database with prepared taxonomy files — see [docs/steps/taxonomy.md#revamp](docs/steps/taxonomy.md#revamp).
 
-The tax-credit step additionally needs the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package (branch `tour2-tax-credit`) installed into the QIIME 2 environment — see [docs/install.md](docs/install.md).
+The tax-credit step additionally needs the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package (branch `tour2-tax-credit`): clone it and point `tax_credit_package_dir` at the clone. It does not need to be installed — see [docs/install.md](docs/install.md).
 
 📖 [docs/install.md](docs/install.md)
 

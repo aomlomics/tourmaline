@@ -17,7 +17,7 @@ they are not created for you from environment files.
 **QIIME 2** — follow the [official 2024.10 install instructions](https://docs.qiime2.org/2024.10/install/)
 for your operating system. The default environment name from the official installer is already
 `qiime2-amplicon-2024.10`; if you name it something else, the rules will not find it. You do not
-need to install anything else into this environment (except for the tax-credit step, below).
+need to install anything else into this environment.
 
 Verify:
 
@@ -65,21 +65,25 @@ conda create -c conda-forge -c bioconda -n krona krona
 
 No Krona taxonomy database download is required.
 
-**Tax-credit benchmarking** (the `tax-credit` step) needs the sibling
-[tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package installed into the QIIME 2 environment.
-Use the `tour2-tax-credit` branch, which is the version Tourmaline 2 expects:
+**Tax-credit benchmarking** (the `tax-credit` step) needs a clone of the sibling
+[tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package, on its `tour2-tax-credit`
+branch, which is the version Tourmaline 2 expects. It does **not** need to be installed: Tourmaline
+imports it directly from the directory named by `tax_credit_package_dir`, and everything it depends
+on comes with the QIIME 2 environment.
 
 ```bash
 cd ..    # alongside your tourmaline clone
 git clone -b tour2-tax-credit https://github.com/ksil-NOAA/tour2-tax-credit.git tax-credit
-
-conda activate qiime2-amplicon-2024.10
-pip install -e tax-credit
 ```
 
 Cloning into a directory named `tax-credit` keeps the shipped configs working as-is, since
 `tax_credit_package_dir` defaults to `../tax-credit`. Any other name works too — just point
-`tax_credit_package_dir` at it.
+`tax_credit_package_dir` at it. Relative paths are resolved from the Tourmaline directory.
+
+The two repositories change together, so `git pull` in the tax-credit clone whenever you update
+Tourmaline. If you installed tax-credit with `pip install -e` before, that is harmless: the
+directory in `tax_credit_package_dir` takes precedence, and the run stops if it holds no
+`tax_credit/` package rather than falling back to the installed copy.
 
 ### Get Tourmaline 2
 

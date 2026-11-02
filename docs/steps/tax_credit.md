@@ -51,20 +51,19 @@ folds already exist requires `force_regenerate: true`. See
 
 ### Requirements
 
-The step calls the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package, which must be
-installed into the QIIME 2 environment from its `tour2-tax-credit` branch:
+The step calls the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package. Clone
+its `tour2-tax-credit` branch; there is nothing to install, because Tourmaline imports it directly
+from `tax_credit_package_dir`:
 
 ```bash
 cd ..    # alongside your tourmaline clone
 git clone -b tour2-tax-credit https://github.com/ksil-NOAA/tour2-tax-credit.git tax-credit
-
-conda activate qiime2-amplicon-2024.10
-pip install -e tax-credit
 ```
 
 Cloning into a directory named `tax-credit` keeps the shipped configs working as-is, since
 `tax_credit_package_dir` defaults to `../tax-credit`. Any other name works too — just point
-`tax_credit_package_dir` at it.
+`tax_credit_package_dir` at it (relative paths are resolved from the Tourmaline directory). Keep
+the clone up to date with Tourmaline; the two change together.
 
 The classify methods
 use the same environments as the taxonomy step, so `bt2-blca` and `revamp` need theirs — see

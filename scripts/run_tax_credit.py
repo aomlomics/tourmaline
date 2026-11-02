@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from glob import glob
-from os.path import abspath, basename, dirname, expandvars, getmtime, join, exists, splitext
+from os.path import abspath, basename, dirname, expandvars, getmtime, isdir, join, exists, splitext
 from pathlib import Path
 
 import pandas as pd
@@ -22,13 +22,23 @@ import tax_credit_mock
 # Ensure tax-credit is importable
 def _ensure_tax_credit(package_dir: str) -> None:
     root = abspath(expandvars(package_dir))
+    # Checked up front: with a wrong path the import below would quietly fall back
+    # to any pip-installed copy, which may be a different branch.
+    if not isdir(join(root, "tax_credit")):
+        raise SystemExit(
+            f"tax_credit_package_dir {package_dir!r} resolves to {root}, which has no "
+            "tax_credit/ package. Point it at your tour2-tax-credit clone; relative "
+            "paths are resolved from the Tourmaline directory."
+        )
     if root not in sys.path:
         sys.path.insert(0, root)
     try:
         import tax_credit  # noqa: F401
     except ImportError as exc:
         raise SystemExit(
-            f"tax-credit not installed. Run: pip install -e {root}\n{exc}"
+            f"Could not import tax_credit from {root} (tax_credit_package_dir). "
+            f"It does not need to be pip-installed; check that the step is running "
+            f"in the QIIME 2 environment.\n{exc}"
         ) from exc
 
 
