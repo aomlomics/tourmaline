@@ -128,8 +128,9 @@ qiime tools import \
 Tourmaline imports both files for you, and `taxa_file` must then be a **headerless** TSV
 (`HeaderlessTSVTaxonomyFormat`) — feature ID and taxonomy string, tab separated, no header row.
 
-For `bt2-blca` the conversion runs the other way: that method needs FASTA and plain text, so
-`.qza` inputs are exported automatically.
+For `bt2-blca` and `revamp-custom` the conversion runs the other way: those methods need
+FASTA and plain text, so `.qza` inputs are exported automatically. `revamp-custom` also
+accepts a taxonomy TSV with a header row and extra columns.
 
 To import them yourself instead:
 

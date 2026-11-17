@@ -109,12 +109,13 @@ Tourmaline 2 is modular. Each step has its own Snakefile and its own config file
 
 ### Step 3 — Taxonomy assignment (`taxonomy`)
 
-* Assigns taxonomy using one of five methods:
+* Assigns taxonomy using one of six methods:
   * [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
   * [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
   * [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
   * [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
   * [REVAMP's BLASTn against NCBI nt with lowest common ancestor](https://github.com/McAllister-NOAA/REVAMP)
+  * REVAMP's method against your own reference database and its taxonomy, with any number of ranks (`revamp-custom`)
 * Produces a taxonomy table, an interactive taxa barplot, a table collapsed to a chosen rank, and a combined ASV/taxonomy/sequence TSV.
 * Optional interactive [Krona](https://github.com/marbl/Krona/wiki) plot (`make_krona`), for any classify method.
 
@@ -122,7 +123,7 @@ Tourmaline 2 is modular. Each step has its own Snakefile and its own config file
 
 ### Step 4 — Reference database benchmarking (`tax-credit`)
 
-* Benchmarks reference databases and classify methods against each other using cross-validated, novel-taxa, self-validated, and mock-community evaluations.
+* Benchmarks reference databases and classify methods against each other using cross-validated, novel-taxa, self-validated, and mock-community evaluations. `revamp-custom` runs for all of them, so its cutoffs can be benchmarked on your own database.
 * Produces metric summaries and plots to help you pick a database and confidence threshold.
 * Requires a clone of the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package (branch `tour2-tax-credit`), pointed to by `tax_credit_package_dir`.
 
@@ -177,10 +178,10 @@ conda env create \
 | Environment | Needed for | Create with |
 |---|---|---|
 | `bt2-blca` | `classify_method: bt2-blca` | `conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2` |
-| `revamp` | `classify_method: revamp` | `conda create -c conda-forge -c bioconda -n revamp "blast>=2.13" "taxonkit>=0.20" r-base r-dplyr bioconductor-biostrings perl perl-list-moreutils krona` |
+| `revamp` | `classify_method: revamp` or `revamp-custom` | `conda create -c conda-forge -c bioconda -n revamp "blast>=2.13" "taxonkit>=0.20" r-base r-dplyr bioconductor-biostrings perl perl-list-moreutils krona` |
 | `krona` | `make_krona: True` | `conda create -c conda-forge -c bioconda -n krona krona` |
 
-REVAMP additionally needs a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP) and a local NCBI `nt` BLAST database with prepared taxonomy files — see [docs/steps/taxonomy.md#revamp](docs/steps/taxonomy.md#revamp).
+Both REVAMP methods need a clone of [REVAMP](https://github.com/McAllister-NOAA/REVAMP). `revamp` also needs a local NCBI `nt` BLAST database with prepared taxonomy files — see [docs/steps/taxonomy.md#revamp](docs/steps/taxonomy.md#revamp); `revamp-custom` uses your `refseqs_file`/`taxa_file` instead — see [docs/steps/taxonomy.md#revamp-with-your-own-reference-database-revamp-custom](docs/steps/taxonomy.md#revamp-with-your-own-reference-database-revamp-custom).
 
 The tax-credit step additionally needs the sibling [tour2-tax-credit](https://github.com/ksil-NOAA/tour2-tax-credit) package (branch `tour2-tax-credit`): clone it and point `tax_credit_package_dir` at the clone. It does not need to be installed — see [docs/install.md](docs/install.md).
 
@@ -349,8 +350,8 @@ Set `fastq_qza_file`. See [Starting from external data](#starting-from-external-
 ```yaml
 run_name: my_run
 output_dir: "../v2-results"
-classify_method: naive-bayes    # naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp
-collapse_taxalevel: 7           # rank (1–7) for the additional collapsed count table
+classify_method: naive-bayes    # naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp | revamp-custom
+collapse_taxalevel: 7           # rank (1 to the number of taxa_ranks) for the additional collapsed count table
 classify_threads: 10
 sample_metadata_file: 00-data/metadata.tsv   # optional, for the barplot
 ```
@@ -388,6 +389,12 @@ revamp_blast_results: [path]    # optional: a BLASTn btab produced elsewhere
 revamp_blast_mode: mostEnvOUT   # allIN | allEnvOUT | mostEnvOUT
 revamp_query_cov: 90            # percent of ASV length a hit must cover (0–100)
 revamp_taxonomy_cutoffs: "97,95,90,80,70,60"  # percent ID cutoffs, ordered S,G,F,O,C,P
+
+# revamp-custom (your refseqs_file + taxa_file; see docs/steps/taxonomy.md)
+# taxa_ranks lists every rank in taxa_file, any number of them
+revamp_dir: [path]              # clone of REVAMP (no nt or taxdump needed)
+revamp_query_cov: 90
+revamp_taxonomy_cutoffs: "97,95,90,80,70,65,60,55"  # one per rank except the first, deepest first
 
 # Krona plot (any classify method)
 make_krona: False        # writes figures/{run_name}-krona.html

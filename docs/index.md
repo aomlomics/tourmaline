@@ -21,12 +21,12 @@ Tourmaline has several features that enhance usability and interoperability:
 
 ## What options does Tourmaline support?
 
-If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in the Snakefiles. Tourmaline also supports taxonomic assignment by Bayesian Lowest Common Ancestor (BLCA) and by REVAMP's lowest common ancestor over BLASTn hits against NCBI `nt`. The main analysis features and options supported by Tourmaline are as follows:
+If you have used QIIME 2 before, you might be wondering which QIIME 2 commands Tourmaline uses and supports. All commands are specified as rules in the Snakefiles. Tourmaline also supports taxonomic assignment by Bayesian Lowest Common Ancestor (BLCA) and by REVAMP's lowest common ancestor over BLASTn hits, against NCBI `nt` or against your own reference database and its taxonomy (`revamp-custom`, any number of ranks). The main analysis features and options supported by Tourmaline are as follows:
 
 * FASTQ sequence import using a manifest file, a folder of fastq.gz files, or a pre-imported FASTQ .qza file
 * Optional primer trimming with Cutadapt and paired-end read merging with vsearch
 * Denoising with [DADA2](https://doi.org/10.1038/nmeth.3869) (paired-end and single-end) and [Deblur](https://doi.org/10.1128/msystems.00191-16) (single-end)
-* Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), consensus [VSEARCH](https://doi.org/10.7717/peerj.2584), [BT2-BLCA](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca), and [REVAMP](https://github.com/McAllister-NOAA/REVAMP)
+* Feature classification (taxonomic assignment) with options of [naive Bayes](https://doi.org/10.1186/s40168-018-0470-z), consensus [BLAST](https://doi.org/10.1186/1471-2105-10-421), consensus [VSEARCH](https://doi.org/10.7717/peerj.2584), [BT2-BLCA](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca), and [REVAMP](https://github.com/McAllister-NOAA/REVAMP) (against NCBI `nt`, or your own reference database with `revamp-custom`)
 * Feature filtering by sequence length, abundance, prevalence, frequency, and sample count
 * Interactive taxonomy barplots, collapsed count tables, and optional [Krona](https://github.com/marbl/Krona/wiki) plots
 * Alpha diversity metrics, rarefaction analyses, and ordination plots
@@ -80,12 +80,13 @@ See [Repseqs Step](steps/repseqs.md) for details.
 
 * Called "taxonomy" in Tourmaline 2 code.
 * Generates taxonomic assignments and visualizations.
-* Assigns taxonomy using one of five methods:
+* Assigns taxonomy using one of six methods:
   * [Naive Bayes classifier as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-sklearn/)
   * [Consensus BLAST as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-blast/)
   * [Consensus VSEARCH as implemented in QIIME 2](https://docs.qiime2.org/2024.10/plugins/available/feature-classifier/classify-consensus-vsearch/)
   * [Anacapa's Bowtie 2 and BLCA method](https://github.com/limey-bean/Anacapa?tab=readme-ov-file#step-3-taxonomic-assignment-using-bowtie-2-and-blca)
   * [REVAMP's BLASTn against NCBI nt with lowest common ancestor](https://github.com/McAllister-NOAA/REVAMP)
+  * REVAMP's method against your own reference database and its taxonomy, any number of ranks (`revamp-custom`)
 
 See [Taxonomy Step](steps/taxonomy.md) for details.
 

@@ -238,7 +238,7 @@ number of ranks: `taxa_ranks` lists them all, and `revamp_taxonomy_cutoffs` take
 per rank except the first (N-1 for N ranks), deepest rank first. It uses `revamp_dir`,
 `revamp_query_cov`, `revamp_taxonomy_cutoffs` and optionally `revamp_blast_results`
 (`sseqid` in column 4), and ignores `revamp_blastdb` and `revamp_blast_mode`. See
-[Taxonomy step](steps/taxonomy.md#revamp-with-a-custom-reference-database-revamp-custom).
+[Taxonomy step](steps/taxonomy.md#revamp-with-your-own-reference-database-revamp-custom).
 
 `revamp`, which needs the `revamp` conda environment
 and ignores `refseqs_file` / `taxa_file` / `pretrained_classifier`. `revamp_blast_mode`

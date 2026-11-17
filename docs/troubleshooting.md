@@ -78,6 +78,24 @@ on the `BLASTDB` path. Without them BLAST prints a warning and **continues with 
 list unapplied**. Tourmaline checks for this before starting; see
 [Taxonomy step](steps/taxonomy.md#revamp).
 
+**revamp-custom stops with "revamp_taxonomy_cutoffs has N values but taxa_ranks has M
+ranks".** It needs one cutoff per rank except the first, deepest rank first: eight for a
+nine-rank taxonomy. In the tax-credit step, a database whose rank count differs from the
+top-level `taxa_ranks` needs its own `revamp_taxonomy_cutoffs_values` on its
+`reference_databases` entry.
+
+**revamp-custom stops with "has 9 ranks but taxa_ranks lists 7"** (or similar). A lineage in
+`taxa_file` has more `;`-separated fields than `taxa_ranks` names. List every rank of the
+taxonomy in `taxa_ranks`, and check for stray `;` inside taxon names.
+
+**revamp-custom assigns shallower than expected.** Check
+`revamp/refdb/refdb_report.txt` for taxon names under more than one parent (the assignment
+stops above such a conflict whenever the best hits include both versions), and
+`revamp/ASV2Taxonomy/{run_name}_assignment_details.tsv`: if `max_depth_rank` is deeper than
+the assignment, the best hits disagreed; if not, the best hit's identity set the limit.
+Many `Unassigned` ASVs with no hit usually mean the marker or region is poorly
+represented in the reference — BLASTn runs in megablast mode, as in REVAMP.
+
 ### Tax-credit
 
 **Jobs run one at a time.** Keep `classify_threads` well below `--cores`, or a single

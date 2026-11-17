@@ -190,7 +190,7 @@ Listing it with no `mock-community` in `evaluation_methods` stops the run with a
 best hits, limited by a percent identity cutoff per rank — against each fold's reference
 and **its own taxonomy**, so unlike `revamp` it runs for every evaluation method,
 including mock-community. It never classifies the `revamp: true` (nt) entry. See
-[the taxonomy step](taxonomy.md#revamp-with-a-custom-reference-database-revamp-custom) for
+[the taxonomy step](taxonomy.md#revamp-with-your-own-reference-database-revamp-custom) for
 the method itself.
 
 ```yaml

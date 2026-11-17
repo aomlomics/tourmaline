@@ -45,7 +45,7 @@ Create these only if you use the corresponding feature.
 conda create -c conda-forge -c bioconda -n bt2-blca biopython muscle=3.8 bowtie2
 ```
 
-**REVAMP taxonomy** (`classify_method: revamp`):
+**REVAMP taxonomy** (`classify_method: revamp` or `revamp-custom`):
 
 ```bash
 conda create -c conda-forge -c bioconda -n revamp \
@@ -53,9 +53,12 @@ conda create -c conda-forge -c bioconda -n revamp \
   perl perl-list-moreutils krona
 ```
 
-`taxonkit` must be 0.20 or newer. REVAMP also needs a clone of
-[REVAMP](https://github.com/McAllister-NOAA/REVAMP) and a local NCBI `nt` database with prepared
-taxonomy files — see [Taxonomy step](steps/taxonomy.md#revamp).
+`taxonkit` must be 0.20 or newer. Both methods need a clone of
+[REVAMP](https://github.com/McAllister-NOAA/REVAMP). `revamp` also needs a local NCBI `nt`
+database with prepared taxonomy files — see [Taxonomy step](steps/taxonomy.md#revamp).
+`revamp-custom` BLASTs against your own `refseqs_file`, so it needs neither `nt` nor the
+taxonomy files (taxonkit is unused) — see
+[REVAMP with your own reference database](steps/taxonomy.md#revamp-with-your-own-reference-database-revamp-custom).
 
 **Krona plots** (`make_krona: True`, any classify method):
 

@@ -1,6 +1,6 @@
 ## Taxonomy Step
 
-Assigns taxonomy and generates visualizations using one of five methods:
+Assigns taxonomy and generates visualizations using one of six methods:
 
 - Naive Bayes (QIIME 2 classify-sklearn)
 - Consensus BLAST
@@ -8,7 +8,7 @@ Assigns taxonomy and generates visualizations using one of five methods:
 - BT2-BLCA (Anacapa)
 - REVAMP (BLASTn against a local NCBI nt database; see [REVAMP](#revamp) below)
 - REVAMP with your own reference database and taxonomy, any number of ranks
-  (`revamp-custom`; see [below](#revamp-with-a-custom-reference-database-revamp-custom))
+  (`revamp-custom`; see [below](#revamp-with-your-own-reference-database-revamp-custom))
 
 ### Configuration
 
@@ -44,13 +44,14 @@ blca_bootstraps: 100         # bt2-blca: BLCA -n, bootstrap replicates per query
 blca_muscle_maxiters: 16     # bt2-blca: muscle -maxiters per query alignment
 classify_params: --verbose   # optional extra args for the classifier
 
-# REVAMP options (classify_method: revamp only)
-revamp_dir: /abs/path/REVAMP              # REVAMP clone
-revamp_blastdb: /abs/path/blastdb         # nt volumes plus a prepared taxdump/
+# REVAMP options (classify_method: revamp or revamp-custom)
+revamp_dir: /abs/path/REVAMP              # REVAMP clone (both)
+revamp_blastdb: /abs/path/blastdb         # revamp only: nt volumes plus a prepared taxdump/
 revamp_blast_results: /abs/path/ASV_blastn_nt.btab  # optional: BLAST run elsewhere
-revamp_blast_mode: mostEnvOUT             # allIN | allEnvOUT | mostEnvOUT
+revamp_blast_mode: mostEnvOUT             # revamp only: allIN | allEnvOUT | mostEnvOUT
 revamp_query_cov: 90                      # percent of ASV length a hit must cover
-revamp_taxonomy_cutoffs: "97,95,90,80,70,60"  # percent ID cutoffs, ordered S,G,F,O,C,P
+revamp_taxonomy_cutoffs: "97,95,90,80,70,60"  # percent ID cutoffs, deepest rank first:
+                                          # revamp: S,G,F,O,C,P; revamp-custom: one per rank but the first
 
 # Krona plot (optional, works with any classify method)
 make_krona: False            # requires the `krona` conda env
@@ -180,74 +181,199 @@ their position, so a genus never shifts into the family slot. REVAMP's own inter
 files — formatted BLAST hits, taxonkit lineages, common names, KRONA inputs, per-ASV
 taxonomy table — are kept under `{run_name}-taxonomy/revamp/`.
 
-### REVAMP with a custom reference database (revamp-custom)
+### REVAMP with your own reference database (revamp-custom)
 
-`classify_method: revamp-custom` applies REVAMP's method — BLASTn, then the lowest common
-ancestor of all best hits, limited by a percent identity cutoff per rank — to your own
-reference database, using **that database's taxonomy** rather than NCBI's. No NCBI
-taxids, taxonkit or taxdump are involved, and the taxonomy may have any number of ranks.
+`classify_method: revamp-custom` assigns taxonomy with REVAMP's method — BLASTn, then the
+lowest common ancestor of all best hits, limited by a percent identity cutoff for each
+rank — against **your own reference database, using its own taxonomy**. Use it when you
+have a curated reference (a regional 12S database, PR2, MIDORI, ...) and want results
+named in that database's taxonomy rather than NCBI's.
+
+Compared with `revamp`:
+
+| | `revamp` | `revamp-custom` |
+|---|---|---|
+| Reference sequences | local NCBI `nt` | `refseqs_file` |
+| Taxonomy | NCBI, via taxids and taxonkit | `taxa_file`, as written |
+| Ranks | always the seven kingdom..species | any number, from `taxa_ranks` |
+| Cutoffs (`revamp_taxonomy_cutoffs`) | six | one fewer than the number of ranks |
+| Needs `revamp_blastdb` / taxdump | yes | no |
+| Environmental filtering (`revamp_blast_mode`) | yes | not applicable |
+
+#### 1. What you need
+
+- The `revamp` conda environment and a clone of
+  [REVAMP](https://github.com/McAllister-NOAA/REVAMP) — see [Install](../install.md). No
+  NCBI `nt` database or taxonomy dump is needed.
+- Your reference sequences (`refseqs_file`): FASTA or a QIIME 2 `FeatureData[Sequence]`
+  `.qza`.
+- Their taxonomy (`taxa_file`): a tab-separated file or a `FeatureData[Taxonomy]` `.qza`.
+
+#### 2. Prepare the reference files
+
+The taxonomy file has one line per reference sequence: the sequence ID, a tab, then the
+lineage with ranks separated by `;`, highest rank first. A header line (`Feature ID	Taxon`)
+and extra columns (such as `Confidence`) are fine.
+
+```
+Feature ID	Taxon
+AB282828.1	Eukaryota;Metazoa;Chordata;Vertebrata;Actinopteri;Lophiiformes;Antennariidae;Antennarius;Antennarius striatus
+AJM0165	Eukaryota;Metazoa;Chordata;Vertebrata;Actinopteri;NA;Lutjanidae;Lutjanus;Lutjanus analis
+```
+
+- **Every lineage should have one field per rank**, in the same order. A lineage with
+  fewer fields is padded with missing ranks at the end; one with more fields than
+  `taxa_ranks` stops the run.
+- **Mark a missing rank with an empty field or a placeholder.** Empty fields, `NA`, `N/A`,
+  `Unknown`, `unidentified`, `unassigned`, `unclassified` and an empty rank prefix such as
+  `g__` all count as missing — never as a taxon name, so two unrelated `NA` genera are not
+  treated as the same genus. Keep the field so later ranks stay in position:
+  `...;Actinopteri;NA;Lutjanidae;...`, not `...;Actinopteri;Lutjanidae;...`.
+- **Names are used exactly as written**, rank prefixes (`g__Antennarius`) included, and
+  come back in the output the same way.
+- Sequence IDs must match between the two files; sequences with no taxonomy are left out
+  of the database and counted in the report.
+
+#### 3. Configure
 
 ```yaml
 classify_method: revamp-custom
-refseqs_file: /abs/path/refdb-seqs.fasta     # FASTA or .qza
-taxa_file: /abs/path/refdb-taxa.tsv          # TSV (sequence ID <tab> ;-separated lineage) or .qza
+database_name: mifish-gomex-12S                 # used in the analysis metadata
+refseqs_file: /abs/path/refdb-seqs.fasta
+taxa_file: /abs/path/refdb-taxa.tsv
 taxa_ranks: domain,kingdom,phylum,subphylum,class,order,family,genus,species
+collapse_taxalevel: 9                           # 1 .. number of taxa_ranks
 revamp_dir: /abs/path/REVAMP
 revamp_query_cov: 90
-revamp_taxonomy_cutoffs: "97,95,90,80,70,65,60,55"   # N-1 values for N ranks, deepest first
+revamp_taxonomy_cutoffs: "97,95,90,80,70,65,60,55"
 ```
 
-**Ranks and cutoffs.** `taxa_ranks` names every field of the lineages in `taxa_file`, in
-order. `revamp_taxonomy_cutoffs` takes one value per rank except the first — eight for the
-nine ranks above — deepest rank first, and must not increase. As in REVAMP, an ASV whose
-best hit is at or above cutoff *k* may be assigned to that rank; below the last cutoff it is
-`Unassigned`, so the first rank is never assigned on its own. A wrong count stops the run
-before anything executes. `revamp_blastdb` and `revamp_blast_mode` are not used.
+`taxa_ranks` names every rank in your taxonomy, in order. `revamp_taxonomy_cutoffs` gives
+one percent identity per rank **except the first**, starting from the deepest rank — so
+nine ranks take eight values. For the example above:
 
-**How it runs.** Under `{run_name}-taxonomy/revamp/`:
+| Best-hit percent identity | Deepest rank the ASV can be assigned |
+|---|---|
+| ≥ 97 | species |
+| 95 – < 97 | genus |
+| 90 – < 95 | family |
+| 80 – < 90 | order |
+| 70 – < 80 | class |
+| 65 – < 70 | subphylum |
+| 60 – < 65 | phylum |
+| 55 – < 60 | kingdom |
+| < 55 | `Unassigned` (the first rank is never assigned on its own, as in REVAMP) |
+
+The cutoffs only set the *deepest possible* rank: when the best hits disagree, the
+assignment stops at the rank they share. Values must not increase from left to right. A
+wrong count stops the run before anything executes, with a message saying how many are
+needed. `revamp_query_cov` (0-100) is the share of the ASV's length a hit must cover to
+count. `revamp_blastdb` and `revamp_blast_mode` are ignored.
+
+#### 4. Run
+
+```bash
+snakemake --use-conda -s taxonomy_step.Snakefile --configfile config_03_taxonomy.yaml --cores 4 --dryrun
+./tourmaline.sh -s taxonomy -c config_03_taxonomy.yaml -n 4
+```
+
+BLAST uses `classify_threads`. The BLAST database is built from `refseqs_file` on each
+run; for the 400-sequence test reference, building and searching take seconds.
+
+#### 5. Check the reference report
+
+Read `{run_name}-taxonomy/revamp/refdb/refdb_report.txt` the first time you use a
+database. It lists the sequence and lineage counts, the deepest named rank per sequence,
+which placeholder values were treated as missing, and warnings such as:
+
+```
+WARNINGS:
+  - 6 taxon names occur under more than one parent lineage. ASVs hitting more than one of
+    them are assigned above the conflicting rank. Examples:
+      family 'Pomacanthidae' under 2 parents, e.g. ...;Actinopteri; | ...;Actinopteri;Acanthuriformes
+```
+
+A name under two parents is an inconsistency in the reference taxonomy — here one record
+lacks the order. Wherever the best hits include both versions, the assignment stops above
+the conflict, so fixing these in `taxa_file` gives deeper, more consistent assignments.
+The report also flags sequences with no first rank (treated as "Environmental Unknown",
+as in REVAMP) and gaps that cannot be filled (for example a missing genus with a species
+present, which cuts that lineage at the gap).
+
+#### 6. Read the results
+
+The outputs are the same as for every method: `{run_name}-taxonomy.tsv` / `.qza`, the
+barplot, the collapsed table, `-asv_taxa_features.tsv` and the optional Krona plot — with
+**one rank per `taxa_ranks` entry**. As with `revamp`:
+
+- The third column is `percent_id`, the best hit's percent identity (0-100), not a 0-1
+  `Confidence`.
+- A rank that could not be resolved, or that is missing in the reference, is `NA` in place;
+  trailing `NA`s are dropped, so a genus never shifts into the family slot.
+- ASVs with no hit covering `revamp_query_cov`% of their length, or below the last cutoff,
+  are `Unassigned`.
+
+`revamp/ASV2Taxonomy/{run_name}_assignment_details.tsv` explains each assignment: the best
+percent identity, the deepest rank the cutoffs allowed, the number of best hits, and how
+many of them had a full lineage down to that rank. Compare `max_depth_rank` with the
+assigned taxonomy to see whether an ASV stopped early because of its identity or because
+its best hits disagreed.
+
+#### Choosing cutoffs
+
+REVAMP suggests `97,95,90,80,70,60` for rRNA genes and `95,92,87,77,67,60` for
+protein-coding genes (species to phylum); for a taxonomy with more ranks, place values for
+the extra ranks between those of their neighbours. The best values depend on the marker and
+the database, so benchmark them with the [tax-credit step](tax_credit.md), which can sweep
+several cutoff sets and supports `revamp-custom` for every evaluation method.
+
+#### BLAST run elsewhere
+
+To BLAST on another machine, build a database from `refseqs_file` and run
+
+```bash
+blastn -db <refdb> -query ASVs.fa -outfmt '6 qseqid pident length sseqid sacc' \
+  -subject_besthit -max_target_seqs 4000 -out ASV_blastn_custom.btab
+```
+
+then set `revamp_blast_results` to the output. Query IDs must be the feature IDs of your
+representative sequences, and column 4 must hold `refseqs_file`'s sequence IDs (an `lcl|`
+prefix is accepted). The run stops if any subject is not in the reference.
+
+#### Things to know
+
+- **Distant ASVs may get no hit.** BLASTn runs in its default megablast mode, as in REVAMP,
+  which is tuned for close matches. ASVs from groups poorly represented in the reference
+  can find no hit covering `revamp_query_cov`% of their length and come back `Unassigned`
+  rather than assigned at a high rank.
+- **Results are only as good as the reference taxonomy.** Inconsistent lineages (see the
+  report) and missing ranks limit how deep assignments can go.
+
+#### How it works
+
+Under `{run_name}-taxonomy/revamp/`:
 
 1. `refdb/` — `scripts/build_revamp_custom_refdb.py` gives every unique lineage an integer
-   *pseudo-taxid*, renames the reference sequences `r1..rN` for `makeblastdb`, and writes
-   `refdb_report.txt`: counts, rank depths, placeholder values, and **taxon names that sit
-   under more than one parent** (a backbone inconsistency; ASVs hitting both sides are
-   assigned above it). Read this report for any new database.
-2. BLASTn against that database with REVAMP's `max_target_seqs` escalation; each hit's
-   subject is replaced by its pseudo-taxid. REVAMP's `reformat_blast.R` then keeps hits
-   covering `revamp_query_cov`% of the ASV and every hit at the best percent identity.
-3. `scripts/revamp_lca.py` assigns taxonomy: REVAMP's assignment algorithm
-   (`asv_taxonomy_processing_figureOuts.pl`) reimplemented for N ranks, since REVAMP's own
-   script is fixed at seven. `ASV2Taxonomy/{run_name}_assignment_details.tsv` records each
-   ASV's best percent identity, the deepest rank allowed, and its hit counts.
+   *pseudo-taxid* (standing in for an NCBI taxid), renames the sequences `r1..rN` for
+   `makeblastdb`, and writes the report.
+2. BLASTn against that database, with REVAMP's escalation of `-max_target_seqs` until
+   every best hit fits; each hit's subject becomes its pseudo-taxid. REVAMP's
+   `reformat_blast.R` then keeps hits covering `revamp_query_cov`% of the ASV and every
+   hit at the best percent identity.
+3. `scripts/revamp_lca.py` assigns taxonomy with REVAMP's algorithm (from
+   `asv_taxonomy_processing_figureOuts.pl`), rewritten for any number of ranks because
+   REVAMP's script is fixed at seven. As in REVAMP, a missing rank with a named rank below
+   it is filled, and when some best hits have a name at every rank down to the allowed
+   depth, only those are combined.
 
-**Reference taxonomy handling.** Placeholder values — empty, `NA`, `Unknown`,
-`unidentified`, `unassigned`, `unclassified`, or an empty prefix such as `g__` — are
-treated as missing ranks, never as taxon names. Short lineages are padded with missing
-trailing ranks; a lineage with more fields than `taxa_ranks` is an error. Otherwise names
-are used exactly as given, rank prefixes included. As in REVAMP, a missing rank with a
-named rank below it is filled (reported as `NA` in place) unless only the deepest rank is
-named below it, in which case the lineage is cut there; a missing first rank makes a
-reference "Environmental Unknown". When some best hits have a name at every rank down to
-the allowed depth, only those are used; hits to shallower references count only when no
-such hit exists.
-
-**Differences from REVAMP's Perl.** Tested against it (`tests/test_revamp_lca.py`): on
-lineages with every rank named or with internal gaps, assignments are identical. They
-differ only for references missing trailing ranks, where the Perl loses track of rank
-positions: it treats a reference lacking only a species as complete at species depth,
-and at reduced depth removes one rank too many from such references. revamp-custom cuts
-these positionally. It also does not apply REVAMP's NCBI-specific rule that `Eukaryota`
-with nothing below it is "Environmental Unknown", and it compares names exactly where
-REVAMP first replaces characters outside `[A-Za-z0-9 ;]` with `_`.
-
-**BLAST run elsewhere.** Set `revamp_blast_results` to a BLASTn table produced against a
-database built from `refseqs_file`, with
-`-outfmt '6 qseqid pident length sseqid sacc' -subject_besthit -max_target_seqs 4000`.
-Column 4 must hold `refseqs_file`'s sequence IDs (an `lcl|` prefix is accepted); the run
-stops if any subject is not in the reference.
-
-The output TSV matches `revamp`'s: third column `percent_id`, unresolved ranks `NA`, and
-one rank per `taxa_ranks` entry carried through the collapsed table, barplot,
-`-asv_taxa_features.tsv` and Krona plot.
+`tests/test_revamp_lca.py` checks it against REVAMP's own script on seven-rank input: on
+lineages with every rank named, or with internal gaps, the assignments are identical. They
+differ only for references missing their last ranks, where REVAMP's script loses track of
+rank positions (it treats a reference lacking only a species as complete at species
+depth, and at reduced depth drops one rank too many); revamp-custom cuts these by
+position. It also skips REVAMP's NCBI-specific rule that `Eukaryota` with nothing below it
+is "Environmental Unknown", and compares names exactly where REVAMP first replaces
+characters outside `[A-Za-z0-9 ;]` with `_`.
 
 Smoke test (400-sequence MiFish reference with nine ranks; BLAST takes seconds):
 `./tourmaline.sh -s taxonomy -c config_03_taxonomy_revamp_custom_test.yaml -n 4`.
