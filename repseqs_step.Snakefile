@@ -15,11 +15,11 @@ shutil.copy(workflow.configfiles[0], config_output_path)
 # set run name
 if config["qaqc_run_name"] != None:
     qaqc_run_name=config["qaqc_run_name"]
-    input_fastq=output_dir+qaqc_run_name+"-qaqc/"+qaqc_run_name+"_fastq.qza"
+    input_fastq=output_dir+qaqc_run_name+"-qaqc/"+qaqc_run_name+"-fastq.qza"
 elif config["fastq_qza_file"] != None:
     input_fastq=config["fastq_qza_file"]
 else:
-    input_fastq=output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"_fastq.qza"
+    input_fastq=output_dir+config["run_name"]+"-qaqc/"+config["run_name"]+"-fastq.qza"
 
 # set Filtering
 if config["to_filter"] == True:
