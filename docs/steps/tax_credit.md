@@ -124,11 +124,11 @@ snakemake --use-conda -s tax_credit_step.Snakefile run_tax_credit \
 ```
 
 The shipped defaults are starting points, not measurements — memory scales with the
-reference. Measure one job and set the matching key:
-
-```bash
-/usr/bin/time -v <the command Snakemake printed>   # read "Maximum resident set size"
-```
+reference. Every job's peak memory is recorded automatically (see
+[Benchmarks](#benchmarks-where-the-time-goes)): after a run, read `peak_rss_mb` (or
+`peak_pss_mb` on Linux, the better figure for classify-sklearn's worker processes) for each
+job kind in `summaries/benchmark_summary.tsv`, and set the matching `mem_mb_*` key a little
+above it.
 
 > **`--resources mem_mb` must be at least as large as the biggest single job.** A run
 > whose ceiling is below some job's reservation fails at execution with that job, and a
@@ -206,14 +206,66 @@ For debugging, individual phases can be run without Snakemake:
 python scripts/run_tax_credit.py --config config_04_tax_credit.yaml --phase evaluate
 ```
 
-Phases are `datasets`, `manifest`, `evaluate`, `plot` and `post-assign`.
+Phases are `datasets`, `manifest`, `evaluate`, `plot`, `post-assign` and
+`benchmark-summary`.
+
+### Benchmarks: where the time goes
+
+Every rule in the step records a Snakemake benchmark file for each job: wall time, CPU time,
+peak memory and mean CPU load, measured over the job's whole process tree (`qiime`,
+bowtie2, muscle, classify-sklearn's workers). At the end of the run,
+`tax_credit_benchmark_summary` joins them to the manifest and writes two tables to
+`summaries/`:
+
+| File | Contents |
+|---|---|
+| `benchmark_summary.tsv` | Totals per evaluation method × classify method × job kind, plus one row per phase (dataset generation, manifest, mock scoring, evaluation, plotting). Sorted by `total_wall_s`, so the first row is the dominant cost. |
+| `job_benchmarks.tsv` | One row per assignment job: `job_id`, evaluation method, database, dataset, classify method, `job_kind`, and the measurements. |
+
+`job_kind` says what a job actually ran: `fit` (classifier, bowtie2 index or BLAST database
+only), `classify` (against a shared fit), `fit+classify` (both, in one job),
+`blca-align` / `blca-blca` / `blca-reformat` (the three bt2-blca stages; `blca-blca` is
+muscle plus bootstraps), or `blca-all-stages` (a single-combination bt2-blca fold).
+
+The columns:
+
+- `total_wall_s`, `median_wall_s`, `max_wall_s`: wall time in seconds.
+- `total_cpu_s`: CPU seconds.
+- `peak_rss_mb` / `peak_pss_mb`: the largest single job's peak memory in MB. PSS is Linux only.
+- `mean_load_pct`: average CPU use, where 100 = one full core. Compare it with the threads a
+  job reserved: a single-threaded BLCA job reads about 100, and a threaded job reading
+  far below `classify_threads × 100` is not using its threads.
+- `pct_of_total_wall`: each row's share of all measured wall time.
+
+The raw per-job files stay in `benchmarks/` (`assign/<job_id>.tsv`,
+`mock_score/<job_id>.tsv`, and one file per phase).
+
+Caveats:
+
+- **On macOS only wall time is recorded.** Snakemake reads processes through psutil's
+  `memory_full_info()`, which macOS refuses even for your own processes, so it writes 0 for
+  CPU time, memory and I/O. The summary detects this and leaves those columns blank rather
+  than reporting 0 MB. Linux, including HPC nodes and Docker, reports every column, so size
+  `mem_mb_*` from a Linux run.
+- **Failed and killed jobs write nothing**, and a retried job records only the attempt that
+  succeeded. A job killed for memory twice before succeeding looks like one run.
+- **Memory is sampled**, every 0.5 s for a job's first ~15 s and every 30 s after that, so a
+  short spike in a long job can be missed.
+- **Wall time includes waiting** for CPU or disk when jobs compete. Compare `total_cpu_s`
+  with `total_wall_s`.
+- **Runs from before benchmarking was added** are not rerun to fill the files in. Snakemake
+  only regenerates a missing benchmark file for its target rule, so their jobs appear with
+  blank measurements (counted by `n_measured`), and the summary rule alone runs.
+
+The cost is negligible: one small file per job, and a sampling thread that reads OS counters.
 
 ### Outputs
 
 ```
 [run_name]-tax-credit/
 ├── data/           # staged reference databases, simulated datasets, assignment results
-├── summaries/      # metric tables, per-job scores, best-run selections
+├── summaries/      # metric tables, per-job scores, best-run selections, benchmark summaries
+├── benchmarks/     # raw per-job Snakemake benchmark files (time, CPU, peak memory)
 └── plots/          # one folder per evaluation method
 ```
 

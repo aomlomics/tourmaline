@@ -17,6 +17,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+import tax_credit_benchmarks
 import tax_credit_mock
 
 # Ensure tax-credit is importable
@@ -2169,7 +2170,10 @@ def main() -> int:
     parser.add_argument("--config", required=True, help="Path to config_04_tax_credit.yaml")
     parser.add_argument(
         "--phase",
-        choices=["datasets", "manifest", "evaluate", "plot", "post-assign", "mock-evaluate-job"],
+        choices=[
+            "datasets", "manifest", "evaluate", "plot", "post-assign",
+            "mock-evaluate-job", "benchmark-summary",
+        ],
         default="datasets",
     )
     parser.add_argument("--job-id", help="Manifest job_id for --phase mock-evaluate-job")
@@ -2199,6 +2203,9 @@ def main() -> int:
     elif args.phase == "post-assign":
         evaluate(cfg)
         plot_results(cfg)
+    elif args.phase == "benchmark-summary":
+        out = run_output_dir(cfg)
+        tax_credit_benchmarks.write_benchmark_summaries(out, join(out, "summaries"))
     return 0
 
 

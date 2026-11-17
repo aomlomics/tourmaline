@@ -14,6 +14,12 @@ summaries_dir = run_output + "summaries/"
 evaluate_done = summaries_dir + ".evaluate.done"
 mock_jobs_dir = summaries_dir + "mock-community/per-job/"
 plots_done = run_output + config.get("plots_subdir", "plots") + "/.done"
+# Per-job wall time / CPU / peak memory, written by Snakemake's benchmark:
+# directive, and summarised by tax_credit_benchmark_summary. See
+# scripts/tax_credit_benchmarks.py for the layout and columns.
+benchmarks_dir = run_output + "benchmarks/"
+benchmark_summary_tsv = summaries_dir + "benchmark_summary.tsv"
+job_benchmarks_tsv = summaries_dir + "job_benchmarks.tsv"
 
 # bt2-blca has its own cutoffs; refuse older configs that shared perc_identity /
 # query_cov with the consensus methods (checked before anything is written).
@@ -394,11 +400,14 @@ rule run_tax_credit:
             summary=_summary_targets(),
         ),
         _plots_input(),
+        benchmark_summary_tsv,
 
 
 rule tax_credit_prepare_datasets:
     output:
         datasets_done,
+    benchmark:
+        benchmarks_dir + "prepare_datasets.tsv"
     params:
         cfg=CONFIGFILE,
     conda:
@@ -413,6 +422,8 @@ checkpoint tax_credit_prepare_manifest:
         datasets_done,
     output:
         manifest_fp,
+    benchmark:
+        benchmarks_dir + "prepare_manifest.tsv"
     params:
         cfg=CONFIGFILE,
     conda:
@@ -430,6 +441,8 @@ rule tax_credit_assign_fold:
         fit_done=_assign_fit_done,
     output:
         touch(assign_done_dir + "{job_id}.done"),
+    benchmark:
+        benchmarks_dir + "assign/{job_id}.tsv"
     params:
         row=lambda wildcards: _manifest_row(wildcards.job_id),
         assign=lambda wildcards: _assign_params(wildcards),
@@ -540,6 +553,8 @@ rule tax_credit_mock_score_job:
     output:
         mock_jobs_dir + "{job_id}.metrics.tsv",
         mock_jobs_dir + "{job_id}.composition.tsv",
+    benchmark:
+        benchmarks_dir + "mock_score/{job_id}.tsv"
     params:
         cfg=CONFIGFILE,
     conda:
@@ -559,6 +574,8 @@ rule tax_credit_evaluate:
             summary=_summary_targets(),
         ),
         evaluate_done=touch(evaluate_done),
+    benchmark:
+        benchmarks_dir + "evaluate.tsv"
     params:
         cfg=CONFIGFILE,
     conda:
@@ -575,6 +592,8 @@ rule tax_credit_plot:
         evaluate_done,
     output:
         plots_done,
+    benchmark:
+        benchmarks_dir + "plot.tsv"
     params:
         cfg=CONFIGFILE,
     conda:
@@ -589,3 +608,22 @@ rule tax_credit_plot:
             touch {output}
         fi
         """
+
+
+# Runs last: every other rule's benchmark file is written when that job
+# finishes, so by the time evaluation (and plotting, if enabled) is done, all of
+# them exist. Reads them by directory rather than as inputs, because the
+# assignment jobs are only known after the manifest checkpoint.
+rule tax_credit_benchmark_summary:
+    input:
+        evaluate_done,
+        _plots_input(),
+    output:
+        benchmark_summary_tsv,
+        job_benchmarks_tsv,
+    params:
+        cfg=CONFIGFILE,
+    conda:
+        "qiime2-amplicon-2024.10"
+    shell:
+        "python scripts/run_tax_credit.py --config {params.cfg} --phase benchmark-summary"
