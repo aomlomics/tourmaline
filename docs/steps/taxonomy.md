@@ -37,6 +37,9 @@ max_accepts: 10              # consensus BLAST/VSEARCH max hits per query (`all`
 blast_database:              # consensus-blast: prebuilt BLAST db dir; enables classify_threads
 build_blast_database: false  # consensus-blast: build one from refseqs_file instead
 confidence_thres: 0.8        # bt2-blca confidence cutoff
+blca_bowtie2_max_hits: 100   # bt2-blca: bowtie2 -k, alignments kept per query
+blca_bootstraps: 100         # bt2-blca: BLCA -n, bootstrap replicates per query
+blca_muscle_maxiters: 16     # bt2-blca: muscle -maxiters per query alignment
 classify_params: --verbose   # optional extra args for the classifier
 
 # REVAMP options (classify_method: revamp only)

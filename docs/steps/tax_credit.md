@@ -226,6 +226,9 @@ bowtie2, muscle, classify-sklearn's workers). At the end of the run,
 only), `classify` (against a shared fit), `fit+classify` (both, in one job),
 `blca-align` / `blca-blca` / `blca-reformat` (the three bt2-blca stages; `blca-blca` is
 muscle plus bootstraps), or `blca-all-stages` (a single-combination bt2-blca fold).
+If `blca-blca` dominates, `blca_bowtie2_max_hits`, `blca_bootstraps` and
+`blca_muscle_maxiters` control its cost; see
+[bt2-blca cost multipliers](../configuration.md#bt2-blca-cost-multipliers).
 
 The columns:
 

@@ -84,6 +84,20 @@ elif config["classify_method"] == "bt2-blca":
                 "-f {input.refseq} "
                 "{params.prefix}; "
 
+    # Cost multipliers, defaulting to the values that used to be hardcoded (the
+    # original Anacapa / BLCA settings and muscle 3.8's default). Per query:
+    # bowtie2 keeps up to -k alignments, muscle aligns the query with them, and
+    # BLCA bootstraps that alignment -n times.
+    def _blca_int(key, default):
+        val = config.get(key)
+        if val is None or (isinstance(val, str) and not val.strip()):
+            return default
+        if isinstance(val, bool) or not isinstance(val, int) or val < 1:
+            raise ValueError(
+                f"{key} must be a positive whole number (default {default}), got {val!r}"
+            )
+        return val
+
     rule bt2:
         input:
             repseqs=fasta_repseqs,
@@ -101,17 +115,20 @@ elif config["classify_method"] == "bt2-blca":
             percID=config["perc_identity"],
             querycov=config["query_cov"],
             taxaranks=config["taxa_ranks"],
-            conf=config["confidence_thres"]
+            conf=config["confidence_thres"],
+            max_hits=_blca_int("blca_bowtie2_max_hits", 100),
+            bootstraps=_blca_int("blca_bootstraps", 100),
+            muscle_maxiters=_blca_int("blca_muscle_maxiters", 16),
         conda:
             "bt2-blca"
         threads: config["classify_threads"]
         shell:
             """
             mkdir -p {params.temp_dir};
-            bowtie2 -x {params.prefix} -f -U {input.repseqs} -S {params.temp_dir}/end_to_end.sam --no-hd --no-sq --very-sensitive --end-to-end --no-unal -p {threads} -k 100 --un {params.temp_dir}/end_to_end_reject.fasta
-            bowtie2 -x {params.prefix}  -f -U {params.temp_dir}/end_to_end_reject.fasta -S {params.temp_dir}/local.sam --no-hd --no-sq --very-sensitive --local --no-unal -p {threads} -k 100 --un {params.temp_dir}/end_to_end_and_local_reject.fasta
+            bowtie2 -x {params.prefix} -f -U {input.repseqs} -S {params.temp_dir}/end_to_end.sam --no-hd --no-sq --very-sensitive --end-to-end --no-unal -p {threads} -k {params.max_hits} --un {params.temp_dir}/end_to_end_reject.fasta
+            bowtie2 -x {params.prefix}  -f -U {params.temp_dir}/end_to_end_reject.fasta -S {params.temp_dir}/local.sam --no-hd --no-sq --very-sensitive --local --no-unal -p {threads} -k {params.max_hits} --un {params.temp_dir}/end_to_end_and_local_reject.fasta
             cat {params.temp_dir}/*.sam > {output.sam}
-            python scripts/blca_from_bowtie.py -i {output.sam} -r {input.reftax} -q {input.refseq} -b {params.percID} -l {params.querycov} -p muscle -n 100 -m 1.0 -f -2.5 -g -2 -tr {params.taxaranks} -o {output.raw_taxonomy}
+            python scripts/blca_from_bowtie.py -i {output.sam} -r {input.reftax} -q {input.refseq} -b {params.percID} -l {params.querycov} -p muscle -n {params.bootstraps} --muscle_max_iterations {params.muscle_maxiters} -m 1.0 -f -2.5 -g -2 -tr {params.taxaranks} -o {output.raw_taxonomy}
             python scripts/reformat_summary_for_r.py {output.raw_taxonomy} {output.taxonomy} {params.conf} {params.taxaranks}
             if grep -q '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta > /dev/null 2>&1; then
                 grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta | sed 's/^>//; s/$/\tUnassigned\t0/' >> {output.taxonomy}

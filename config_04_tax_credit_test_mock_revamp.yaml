@@ -87,6 +87,15 @@ consensus_classify_params: ""
 blca_perc_identity: 0.8
 blca_query_cov: 0.8
 blca_confidence_values: [0.8]
+# Optional: bt2-blca cost multipliers. Single values (not lists), defaults shown.
+# Per query: bowtie2 keeps up to blca_bowtie2_max_hits alignments (-k), muscle
+# aligns the query with them for up to blca_muscle_maxiters iterations, and BLCA
+# bootstraps that alignment blca_bootstraps times (-n). Lowering them is the main
+# way to speed bt2-blca up on a large database (muscle's 2 = its fast mode), but
+# it changes assignments, so use the same values in the taxonomy step you benchmark for.
+blca_bowtie2_max_hits: 100
+blca_bootstraps: 100
+blca_muscle_maxiters: 16
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
 
 ## --- REVAMP OPTIONS (mock-community only) ---

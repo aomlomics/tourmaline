@@ -211,7 +211,14 @@ or just set `build_blast_database: true`.
 ```yaml
 bowtie_database: /abs/path/bowtie2_index/   # optional; auto-built if omitted
 confidence_thres: 0.8
+blca_bowtie2_max_hits: 100   # bowtie2 -k
+blca_bootstraps: 100         # BLCA -n
+blca_muscle_maxiters: 16     # muscle -maxiters
 ```
+
+The last three are bt2-blca's cost multipliers; see
+[bt2-blca cost multipliers](#bt2-blca-cost-multipliers). They are optional, and the defaults
+reproduce earlier runs exactly.
 
 **REVAMP options**
 
@@ -378,7 +385,7 @@ shared as widely as its inputs allow, so a sweep never repeats work its paramete
 | Stage | Depends on | Runs |
 |---|---|---|
 | bowtie2 index + alignment | the fold's reference and query | once per fold |
-| BLCA (muscle, 100 bootstraps) | the alignment, `blca_perc_identity`, `blca_query_cov` | once per parameter set |
+| BLCA (muscle + bootstraps) | the alignment, `blca_perc_identity`, `blca_query_cov` | once per parameter set |
 | confidence threshold | the BLCA output, `blca_confidence_values` | once per confidence |
 
 Only `reformat_summary_for_r.py` reads the confidence, so adding confidence values multiplies
@@ -392,6 +399,53 @@ and the reject FASTA, and `bt2_blca-<params>/raw-taxonomy.tsv` holds the BLCA ou
 per-confidence directories keep only `taxonomy.tsv` and `query_tax_assignments.txt`. A fold with a
 single parameter set and a single confidence still runs as one job, with everything under that
 one directory.
+
+#### bt2-blca cost multipliers
+
+bt2-blca's cost is per query, and three settings multiply it. For each query, bowtie2 keeps up to
+`blca_bowtie2_max_hits` alignments. muscle then aligns the query with those hits for up to
+`blca_muscle_maxiters` iterations. Finally, BLCA bootstraps that alignment `blca_bootstraps` times.
+On a large database such as SILVA, where most queries reach the hit limit, the BLCA stage
+dominates the whole tax-credit run.
+
+| Key | Tool flag | Default | Stage |
+|---|---|---|---|
+| `blca_bowtie2_max_hits` | bowtie2 `-k`: alignments kept per query | `100` | alignment |
+| `blca_bootstraps` | BLCA `-n`: bootstrap replicates per query | `100` | BLCA |
+| `blca_muscle_maxiters` | muscle `-maxiters`: refinement iterations per query's alignment | `16` | BLCA |
+
+The same keys work in the taxonomy step (`config_03_taxonomy.yaml`). Each takes a **single
+positive whole number, not a list**. Bowtie2's `-k` belongs to the alignment stage that every
+BLCA parameter set in a fold shares, so sweeping it would break that sharing. To compare
+settings, benchmark separate runs. A blank value or a missing key uses the default, which
+reproduces earlier runs exactly. Anything else, such as `0`, a list or a quoted number, stops
+the run at parse time.
+
+**Lowering them trades accuracy for speed.**
+
+- **Hits (`blca_bowtie2_max_hits`).** Muscle's time grows faster than linearly with the
+  number of hits, and the bootstrap time grows linearly. With fewer hits, each query's
+  vote is spread over fewer candidate taxa.
+- **Bootstraps (`blca_bootstraps`).** Fewer bootstraps make the confidence scores coarser.
+  With 20, confidence moves in steps of 0.05.
+- **Muscle iterations (`blca_muscle_maxiters`).** `2` is muscle's own fast mode for large
+  inputs. Higher values refine the alignment further.
+
+Because these settings change assignments, use the same values in the taxonomy step that you
+benchmarked here. Check the cost and the accuracy change together in
+`summaries/benchmark_summary.tsv` (`blca-align` and `blca-blca` rows) and in the metric
+summaries.
+
+In tax-credit, each value goes only to the stage that uses it: `-k` to the alignment jobs, and
+bootstraps and muscle iterations to the BLCA jobs. Changing muscle iterations therefore reruns
+only the BLCA stage, not the alignments.
+
+> **One-time rerun for runs started before these keys existed.** Snakemake reruns every
+> job of a rule whose shell command has changed. This release changed the assignment rule's
+> command in tax-credit and the `bt2` rule in the taxonomy step. Resuming such a run would
+> redo all of its assignments, even though the defaults give identical output. To keep the
+> finished jobs, run Snakemake directly once with `--rerun-triggers mtime` (`tourmaline.sh`
+> does not pass extra flags through).
 
 `classify_methods` accepts `naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca` and `revamp`. Assignment jobs write method-relevant parameters to `assignment_manifest.tsv`; unused fields are left blank. List-valued `perc_identity`, `query_cov`, `min_consensus`, and `max_accepts` expand into parameter sweeps for consensus methods. `max_accepts` (QIIME2 `--p-maxaccepts`, default `10`) only appears in a job's parameter id when it differs from that default, so directory names for runs that leave it alone are unchanged; `all` is accepted by consensus-vsearch but not consensus-blast. bt2-blca has its own cutoffs, `blca_perc_identity` (BLCA `-b`) and `blca_query_cov` (BLCA `-l`, minimum hit length relative to the query), which also accept lists and do not read the consensus keys. Both are required whenever `bt2-blca` is in `classify_methods`: a config without them (such as an older config that relied on `perc_identity` / `query_cov` for bt2-blca) stops with an error before any work starts.
 

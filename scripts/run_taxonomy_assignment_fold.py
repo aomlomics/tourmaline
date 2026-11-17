@@ -25,6 +25,15 @@ BLCA_RAW_TAXONOMY_NAME = "raw-taxonomy.tsv"
 # Shared consensus-blast artifact: one pre-indexed BLAST database per fold.
 BLASTDB_NAME = "blastdb.qza"
 
+# bt2-blca cost multipliers (config: blca_bowtie2_max_hits, blca_bootstraps,
+# blca_muscle_maxiters). Per query: bowtie2 keeps up to MAX_HITS alignments,
+# muscle aligns the query with them for up to MAXITERS iterations, and BLCA
+# bootstraps that alignment BOOTSTRAPS times. Defaults match the original
+# Anacapa / BLCA settings and muscle 3.8's own default.
+DEFAULT_BOWTIE2_MAX_HITS = 100
+DEFAULT_BLCA_BOOTSTRAPS = 100
+DEFAULT_MUSCLE_MAXITERS = 16
+
 
 def run_cmd(cmd: str, check: bool = True) -> None:
     print(cmd, flush=True)
@@ -284,7 +293,9 @@ def blca_align(
 
     Neither the index nor the alignment depends on ``blca_perc_identity``,
     ``blca_query_cov`` or the confidence threshold, so one run of this stage
-    serves every sweep combination for a fold. Stages 2 and 3 read the SAM,
+    serves every sweep combination for a fold. The alignment does depend on
+    ``bowtie2_max_hits`` (bowtie2 ``-k``), which is therefore a single run-wide
+    value rather than a sweep. Stages 2 and 3 read the SAM,
     the reject FASTA and the staged FASTA / taxonomy back out of *shared_dir*.
     """
     shared_dir.mkdir(parents=True, exist_ok=True)
@@ -302,20 +313,21 @@ def blca_align(
     temp_dir.mkdir(parents=True, exist_ok=True)
     sam_path = shared_dir / BLCA_SAM_NAME
     threads = int(cfg.get("classify_threads", 1))
+    max_hits = int(cfg.get("bowtie2_max_hits", DEFAULT_BOWTIE2_MAX_HITS))
 
     run_bt2_cmd(
         "bowtie2 "
         f"-x '{index_prefix}' -f -U '{query_fasta}' "
         f"-S '{temp_dir}/end_to_end.sam' "
         f"--no-hd --no-sq --very-sensitive --end-to-end --no-unal "
-        f"-p {threads} -k 100 --un '{temp_dir}/end_to_end_reject.fasta'"
+        f"-p {threads} -k {max_hits} --un '{temp_dir}/end_to_end_reject.fasta'"
     )
     run_bt2_cmd(
         "bowtie2 "
         f"-x '{index_prefix}' -f -U '{temp_dir}/end_to_end_reject.fasta' "
         f"-S '{temp_dir}/local.sam' "
         f"--no-hd --no-sq --very-sensitive --local --no-unal "
-        f"-p {threads} -k 100 --un '{temp_dir}/{BLCA_REJECT_NAME}'"
+        f"-p {threads} -k {max_hits} --un '{temp_dir}/{BLCA_REJECT_NAME}'"
     )
     with sam_path.open("w", encoding="utf-8") as out_sam:
         for part in ("end_to_end.sam", "local.sam"):
@@ -334,9 +346,11 @@ def blca_classify(
 ) -> Path:
     """bt2-blca stage 2: BLCA over the shared SAM -> per-read raw taxonomy.
 
-    Depends on ``blca_perc_identity`` / ``blca_query_cov`` (BLCA's -b / -l) but
-    **not** on the confidence threshold, so one run serves every confidence
-    value. This is the expensive stage: muscle plus 100 bootstraps per query.
+    Depends on ``blca_perc_identity`` / ``blca_query_cov`` (BLCA's -b / -l),
+    ``blca_bootstraps`` (-n) and ``muscle_maxiters`` but **not** on the
+    confidence threshold, so one run serves every confidence value. This is
+    the expensive stage: one muscle alignment plus ``blca_bootstraps``
+    bootstraps per query.
     """
     staging_dir = shared_dir / "staging"
     # Cache hits when stage 1 staged these; re-exported only if run standalone.
@@ -356,7 +370,10 @@ def blca_classify(
         f"'{blca_script}' "
         f"-i '{sam_path}' -r '{ref_taxonomy}' -q '{ref_fasta}' "
         f"-b {cfg['perc_identity']} -l {cfg['query_cov']} "
-        f"-p muscle -n 100 -m 1.0 -f -2.5 -g -2 "
+        f"-p muscle -n {int(cfg.get('blca_bootstraps', DEFAULT_BLCA_BOOTSTRAPS))} "
+        f"--muscle_max_iterations "
+        f"{int(cfg.get('muscle_maxiters', DEFAULT_MUSCLE_MAXITERS))} "
+        f"-m 1.0 -f -2.5 -g -2 "
         f"-tr '{taxa_ranks}' -o '{raw_taxonomy}'"
     )
     return raw_taxonomy
@@ -524,6 +541,13 @@ def assign_revamp(
     return assignments
 
 
+def _positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {value}")
+    return number
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--query-qza", required=True)
@@ -568,6 +592,19 @@ def main() -> int:
         "--taxa-ranks",
         default="kingdom,phylum,class,order,family,genus,species",
     )
+    # bt2-blca cost multipliers; see DEFAULT_* above. Ignored by other methods.
+    parser.add_argument(
+        "--bowtie2-max-hits", type=_positive_int, default=DEFAULT_BOWTIE2_MAX_HITS,
+        help="bowtie2 -k: alignments kept per query (bt2-blca align stage)",
+    )
+    parser.add_argument(
+        "--blca-bootstraps", type=_positive_int, default=DEFAULT_BLCA_BOOTSTRAPS,
+        help="BLCA -n: bootstrap replicates per query (bt2-blca blca stage)",
+    )
+    parser.add_argument(
+        "--muscle-maxiters", type=_positive_int, default=DEFAULT_MUSCLE_MAXITERS,
+        help="muscle -maxiters for each query's alignment (bt2-blca blca stage)",
+    )
     # REVAMP (mock-community only): nt is the reference database, so --ref-seqs /
     # --ref-taxa are unused; --revamp-blast-results reuses BLAST run elsewhere.
     parser.add_argument("--revamp-dir", default=None)
@@ -588,6 +625,9 @@ def main() -> int:
         "min_consensus": args.min_consensus,
         "max_accepts": args.max_accepts or "10",
         "taxa_ranks": args.taxa_ranks,
+        "bowtie2_max_hits": args.bowtie2_max_hits,
+        "blca_bootstraps": args.blca_bootstraps,
+        "muscle_maxiters": args.muscle_maxiters,
         "revamp_dir": args.revamp_dir,
         "revamp_blastdb": args.revamp_blastdb,
         "revamp_blast_mode": args.revamp_blast_mode,

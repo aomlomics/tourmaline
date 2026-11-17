@@ -41,6 +41,31 @@ if "bt2-blca" in _classify_methods:
             "config_04_tax_credit.yaml."
         )
 
+# bt2-blca cost multipliers. Single run-wide values, not sweeps: bowtie2 -k is part
+# of the align stage that every BLCA parameter set in a fold shares. Defaults are
+# the values that used to be hardcoded. Checked before anything is written.
+_BLCA_MULTIPLIER_DEFAULTS = {
+    "blca_bowtie2_max_hits": 100,  # bowtie2 -k   (align stage)
+    "blca_bootstraps": 100,        # BLCA -n      (blca stage)
+    "blca_muscle_maxiters": 16,    # muscle -maxiters (blca stage)
+}
+
+
+def _blca_multiplier(key):
+    val = config.get(key)
+    if val is None or (isinstance(val, str) and not val.strip()):
+        return _BLCA_MULTIPLIER_DEFAULTS[key]
+    if isinstance(val, bool) or not isinstance(val, int) or val < 1:
+        raise ValueError(
+            f"{key} must be a single positive whole number (default "
+            f"{_BLCA_MULTIPLIER_DEFAULTS[key]}), got {val!r}. It is a run-wide "
+            "setting, not a list to sweep."
+        )
+    return val
+
+
+_blca_multipliers = {key: _blca_multiplier(key) for key in _BLCA_MULTIPLIER_DEFAULTS}
+
 os.makedirs(run_output, exist_ok=True)
 config_output_path = run_output + config["run_name"] + "-tax-credit_config.yaml"
 shutil.copy(workflow.configfiles[0], config_output_path)
@@ -121,6 +146,8 @@ def _assign_params(wildcards):
         "revamp_taxonomy_cutoffs": _row_str(
             row, "revamp_taxonomy_cutoffs", "97,95,90,80,70,60"
         ),
+        # bt2-blca cost multipliers; overwritten below (blank for every other method)
+        "blca_opts": "",
     }
     if method in ("consensus-blast", "consensus-vsearch"):
         params["perc_identity"] = _row_optional_float(row, "perc_identity")
@@ -153,6 +180,7 @@ def _assign_params(wildcards):
             "taxa_ranks",
             config.get("taxa_ranks", "kingdom,phylum,class,order,family,genus,species"),
         )
+        params["blca_opts"] = _blca_stage_opts(row)
     else:
         params["perc_identity"] = 0.8
         params["query_cov"] = 0.8
@@ -166,6 +194,29 @@ def _assign_params(wildcards):
 
 def _row_is_true(row, field):
     return _row_str(row, field, "").lower() == "true"
+
+
+def _blca_stage_opts(row):
+    """bt2-blca multiplier flags for the stage(s) this job runs, and only those.
+
+    They are params, so changing one reruns exactly the jobs it affects:
+    bowtie2 -k the align stage, bootstraps and muscle iterations the BLCA stage.
+    The reformat stage and index-only fit jobs use none of them.
+    """
+    stage = _row_str(row, "blca_stage", "")
+    k = f"--bowtie2-max-hits {_blca_multipliers['blca_bowtie2_max_hits']}"
+    blca = (
+        f"--blca-bootstraps {_blca_multipliers['blca_bootstraps']} "
+        f"--muscle-maxiters {_blca_multipliers['blca_muscle_maxiters']}"
+    )
+    if stage == "align":
+        return k
+    if stage == "blca":
+        return blca
+    if stage == "reformat" or _row_is_true(row, "fit_only") or _row_is_true(row, "trad_fit"):
+        return ""
+    # single-combination fold: all three stages in one job
+    return f"{k} {blca}"
 
 
 # One rule dispatches every kind of assignment work, but only some of the tools
@@ -541,6 +592,7 @@ rule tax_credit_assign_fold:
             --query-cov {params.assign[query_cov]} \
             --min-consensus {params.assign[min_consensus]} \
             --taxa-ranks '{params.assign[taxa_ranks]}' \
+            {params.assign[blca_opts]} \
             $SKIP_FLAG $EXTRA_CLS $EXTRA_BT2 $EXTRA_CONSENSUS $EXTRA_BLASTDB $EXTRA_REVAMP $EXTRA_BLCA $FIT_ONLY
 
         touch {output}
