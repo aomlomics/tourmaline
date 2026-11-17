@@ -2,7 +2,8 @@
 ## (The tax-credit step does not include this file: it runs its own per-fold
 ## assignments through scripts/run_taxonomy_assignment_fold.py.)
 ## Parent Snakefile must define: output_dir, config, input_repseqs, output_seq, output_tax,
-## use_classifier, classify_method, fasta_repseqs (bt2-blca), input_table (revamp),
+## use_classifier, classify_method, fasta_repseqs (bt2-blca), input_table (revamp,
+## revamp-custom; the latter also uses output_seq/output_tax as plain FASTA + TSV),
 ## taxonomy_dir, taxonomy_qza, taxonomy_tsv, classifier_qza, fit_params (optional string),
 ## blastdb_qza and blastdb_source (consensus-blast).
 
@@ -266,12 +267,19 @@ elif config["classify_method"] == "consensus-vsearch":
             {params.classifyparams};
             """
 
-elif config["classify_method"] == "revamp":
+elif config["classify_method"] in ("revamp", "revamp-custom"):
     ## REVAMP (https://github.com/McAllister-NOAA/REVAMP) BLASTs ASVs against a local
     ## NCBI nt database and merges the best hits to their lowest common ancestor.
     ## Tourmaline calls REVAMP's taxonomy scripts directly (see
     ## scripts/run_revamp_taxonomy.sh) rather than revamp.sh, which also runs cutadapt,
     ## DADA2, figures and interactive prompts. Nothing in the REVAMP clone is modified.
+    ##
+    ## revamp-custom runs the same method against the user's reference database
+    ## (refseqs_file/taxa_file) and its own taxonomy, with any number of ranks:
+    ## build_revamp_custom_refdb.py gives each unique lineage a pseudo-taxid, BLAST and
+    ## REVAMP's reformat_blast.R pick the best hits, and revamp_lca.py (REVAMP's
+    ## assignment algorithm generalized to N ranks / N-1 cutoffs) assigns taxonomy.
+    revamp_custom = config["classify_method"] == "revamp-custom"
     ruleorder: revamp_to_taxonomy_tsv > export_taxonomy_to_tsv
 
     # REVAMP's scripts use relative paths between these directories, so its output
@@ -283,6 +291,12 @@ elif config["classify_method"] == "revamp":
     revamp_btab = revamp_dir + "blast_results/ASV_blastn_nt.btab"
     revamp_formatted_blast = revamp_dir + "blast_results/ASV_blastn_nt_formatted.txt"
     revamp_asv_taxonomy = revamp_dir + "ASV2Taxonomy/" + config["run_name"] + "_asvTaxonomyTable.txt"
+    # revamp-custom only: reference database prepared from refseqs_file/taxa_file.
+    revamp_refdb_dir = revamp_dir + "refdb/"
+    revamp_refdb_fasta = revamp_refdb_dir + "ref_blast.fasta"
+    revamp_refdb_map = revamp_refdb_dir + "seqid_map.tsv"
+    revamp_refdb_taxonomy = revamp_refdb_dir + "pseudo_taxonomy.tsv"
+    revamp_refdb_report = revamp_refdb_dir + "refdb_report.txt"
 
     # BLASTing nt usually happens on the machine that holds the database, so BLAST
     # results may be supplied instead of being produced here.
@@ -316,7 +330,29 @@ elif config["classify_method"] == "revamp":
             grep '^>' {output.fasta} | sed 's/^>//' | awk '{{print $1"\t1"}}' >> {output.counts}
             """
 
-    if revamp_blast_results:
+    if revamp_custom:
+        rule revamp_custom_refdb:
+            input:
+                seqs=output_seq,
+                taxa=output_tax
+            output:
+                fasta=revamp_refdb_fasta,
+                seqmap=revamp_refdb_map,
+                taxonomy=revamp_refdb_taxonomy,
+                report=revamp_refdb_report
+            params:
+                outdir=revamp_refdb_dir,
+                taxaranks=config["taxa_ranks"]
+            conda:
+                "qiime2-amplicon-2024.10"
+            shell:
+                "python scripts/build_revamp_custom_refdb.py "
+                "--ref-seqs {input.seqs} "
+                "--ref-taxa {input.taxa} "
+                "--taxaranks {params.taxaranks} "
+                "--outdir {params.outdir}"
+
+    if revamp_blast_results and not revamp_custom:
         rule revamp_stage_blast:
             input:
                 btab=revamp_blast_results,
@@ -325,7 +361,26 @@ elif config["classify_method"] == "revamp":
                 revamp_btab
             shell:
                 "cp {input.btab} {output}"
-    else:
+    elif revamp_blast_results:
+        # External results name subjects by the reference FASTA's IDs; staging swaps
+        # them for pseudo-taxids and fails on any subject not in the reference.
+        rule revamp_stage_blast:
+            input:
+                btab=revamp_blast_results,
+                check=revamp_check,
+                seqmap=revamp_refdb_map
+            output:
+                revamp_btab
+            params:
+                workdir=revamp_dir
+            shell:
+                "bash scripts/run_revamp_taxonomy.sh "
+                "--mode stage "
+                "--reference custom "
+                "--workdir {params.workdir} "
+                "--seqid-map {input.seqmap} "
+                "--blast-results {input.btab}"
+    elif not revamp_custom:
         rule revamp_blast:
             input:
                 fasta=revamp_fasta,
@@ -348,33 +403,101 @@ elif config["classify_method"] == "revamp":
                 "--blastdb {params.blastdb} "
                 "--blast-mode {params.blastmode} "
                 "--threads {threads}"
+    else:
+        rule revamp_blast:
+            input:
+                fasta=revamp_fasta,
+                check=revamp_check,
+                reffasta=revamp_refdb_fasta,
+                seqmap=revamp_refdb_map
+            output:
+                revamp_btab
+            params:
+                revampdir=config["revamp_dir"],
+                workdir=revamp_dir
+            conda:
+                "revamp"
+            threads: config["classify_threads"]
+            shell:
+                "bash scripts/run_revamp_taxonomy.sh "
+                "--mode blast "
+                "--reference custom "
+                "--revamp-dir {params.revampdir} "
+                "--workdir {params.workdir} "
+                "--ref-fasta {input.reffasta} "
+                "--seqid-map {input.seqmap} "
+                "--threads {threads}"
 
-    rule revamp_assign:
-        input:
-            btab=revamp_btab,
-            fasta=revamp_fasta,
-            counts=revamp_counts
-        output:
-            asvtaxonomy=revamp_asv_taxonomy,
-            formattedblast=revamp_formatted_blast
-        params:
-            revampdir=config["revamp_dir"],
-            workdir=revamp_dir,
-            blastdb=config["revamp_blastdb"],
-            runname=config["run_name"],
-            querycov=config.get("revamp_query_cov") or 90,
-            cutoffs=config.get("revamp_taxonomy_cutoffs") or "97,95,90,80,70,60"
-        conda:
-            "revamp"
-        shell:
-            "bash scripts/run_revamp_taxonomy.sh "
-            "--mode assign "
-            "--revamp-dir {params.revampdir} "
-            "--workdir {params.workdir} "
-            "--blastdb {params.blastdb} "
-            "--run-name {params.runname} "
-            "--query-cov {params.querycov} "
-            "--cutoffs {params.cutoffs}"
+    if revamp_custom:
+        rule revamp_reformat:
+            input:
+                btab=revamp_btab,
+                fasta=revamp_fasta
+            output:
+                revamp_formatted_blast
+            params:
+                revampdir=config["revamp_dir"],
+                workdir=revamp_dir,
+                querycov=config.get("revamp_query_cov") or 90
+            conda:
+                "revamp"
+            shell:
+                "bash scripts/run_revamp_taxonomy.sh "
+                "--mode reformat "
+                "--reference custom "
+                "--revamp-dir {params.revampdir} "
+                "--workdir {params.workdir} "
+                "--query-cov {params.querycov}"
+
+        rule revamp_lca:
+            input:
+                formattedblast=revamp_formatted_blast,
+                taxonomy=revamp_refdb_taxonomy,
+                fasta=revamp_fasta
+            output:
+                asvtaxonomy=revamp_asv_taxonomy,
+                details=revamp_dir + "ASV2Taxonomy/" + config["run_name"] + "_assignment_details.tsv"
+            params:
+                taxaranks=config["taxa_ranks"],
+                cutoffs=config["revamp_taxonomy_cutoffs"]
+            conda:
+                "qiime2-amplicon-2024.10"
+            shell:
+                "python scripts/revamp_lca.py "
+                "--formatted-blast {input.formattedblast} "
+                "--pseudo-taxonomy {input.taxonomy} "
+                "--asv-fasta {input.fasta} "
+                "--taxaranks {params.taxaranks} "
+                "--cutoffs {params.cutoffs} "
+                "--output {output.asvtaxonomy} "
+                "--details {output.details}"
+    else:
+        rule revamp_assign:
+            input:
+                btab=revamp_btab,
+                fasta=revamp_fasta,
+                counts=revamp_counts
+            output:
+                asvtaxonomy=revamp_asv_taxonomy,
+                formattedblast=revamp_formatted_blast
+            params:
+                revampdir=config["revamp_dir"],
+                workdir=revamp_dir,
+                blastdb=config["revamp_blastdb"],
+                runname=config["run_name"],
+                querycov=config.get("revamp_query_cov") or 90,
+                cutoffs=config.get("revamp_taxonomy_cutoffs") or "97,95,90,80,70,60"
+            conda:
+                "revamp"
+            shell:
+                "bash scripts/run_revamp_taxonomy.sh "
+                "--mode assign "
+                "--revamp-dir {params.revampdir} "
+                "--workdir {params.workdir} "
+                "--blastdb {params.blastdb} "
+                "--run-name {params.runname} "
+                "--query-cov {params.querycov} "
+                "--cutoffs {params.cutoffs}"
 
     rule revamp_to_taxonomy_tsv:
         input:

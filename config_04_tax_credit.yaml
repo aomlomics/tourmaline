@@ -29,8 +29,13 @@ reference_databases:
     # from the top-level taxa_ranks. Ranks named like the top-level ones are scored;
     # the rest are skipped. PR2 v5 (9 ranks), scoring Domain as kingdom and Division
     # as phylum: kingdom,supergroup,phylum,subdivision,class,order,family,genus,species
-    # bt2-blca also uses this list to label the taxonomy. novel-taxa ignores it.
+    # bt2-blca also uses this list to label the taxonomy, and revamp-custom assigns
+    # every rank in it. novel-taxa ignores it.
     taxa_ranks:
+    # Optional (revamp-custom): cutoffs for this database when its rank count differs
+    # from the top-level taxa_ranks: N-1 values for N ranks, deepest rank first;
+    # single string or list to sweep. Overrides the top-level revamp_taxonomy_cutoffs_values.
+    revamp_taxonomy_cutoffs_values:
   # The local NCBI nt database used by the `revamp` classify method. It has no
   # refseqs_file / taxa_file: revamp reaches nt through BLAST, not QIIME artifacts.
   # Only mock-community evaluates it, and only revamp classifies against it. List its
@@ -66,7 +71,8 @@ format_reference_databases: false #not implemented yet
 
 ## --- TAXONOMIC ASSIGNMENT (shared) ---
 # One or more methods to benchmark: naive-bayes | consensus-blast | consensus-vsearch |
-# bt2-blca | revamp (revamp is mock-community only; see REVAMP OPTIONS below)
+# bt2-blca | revamp | revamp-custom (revamp is mock-community only; revamp-custom runs
+# for every evaluation method; see REVAMP OPTIONS below)
 classify_methods:
   - naive-bayes
   - consensus-vsearch
@@ -121,12 +127,17 @@ blca_bowtie2_max_hits: 100
 blca_bootstraps: 100
 blca_muscle_maxiters: 16
 
-## --- REVAMP OPTIONS (mock-community only) ---
-## Used when `revamp` is in classify_methods. REVAMP classifies against a local NCBI nt
-## BLAST database, which is too large to simulate cross-validated / novel-taxa /
-## self-validated datasets from, so revamp is skipped for those evaluation methods.
-## Requires the `revamp` conda env; see docs/steps/taxonomy.md#revamp.
-# Required for revamp: path to a REVAMP clone (https://github.com/McAllister-NOAA/REVAMP).
+## --- REVAMP OPTIONS ---
+## Used when `revamp` or `revamp-custom` is in classify_methods. Both require the
+## `revamp` conda env; see docs/steps/taxonomy.md#revamp.
+##   revamp         BLAST against a local NCBI nt database, which is too large to
+##                  simulate cross-validated / novel-taxa / self-validated datasets from,
+##                  so it runs for mock-community only.
+##   revamp-custom  BLAST against each fold's own reference, with its own taxonomy and
+##                  any number of ranks; runs for every evaluation method. Uses
+##                  revamp_dir, revamp_query_cov_values and revamp_taxonomy_cutoffs_values
+##                  (or a database's own); ignores revamp_blastdb and revamp_blast_mode_values.
+# Required for revamp and revamp-custom: path to a REVAMP clone (https://github.com/McAllister-NOAA/REVAMP).
 revamp_dir:
 # Required for revamp: database directory. With per-dataset blast_results supplied, only
 # its taxdump/ subdirectory is read (names/nodes/merged/delnodes.dmp, common_names.dmp).
@@ -135,7 +146,8 @@ revamp_blastdb:
 revamp_query_cov_values: [90]
 # Percent identity cutoffs limiting assignment depth, ordered S,G,F,O,C,P.
 # Single string or list to sweep; 97,95,90,80,70,60 for rRNA genes,
-# 95,92,87,77,67,60 for protein-coding genes.
+# 95,92,87,77,67,60 for protein-coding genes. revamp-custom applies these to databases
+# with seven ranks; a database with N ranks needs N-1 values, set on its entry.
 revamp_taxonomy_cutoffs_values:
   - "97,95,90,80,70,60"
 # BLASTn subject filtering: allIN | allEnvOUT | mostEnvOUT. Each mode needs its own BLAST

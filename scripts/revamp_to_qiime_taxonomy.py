@@ -2,7 +2,8 @@
 
 REVAMP's `asv_taxonomy_processing_figureOuts.pl` writes
 `{run_name}_asvTaxonomyTable.txt`: one row per ASV with seven fixed rank columns
-(Kingdom..Species). This script rewrites it as the three-column taxonomy TSV
+(Kingdom..Species). For revamp-custom, `scripts/revamp_lca.py` writes the same table
+with one column per rank in taxa_ranks. This script rewrites it as the three-column taxonomy TSV
 Tourmaline's other classify methods produce, so the downstream QIIME 2 rules
 (import, collapse, barplot, ODE export) work unchanged.
 
@@ -120,7 +121,8 @@ def main():
                         help='Representative sequences exported to FASTA; sets output order')
     parser.add_argument('--output', required=True, help='Taxonomy TSV to write')
     parser.add_argument('--taxaranks', required=True,
-                        help='Comma-separated rank names; REVAMP always assigns seven')
+                        help='Comma-separated rank names; seven for revamp (nt), one per '
+                             'reference rank for revamp-custom')
     args = parser.parse_args()
 
     taxa_ranks = [rank.strip() for rank in args.taxaranks.split(',') if rank.strip()]
@@ -128,8 +130,10 @@ def main():
     assignments, n_ranks = read_revamp_table(args.asv_taxonomy_table)
     if len(taxa_ranks) != n_ranks:
         sys.exit(f'ERROR: taxa_ranks has {len(taxa_ranks)} ranks ({args.taxaranks}) but '
-                 f'{args.asv_taxonomy_table} has {n_ranks}. REVAMP assigns seven ranks '
-                 '(kingdom,phylum,class,order,family,genus,species); set taxa_ranks to match.')
+                 f'{args.asv_taxonomy_table} has {n_ranks}. The revamp method (NCBI nt) '
+                 'assigns seven ranks (kingdom,phylum,class,order,family,genus,species); '
+                 'revamp-custom assigns one per rank of the reference taxonomy. Set '
+                 'taxa_ranks to match.')
 
     percent_ids = read_percent_ids(args.formatted_blast)
     repseqs_ids = read_fasta_ids(args.repseqs_fasta)

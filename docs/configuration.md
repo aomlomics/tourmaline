@@ -138,7 +138,7 @@ Defines how representative sequences are assigned taxonomy and summarized.
 ```yaml
 run_name: my_run
 output_dir: /path/to/results
-classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp
+classify_method: naive-bayes      # options: naive-bayes | consensus-blast | consensus-vsearch | bt2-blca | revamp | revamp-custom
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
 collapse_taxalevel: 7             # taxonomy level for collapsed table
 classify_threads: 10
@@ -231,7 +231,16 @@ revamp_query_cov: 90                                # percent of ASV length a hi
 revamp_taxonomy_cutoffs: "97,95,90,80,70,60"        # percent ID cutoffs, ordered S,G,F,O,C,P
 ```
 
-Used only when `classify_method` is `revamp`, which needs the `revamp` conda environment
+Used when `classify_method` is `revamp` or `revamp-custom`.
+
+`revamp-custom` BLASTs against `refseqs_file` and takes lineages from `taxa_file`, with any
+number of ranks: `taxa_ranks` lists them all, and `revamp_taxonomy_cutoffs` takes one value
+per rank except the first (N-1 for N ranks), deepest rank first. It uses `revamp_dir`,
+`revamp_query_cov`, `revamp_taxonomy_cutoffs` and optionally `revamp_blast_results`
+(`sseqid` in column 4), and ignores `revamp_blastdb` and `revamp_blast_mode`. See
+[Taxonomy step](steps/taxonomy.md#revamp-with-a-custom-reference-database-revamp-custom).
+
+`revamp`, which needs the `revamp` conda environment
 and ignores `refseqs_file` / `taxa_file` / `pretrained_classifier`. `revamp_blast_mode`
 applies when Tourmaline runs BLAST itself; with `revamp_blast_results` supplied it is
 recorded but not applied. Suggested cutoffs are `97,95,90,80,70,60` for rRNA genes and

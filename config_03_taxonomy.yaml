@@ -26,11 +26,12 @@ database_name: "silva-138_1-99-515f_926r-uniq"
 refseqs_file: "00-data/silva-138_1-99-515f_926r-uniq-seq.qza"
 # Required, unless using pretrained classifier: reference taxonomy (TSV or .qza) compatible with chosen method.
 taxa_file: "00-data/silva-138_1-99-515f_926r-uniq-tax.qza"
-# Required: taxonomy assignment method (`naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca`, `revamp`).
+# Required: taxonomy assignment method (`naive-bayes`, `consensus-blast`, `consensus-vsearch`, `bt2-blca`, `revamp`, `revamp-custom`).
 classify_method: naive-bayes
-# Required: ordered taxonomy ranks to expand in outputs (comma-separated).
+# Required: ordered taxonomy ranks to expand in outputs (comma-separated). For revamp-custom,
+# list every rank in taxa_file's lineages (any number); for revamp, the seven shown here.
 taxa_ranks: kingdom,phylum,class,order,family,genus,species
-# Optional: taxonomy level (1–7) for collapsed abundance table.
+# Optional: taxonomy level (1 to the number of taxa_ranks) for collapsed abundance table.
 collapse_taxalevel: 7
 # Optional: number of threads used by taxonomy commands.
 classify_threads: 10
@@ -82,22 +83,31 @@ blca_bootstraps: 100
 blca_muscle_maxiters: 16
 
 ## --- REVAMP OPTIONS ---
-## Only used when classify_method is `revamp`. Requires the `revamp` conda env and a
-## REVAMP clone; refseqs_file/taxa_file are ignored (nt is the reference database).
-# Required for revamp: path to a REVAMP clone (https://github.com/McAllister-NOAA/REVAMP).
+## Used when classify_method is `revamp` or `revamp-custom`. Both require the `revamp`
+## conda env and a REVAMP clone.
+##   revamp         BLASTn against NCBI nt; refseqs_file/taxa_file are ignored.
+##   revamp-custom  BLASTn against refseqs_file, with lineages from taxa_file (any number
+##                  of ;-separated ranks, one per taxa_ranks entry); no NCBI taxonomy.
+##                  revamp_blastdb and revamp_blast_mode are ignored.
+# Required for revamp and revamp-custom: path to a REVAMP clone (https://github.com/McAllister-NOAA/REVAMP).
 revamp_dir:
-# Required for revamp: database directory holding the NCBI nt volumes and a taxdump/
+# Required for revamp (not revamp-custom): database directory holding the NCBI nt volumes and a taxdump/
 # subdirectory prepared by REVAMP's ncbi_db_cleanup.sh. When revamp_blast_results is
 # supplied, only taxdump/ (names/nodes/merged/delnodes.dmp, common_names.dmp) is needed.
 revamp_blastdb:
-# Optional: BLASTn results (outfmt 6: qseqid pident length staxids sacc) run elsewhere
-# against nt, e.g. on the machine holding the database. Leave empty to BLAST locally.
+# Optional: BLASTn results run elsewhere, e.g. on the machine holding the database.
+# Leave empty to BLAST locally. revamp: outfmt '6 qseqid pident length staxids sacc'
+# against nt. revamp-custom: outfmt '6 qseqid pident length sseqid sacc' against a
+# database built from refseqs_file, so column 4 holds refseqs_file's sequence IDs.
 revamp_blast_results:
-# Optional: BLASTn subject filtering (`allIN`, `allEnvOUT`, `mostEnvOUT`); local BLAST only.
+# Optional: BLASTn subject filtering (`allIN`, `allEnvOUT`, `mostEnvOUT`); local nt BLAST only.
 revamp_blast_mode: mostEnvOUT
 # Optional: percent of ASV length a BLAST hit must cover to be considered (0-100).
 revamp_query_cov: 90
-# Optional: percent identity cutoffs for assignment depth, ordered S,G,F,O,C,P.
+# Optional: percent identity cutoffs for assignment depth, deepest rank first.
+# revamp: six values, ordered S,G,F,O,C,P.
+# revamp-custom: required, one value per rank in taxa_ranks except the first (N-1 values
+# for N ranks), deepest rank first; values must not increase.
 # Suggested: 97,95,90,80,70,60 for rRNA genes; 95,92,87,77,67,60 for protein-coding genes.
 revamp_taxonomy_cutoffs: "97,95,90,80,70,60"
 

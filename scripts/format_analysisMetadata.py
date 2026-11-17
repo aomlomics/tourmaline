@@ -111,6 +111,12 @@ def assign_tools(taxa,tour):
             parts.append("taxonkit "+str(tour['taxonkit_version']))
         software = ";".join(parts)
         cat = "sequence similarity"
+    elif taxa['classify_method'] == 'revamp-custom':
+        # REVAMP's method against the user's reference database and its own taxonomy:
+        # REVAMP selects the best BLAST hits, Tourmaline's revamp_lca.py assigns.
+        software = ";".join(["REVAMP (custom reference database; Tourmaline revamp_lca.py)",
+                             "blast "+str(tour['blast_version'])])
+        cat = "sequence similarity"
     else:
         # bt2-blca and any later method: no version metadata recorded for it yet.
         software = str(taxa['classify_method'])
@@ -152,15 +158,15 @@ def trim_paramF(qaqc,repseqs,tour):
 def tax_class_id_cutoff(taxa):
     if taxa['classify_method'] in ['consensus-blast','consensus-vsearch']:
         return taxa['perc_identity']
-    elif taxa['classify_method'] == 'revamp':
-        # REVAMP uses one cutoff per rank; the first is the species-level cutoff.
+    elif taxa['classify_method'] in ('revamp', 'revamp-custom'):
+        # REVAMP uses one cutoff per rank; the first is the deepest rank's cutoff.
         return str(taxa['revamp_taxonomy_cutoffs']).split(',')[0]
     return "not applicable"
 
 def tax_class_query_cutoff(taxa):
     if taxa['classify_method'] in ['consensus-blast','consensus-vsearch']:
         return taxa['query_cov']
-    elif taxa['classify_method'] == 'revamp':
+    elif taxa['classify_method'] in ('revamp', 'revamp-custom'):
         return taxa['revamp_query_cov']
     return "not applicable"
 
@@ -175,6 +181,11 @@ def assign_collapse(taxa):
         output = (f"lowest common ancestor of all best BLAST hits, with percent identity "
                   f"cutoffs of {str(taxa['revamp_taxonomy_cutoffs'])} for species,genus,"
                   f"family,order,class,phylum")
+    elif taxa['classify_method'] == 'revamp-custom':
+        ranks = [r.strip() for r in str(taxa['taxa_ranks']).split(',') if r.strip()]
+        output = (f"lowest common ancestor of all best BLAST hits, with percent identity "
+                  f"cutoffs of {str(taxa['revamp_taxonomy_cutoffs'])} for "
+                  f"{','.join(reversed(ranks[1:]))}")
     else:
         output = ""
     return output

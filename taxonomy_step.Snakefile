@@ -48,6 +48,27 @@ if config["classify_method"] == "revamp":
     # REVAMP classifies against a local NCBI nt BLAST database, not a QIIME classifier
     # or reference artifacts; refseqs_file and taxa_file are unused.
     use_classifier="no"
+elif config["classify_method"] == "revamp-custom":
+    # REVAMP's method against the user's reference database and its own taxonomy, with
+    # every rank in taxa_ranks and one cutoff per rank below the first. Checked here so
+    # a wrong cutoff count fails at parse time rather than after BLAST.
+    use_classifier="no"
+    if config["refseqs_file"] == None or config["taxa_file"] == None:
+        raise ValueError("classify_method revamp-custom needs refseqs_file and taxa_file "
+                         "(the reference sequences and their taxonomy).")
+    _revamp_ranks = [r.strip() for r in str(config["taxa_ranks"]).split(",") if r.strip()]
+    _revamp_cutoffs = [c for c in str(config.get("revamp_taxonomy_cutoffs") or "").split(",") if c.strip()]
+    if len(_revamp_ranks) < 2:
+        raise ValueError("classify_method revamp-custom needs at least two ranks in taxa_ranks.")
+    if len(_revamp_cutoffs) != len(_revamp_ranks) - 1:
+        raise ValueError(
+            f"revamp_taxonomy_cutoffs has {len(_revamp_cutoffs)} values but taxa_ranks has "
+            f"{len(_revamp_ranks)} ranks ({config['taxa_ranks']}). revamp-custom needs "
+            f"{len(_revamp_ranks) - 1} cutoffs, deepest rank first, one per rank except the "
+            "first.")
+    if config.get("revamp_blast_mode") not in (None, "", "allIN"):
+        print(f"NOTE: revamp_blast_mode ({config['revamp_blast_mode']}) only applies to NCBI nt; "
+              "it is ignored for revamp-custom.\n")
 elif config["pretrained_classifier"] != None:
     use_classifier="yes"
 else:
@@ -191,7 +212,7 @@ if config["classify_method"] == "bt2-blca":
 if config["classify_method"] == "revamp":
     output_seq = None
     output_tax = None
-elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] != "bt2-blca":
+elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_method"] not in ("bt2-blca", "revamp-custom"):
     output_seq = taxonomy_dir+change_suffix(config["refseqs_file"], ".qza")
     output_tax = taxonomy_dir+change_suffix(config["taxa_file"], ".qza")
     rule import_ref_seqs:
@@ -220,10 +241,11 @@ elif has_fa_suffix(config["refseqs_file"], fasta_suffixes) and config["classify_
             "--input-format HeaderlessTSVTaxonomyFormat "
             "--input-path {input} "
             "--output-path {output}"
-elif has_fa_suffix(config["refseqs_file"], [".qza"]) and config["classify_method"] != "bt2-blca":
+elif has_fa_suffix(config["refseqs_file"], [".qza"]) and config["classify_method"] not in ("bt2-blca", "revamp-custom"):
     output_seq = config["refseqs_file"]
     output_tax = config["taxa_file"]
-elif config["classify_method"] == "bt2-blca":
+elif config["classify_method"] in ("bt2-blca", "revamp-custom"):
+    # Both read plain FASTA + TSV rather than QIIME artifacts.
     if has_fa_suffix(config["refseqs_file"], [".qza"]):
         output_seq=taxonomy_dir+change_suffix(config["refseqs_file"], ".fasta")
         output_tax = taxonomy_dir+change_suffix(config["taxa_file"], ".txt")

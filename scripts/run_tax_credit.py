@@ -383,6 +383,7 @@ _SUPPORTED_CLASSIFY_METHODS = frozenset({
     "consensus-vsearch",
     "bt2-blca",
     "revamp",
+    "revamp-custom",
 })
 
 # revamp classifies against a local NCBI nt BLAST database, which is far too large
@@ -495,6 +496,119 @@ def revamp_param_id(combo: dict, blast_mode: str) -> str:
 def revamp_blast_id(blast_mode: str) -> str:
     """Shared BLAST directory name; one BLAST per subject-filtering mode."""
     return f"blast-{blast_mode}"
+
+
+# revamp-custom: REVAMP's method against each simulated fold's own reference and its
+# taxonomy, with any number of ranks (scripts/revamp_lca.py). Unlike revamp it runs
+# for every evaluation method, and it never classifies the nt (`revamp: true`) entry.
+REVAMP_CUSTOM_BLAST_ID = "blast"
+
+
+def _revamp_custom_enabled(cfg: dict) -> bool:
+    methods = cfg.get("classify_methods") or cfg.get("classify_method", "naive-bayes")
+    if isinstance(methods, str):
+        methods = [methods]
+    return "revamp-custom" in methods
+
+
+def _database_rank_names(cfg: dict, db_id: str) -> list[str]:
+    """Every rank of a database's taxonomy: its own taxa_ranks, else the top-level list."""
+    for db in cfg.get("reference_databases") or []:
+        if db.get("id") == db_id and db.get("taxa_ranks"):
+            return _parse_ranks(db["taxa_ranks"])
+    return _parse_ranks(cfg.get("taxa_ranks") or _DEFAULT_TAXA_RANKS)
+
+
+def _as_cutoff_list(value) -> list[str]:
+    if value is None or value == "":
+        return []
+    items = value if isinstance(value, (list, tuple)) else [value]
+    # Spaces are stripped: cutoffs reach the assignment script as one shell argument
+    # and also name the parameter set in summaries and plots.
+    return [str(item).replace(" ", "") for item in items if str(item).strip()]
+
+
+def revamp_custom_cutoffs(cfg: dict, db_id: str) -> list[str]:
+    """Cutoff strings to sweep for one database.
+
+    A database's own ``revamp_taxonomy_cutoffs_values`` wins, then the top-level one
+    (shared with revamp). REVAMP's default applies only to a seven-rank database.
+    """
+    for db in cfg.get("reference_databases") or []:
+        if db.get("id") == db_id:
+            own = _as_cutoff_list(
+                db.get("revamp_taxonomy_cutoffs_values") or db.get("revamp_taxonomy_cutoffs")
+            )
+            if own:
+                return own
+    top = _as_cutoff_list(
+        cfg.get("revamp_taxonomy_cutoffs_values") or cfg.get("revamp_taxonomy_cutoffs")
+    )
+    if top:
+        return top
+    if len(_database_rank_names(cfg, db_id)) == 7:
+        return [_REVAMP_DEFAULT_CUTOFFS]
+    return []
+
+
+def validate_revamp_custom_config(cfg: dict) -> None:
+    """Check revamp-custom's config: REVAMP clone, and N-1 cutoffs per N-rank database."""
+    if not _revamp_custom_enabled(cfg):
+        return
+    errors = []
+    if not cfg.get("revamp_dir"):
+        errors.append("revamp-custom is in classify_methods but revamp_dir is not set.")
+    exclude = set(cfg.get("exclude_databases") or [])
+    for db in cfg.get("reference_databases") or []:
+        db_id = db.get("id")
+        if db_id in exclude or is_revamp_database(db):
+            continue
+        ranks = _database_rank_names(cfg, db_id)
+        cutoff_sets = revamp_custom_cutoffs(cfg, db_id)
+        if not cutoff_sets:
+            errors.append(
+                f"reference_databases '{db_id}' has {len(ranks)} ranks, so revamp-custom "
+                f"needs {len(ranks) - 1} cutoffs: set revamp_taxonomy_cutoffs_values on "
+                "that database entry (or at the top level)."
+            )
+        for cutoffs in cutoff_sets:
+            values = cutoffs.split(",")
+            try:
+                numbers = [float(v) for v in values]
+            except ValueError:
+                errors.append(f"'{db_id}': cutoffs {cutoffs} are not all numbers.")
+                continue
+            if len(numbers) != len(ranks) - 1:
+                errors.append(
+                    f"'{db_id}': cutoffs {cutoffs} have {len(numbers)} values but its "
+                    f"taxonomy has {len(ranks)} ranks ({','.join(ranks)}); revamp-custom "
+                    f"needs {len(ranks) - 1}, deepest rank first. Set "
+                    "revamp_taxonomy_cutoffs_values on the database entry when "
+                    "databases differ in rank count."
+                )
+            elif any(b > a for a, b in zip(numbers, numbers[1:])):
+                errors.append(
+                    f"'{db_id}': cutoffs {cutoffs} must not increase from left (deepest "
+                    "rank) to right."
+                )
+    if errors:
+        raise ValueError("Invalid revamp-custom config:\n  - " + "\n  - ".join(errors))
+
+
+def revamp_custom_param_combinations(cfg: dict, db_id: str) -> list[dict]:
+    """Post-BLAST combinations for one database; all reuse that fold's BLAST."""
+    qcs = cfg.get("revamp_query_cov_values") or cfg.get("revamp_query_cov") or [90]
+    if not isinstance(qcs, (list, tuple)):
+        qcs = [qcs]
+    return [
+        {"query_cov": float(qc), "taxonomy_cutoffs": cut}
+        for qc, cut in itertools.product(qcs, revamp_custom_cutoffs(cfg, db_id))
+    ]
+
+
+def revamp_custom_param_id(combo: dict) -> str:
+    cutoffs = str(combo["taxonomy_cutoffs"]).replace(",", "_")
+    return f"qc{_format_sweep_param(combo['query_cov'])}-cut{cutoffs}"
 
 
 
@@ -649,6 +763,10 @@ def method_settings(cfg: dict, method: str) -> dict:
         )
         settings["revamp_dir"] = cfg["revamp_dir"]
         settings["revamp_blastdb"] = cfg["revamp_blastdb"]
+    elif method == "revamp-custom":
+        validate_revamp_custom_config(cfg)
+        settings["taxa_ranks"] = cfg.get("taxa_ranks", _DEFAULT_TAXA_RANKS)
+        settings["revamp_dir"] = cfg["revamp_dir"]
     return settings
 
 
@@ -746,6 +864,16 @@ def _manifest_assign_params(
             params["revamp_taxonomy_cutoffs"] = str(revamp_combo["taxonomy_cutoffs"])
         if revamp_blast_mode:
             params["revamp_blast_mode"] = revamp_blast_mode
+        if revamp_blast_results:
+            params["revamp_blast_results"] = revamp_blast_results
+    elif method == "revamp-custom":
+        # taxa_ranks is replaced by the database's own list in _apply_database_taxa_ranks;
+        # it sets how many ranks the reference lineages hold.
+        params["taxa_ranks"] = method_cfg.get("taxa_ranks", _DEFAULT_TAXA_RANKS)
+        params["revamp_dir"] = method_cfg.get("revamp_dir") or na
+        if revamp_combo is not None:
+            params["revamp_query_cov"] = float(revamp_combo["query_cov"])
+            params["revamp_taxonomy_cutoffs"] = str(revamp_combo["taxonomy_cutoffs"])
         if revamp_blast_results:
             params["revamp_blast_results"] = revamp_blast_results
     else:
@@ -950,6 +1078,62 @@ def _append_fold_assignment_rows(
                         revamp_blast_results=btab,
                     ),
                 })
+        return
+
+    if method == "revamp-custom":
+        # One fit job per fold builds the BLAST database from this fold's reference
+        # (pseudo-taxids from its own taxonomy) and BLASTs the queries; every
+        # query_cov x cutoffs combination is post-BLAST and reuses that btab, whose
+        # sibling revamp/refdb/ holds the lineages. A mock dataset's blast_results is
+        # a search against nt, so it is not used here: the local search is cheap.
+        db_id = _database_for_reference(
+            reference_id, [db["id"] for db in cfg.get("reference_databases") or []]
+        )
+        if db_id is None:
+            raise ValueError(f"revamp-custom: no reference database for {reference_id}")
+        shared_dir = join(
+            results_root, subdir, dataset_id, reference_id, method, REVAMP_CUSTOM_BLAST_ID
+        )
+        fit_job_id = f"{job_id_prefix}-{REVAMP_CUSTOM_BLAST_ID}"
+        rows.append({
+            "job_id": fit_job_id,
+            "evaluation_method": eval_method,
+            "dataset_id": dataset_id,
+            "reference_id": reference_id,
+            "query_qza": query,
+            "ref_seqs": ref_seqs,
+            "ref_taxa": ref_taxa,
+            "output_dir": shared_dir,
+            "confidence": _manifest_na(),
+            "skip_fit": False,
+            "trad_fit": False,
+            "fit_only": True,
+            "fit_job_id": "",
+            **_empty_manifest_artifact_fields(),
+            **_manifest_assign_params(method, method_cfg),
+        })
+        btab = join(shared_dir, "revamp", "blast_results", "ASV_blastn_nt.btab")
+        for combo in revamp_custom_param_combinations(cfg, db_id):
+            p = revamp_custom_param_id(combo)
+            rows.append({
+                "job_id": f"{job_id_prefix}-{p}",
+                "evaluation_method": eval_method,
+                "dataset_id": dataset_id,
+                "reference_id": reference_id,
+                "query_qza": query,
+                "ref_seqs": ref_seqs,
+                "ref_taxa": ref_taxa,
+                "output_dir": join(results_root, subdir, dataset_id, reference_id, method, p),
+                "confidence": _manifest_na(),
+                "skip_fit": True,
+                "trad_fit": False,
+                "fit_only": False,
+                "fit_job_id": fit_job_id,
+                **_empty_manifest_artifact_fields(),
+                **_manifest_assign_params(
+                    method, method_cfg, revamp_combo=combo, revamp_blast_results=btab,
+                ),
+            })
         return
 
     if method == "bt2-blca":
@@ -1239,6 +1423,7 @@ def prepare_manifest(cfg: dict) -> str:
 
     revamp_dbs = set(revamp_database_ids(cfg))
     validate_revamp_config(cfg)
+    validate_revamp_custom_config(cfg)
 
     for classify_method in classify_methods(cfg):
         method_cfg = method_settings(cfg, classify_method)
@@ -1249,6 +1434,7 @@ def prepare_manifest(cfg: dict) -> str:
                 for job in tax_credit_mock.assignment_jobs(cfg, ddir):
                     # The nt "database" is only classified by revamp, and revamp only
                     # classifies against nt: every other pairing is meaningless.
+                    # (revamp-custom therefore skips nt, like the other methods.)
                     is_revamp_db = job["reference_id"] in revamp_dbs
                     if is_revamp_db != (classify_method == "revamp"):
                         continue

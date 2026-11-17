@@ -542,6 +542,112 @@ def assign_revamp(
     return assignments
 
 
+def revamp_custom_blast(
+    query_qza: Path,
+    ref_seqs: Path,
+    ref_taxa: Path,
+    out_dir: Path,
+    cfg: dict,
+) -> Path:
+    """revamp-custom fit: pseudo-taxid reference from this fold, then BLAST.
+
+    Writes <out_dir>/revamp/refdb/ (build_revamp_custom_refdb.py) and
+    <out_dir>/revamp/blast_results/ASV_blastn_nt.btab with pseudo-taxids in column 4.
+    assign_revamp_custom() finds the lineages next to the btab, so a sweep's
+    assignment jobs need only the btab path.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    work = _revamp_workdir(out_dir, query_qza)
+    staging = out_dir / "staging"
+    staging.mkdir(parents=True, exist_ok=True)
+    ref_fasta = ensure_fasta(ref_seqs, staging)
+    ref_tsv = ensure_taxonomy_tsv(ref_taxa, staging)
+    refdb = work / "refdb"
+    taxa_ranks = cfg.get("taxa_ranks") or "kingdom,phylum,class,order,family,genus,species"
+    run_cmd(
+        f"'{sys.executable}' '{SCRIPT_DIR / 'build_revamp_custom_refdb.py'}' "
+        f"--ref-seqs '{ref_fasta}' --ref-taxa '{ref_tsv}' "
+        f"--taxaranks '{taxa_ranks}' --outdir '{refdb}'"
+    )
+    script = SCRIPT_DIR / "run_revamp_taxonomy.sh"
+    run_revamp_cmd(
+        f"bash '{script}' --mode blast --reference custom "
+        f"--revamp-dir '{cfg['revamp_dir']}' "
+        f"--workdir '{work}' "
+        f"--ref-fasta '{refdb / 'ref_blast.fasta'}' "
+        f"--seqid-map '{refdb / 'seqid_map.tsv'}' "
+        f"--threads {int(cfg.get('classify_threads', 1))}"
+    )
+    return work / "blast_results" / "ASV_blastn_nt.btab"
+
+
+def assign_revamp_custom(
+    query_qza: Path,
+    ref_seqs: Path,
+    ref_taxa: Path,
+    out_dir: Path,
+    cfg: dict,
+    blast_results: Path | None = None,
+) -> Path:
+    """REVAMP's method on the fold's own reference taxonomy, any number of ranks.
+
+    *blast_results* is the btab of this fold's revamp-custom fit job; its
+    pseudo-taxid lineages are read from the refdb/ beside it. Without it, the
+    reference is built and BLASTed here first.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    work = _revamp_workdir(out_dir, query_qza)
+    btab = work / "blast_results" / "ASV_blastn_nt.btab"
+    if blast_results:
+        blast_results = Path(blast_results)
+        if not blast_results.exists():
+            raise FileNotFoundError(f"revamp-custom blast results not found: {blast_results}")
+        refdb = blast_results.parent.parent / "refdb"
+        shutil.copyfile(blast_results, btab)
+    else:
+        revamp_custom_blast(query_qza, ref_seqs, ref_taxa, out_dir, cfg)
+        refdb = work / "refdb"
+    pseudo_taxonomy = refdb / "pseudo_taxonomy.tsv"
+    if not pseudo_taxonomy.exists():
+        raise FileNotFoundError(
+            f"revamp-custom: {pseudo_taxonomy} not found; it is written by the fit job "
+            "that produced the BLAST results."
+        )
+
+    script = SCRIPT_DIR / "run_revamp_taxonomy.sh"
+    run_revamp_cmd(
+        f"bash '{script}' --mode reformat --reference custom "
+        f"--revamp-dir '{cfg['revamp_dir']}' "
+        f"--workdir '{work}' "
+        f"--query-cov {cfg.get('revamp_query_cov') or 90}"
+    )
+
+    taxa_ranks = cfg.get("taxa_ranks") or "kingdom,phylum,class,order,family,genus,species"
+    table = work / "ASV2Taxonomy" / "revamp_asvTaxonomyTable.txt"
+    table.parent.mkdir(parents=True, exist_ok=True)
+    run_cmd(
+        f"'{sys.executable}' '{SCRIPT_DIR / 'revamp_lca.py'}' "
+        f"--formatted-blast '{work}/blast_results/ASV_blastn_nt_formatted.txt' "
+        f"--pseudo-taxonomy '{pseudo_taxonomy}' "
+        f"--asv-fasta '{work}/dada2/ASVs.fa' "
+        f"--taxaranks '{taxa_ranks}' "
+        f"--cutoffs '{cfg['revamp_taxonomy_cutoffs']}' "
+        f"--output '{table}' "
+        f"--details '{work}/ASV2Taxonomy/revamp_assignment_details.tsv'"
+    )
+
+    assignments = out_dir / "query_tax_assignments.txt"
+    run_cmd(
+        f"'{sys.executable}' '{SCRIPT_DIR / 'revamp_to_qiime_taxonomy.py'}' "
+        f"--asv-taxonomy-table '{table}' "
+        f"--formatted-blast '{work}/blast_results/ASV_blastn_nt_formatted.txt' "
+        f"--repseqs-fasta '{work}/dada2/ASVs.fa' "
+        f"--output '{assignments}' "
+        f"--taxaranks '{taxa_ranks}'"
+    )
+    return assignments
+
+
 def _positive_int(value: str) -> int:
     number = int(value)
     if number < 1:
@@ -608,6 +714,9 @@ def main() -> int:
     )
     # REVAMP (mock-community only): nt is the reference database, so --ref-seqs /
     # --ref-taxa are unused; --revamp-blast-results reuses BLAST run elsewhere.
+    # revamp-custom uses --ref-seqs / --ref-taxa, --revamp-dir, --revamp-query-cov and
+    # --revamp-taxonomy-cutoffs (N-1 values for N --taxa-ranks); its
+    # --revamp-blast-results is the btab of the fold's revamp-custom fit job.
     parser.add_argument("--revamp-dir", default=None)
     parser.add_argument("--revamp-blastdb", default=None)
     parser.add_argument("--revamp-blast-results", default=None)
@@ -696,9 +805,15 @@ def main() -> int:
             # The shared "fit" for REVAMP is the BLAST search; sweeps reuse its btab.
             revamp_blast(query, out_dir, cfg)
             return 0
+        if method == "revamp-custom":
+            if not args.revamp_dir:
+                print("revamp-custom requires --revamp-dir", file=sys.stderr)
+                return 1
+            revamp_custom_blast(query, ref_seqs, ref_taxa, out_dir, cfg)
+            return 0
         print(
-            "--fit-only supports naive-bayes, bt2-blca, consensus-blast and "
-            f"revamp only, not {method}",
+            "--fit-only supports naive-bayes, bt2-blca, consensus-blast, revamp and "
+            f"revamp-custom only, not {method}",
             file=sys.stderr,
         )
         return 1
@@ -732,6 +847,14 @@ def main() -> int:
             return 1
         assign_revamp(
             query, out_dir, cfg,
+            blast_results=Path(args.revamp_blast_results) if args.revamp_blast_results else None,
+        )
+    elif method == "revamp-custom":
+        if not args.revamp_dir:
+            print("revamp-custom requires --revamp-dir", file=sys.stderr)
+            return 1
+        assign_revamp_custom(
+            query, ref_seqs, ref_taxa, out_dir, cfg,
             blast_results=Path(args.revamp_blast_results) if args.revamp_blast_results else None,
         )
     else:

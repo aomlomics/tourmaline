@@ -137,7 +137,7 @@ def _assign_params(wildcards):
         "confidence": _row_str(row, "confidence", ""),
         # consensus methods only; overwritten below (blank for every other method)
         "max_accepts": "",
-        # revamp (mock-community only); blank for every other method
+        # revamp (mock-community only) and revamp-custom; blank for every other method
         "revamp_dir": _row_str(row, "revamp_dir", ""),
         "revamp_blastdb": _row_str(row, "revamp_blastdb", ""),
         "revamp_blast_results": _row_str(row, "revamp_blast_results", ""),
@@ -155,9 +155,10 @@ def _assign_params(wildcards):
         params["min_consensus"] = _row_optional_float(row, "min_consensus")
         params["max_accepts"] = _config_max_accepts(row)
         params["taxa_ranks"] = ""
-    elif method == "revamp":
-        # nt is the reference database: the shared cutoff columns are unused, and the
-        # revamp_* params above carry everything the assignment needs.
+    elif method in ("revamp", "revamp-custom"):
+        # The shared cutoff columns are unused; the revamp_* params above carry what
+        # the assignment needs. taxa_ranks is the database's own rank list, which
+        # sets how many ranks (and so cutoffs) revamp-custom works with.
         params["perc_identity"] = 0.8
         params["query_cov"] = 0.8
         params["min_consensus"] = 0.51
@@ -248,7 +249,7 @@ def _assign_threads(wildcards):
     # revamp assignment is the post-BLAST LCA; BLAST is its own fit job, whose
     # btab this row names. Without one it would BLAST here and need the threads.
     if (
-        method == "revamp"
+        method in ("revamp", "revamp-custom")
         and not fit_only
         and _row_str(row, "revamp_blast_results", "")
     ):
@@ -356,6 +357,10 @@ def _assign_mem_mb(wildcards, threads, attempt):
     elif method == "revamp":
         # BLAST against nt, or the post-BLAST LCA over its btab
         base = _mem_mb("default")
+    elif method == "revamp-custom":
+        # fit: makeblastdb over the fold reference, then BLAST; otherwise the
+        # post-BLAST reformat + LCA over its btab
+        base = _mem_mb("makeblastdb") if fit_only else _mem_mb("default")
     else:
         # consensus-vsearch: loads the reference and classifies against it
         base = _mem_mb("classify")
@@ -557,6 +562,13 @@ rule tax_credit_assign_fold:
             if [ -n "$ROW_RVBLAST" ] && [ "$ROW_RVBLAST" != "nan" ]; then
                 EXTRA_REVAMP="$EXTRA_REVAMP --revamp-blast-results $ROW_RVBLAST"
             fi
+        elif [ "{params.assign[classify_method]}" = "revamp-custom" ]; then
+            EXTRA_REVAMP="--revamp-dir {params.assign[revamp_dir]} \
+                --revamp-query-cov {params.assign[revamp_query_cov]} \
+                --revamp-taxonomy-cutoffs {params.assign[revamp_taxonomy_cutoffs]}"
+            if [ -n "$ROW_RVBLAST" ] && [ "$ROW_RVBLAST" != "nan" ]; then
+                EXTRA_REVAMP="$EXTRA_REVAMP --revamp-blast-results $ROW_RVBLAST"
+            fi
         fi
         CONF_FLAG=""
         if [ -n "$ROW_CONF" ] && [ "$ROW_CONF" != "nan" ] && [ "$ROW_CONF" != "NA" ]; then
@@ -580,10 +592,14 @@ rule tax_credit_assign_fold:
         if [ "$TRAD_FIT" = "True" ] || [ "$TRAD_FIT" = "true" ] || [ "$ROW_FIT_ONLY" = "True" ] || [ "$ROW_FIT_ONLY" = "true" ]; then
             # --blca-stage takes over dispatch, so don't add --fit-only for it.
             # The align stage needs the real query, so don't substitute the
-            # reference either (a naive-bayes fit ignores the query).
+            # reference either (a naive-bayes fit ignores the query). Nor for the
+            # REVAMP methods, whose fit job is the BLAST search of the query.
             if [ -z "$EXTRA_BLCA" ]; then
                 FIT_ONLY="--fit-only"
-                ROW_QUERY="$ROW_REFS"
+                case "{params.assign[classify_method]}" in
+                    revamp|revamp-custom) ;;
+                    *) ROW_QUERY="$ROW_REFS" ;;
+                esac
             fi
         fi
 

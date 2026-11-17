@@ -89,7 +89,7 @@ individually rather than giving every job `classify_threads`:
 | job | threads |
 |---|---|
 | `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 index + alignment, the BLCA stage, the REVAMP BLAST | `classify_threads` |
-| `makeblastdb`, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
+| `makeblastdb`, the confidence reformat, REVAMP's post-BLAST assignment (both REVAMP methods) | 1 |
 | `fit-classifier-naive-bayes`, as a shared fit job (confidence sweeps, `cross-validated-trad`) | 1 |
 
 `fit-classifier-naive-bayes` takes no thread option. A fold with a single confidence fits and
@@ -167,6 +167,7 @@ quickly. They are **test fixtures only** — never report benchmarking results f
 ./tourmaline.sh -s tax-credit -c config_04_tax_credit_test.yaml -n 8       # reduced matrix
 ./tourmaline.sh -s tax-credit -c config_04_tax_credit_test_full.yaml -n 8  # full matrix, slower
 ./tourmaline.sh -s tax-credit -c config_04_tax_credit_test_mock.yaml -n 8  # mock-community only
+./tourmaline.sh -s tax-credit -c config_04_tax_credit_test_revamp_custom.yaml -n 6  # revamp-custom, 9 + 7 ranks
 ```
 
 See `00-data/tax-credit-test/README.md` for what a complete run looks like and how the
@@ -182,6 +183,41 @@ fixtures are regenerated.
 novel-taxa or self-validated datasets from. It therefore runs **only** for `mock-community`.
 Listing it alongside other evaluation methods is fine — it is skipped for them with a notice.
 Listing it with no `mock-community` in `evaluation_methods` stops the run with an error.
+
+### revamp-custom: REVAMP's method on each fold's own reference
+
+`revamp-custom` runs REVAMP's method — BLASTn, then the lowest common ancestor of all
+best hits, limited by a percent identity cutoff per rank — against each fold's reference
+and **its own taxonomy**, so unlike `revamp` it runs for every evaluation method,
+including mock-community. It never classifies the `revamp: true` (nt) entry. See
+[the taxonomy step](taxonomy.md#revamp-with-a-custom-reference-database-revamp-custom) for
+the method itself.
+
+```yaml
+classify_methods: [revamp-custom]
+revamp_dir: /abs/path/REVAMP
+revamp_query_cov_values: [90]
+revamp_taxonomy_cutoffs_values: ["97,95,90,80,70,60"]   # for seven-rank databases
+reference_databases:
+  - id: pr2
+    taxa_ranks: kingdom,supergroup,phylum,subdivision,class,order,family,genus,species
+    revamp_taxonomy_cutoffs_values: ["97,95,90,85,80,75,70,65"]   # 9 ranks -> 8 cutoffs
+```
+
+- **Cutoffs follow each database's rank count**: N-1 values for N ranks, deepest first.
+  A database's own `revamp_taxonomy_cutoffs_values` wins over the top-level list, which
+  is shared with `revamp`. Every database must end up with the right count, or the run
+  stops before anything executes.
+- **All ranks are assigned and scored as usual.** revamp-custom assigns every rank in the
+  database's `taxa_ranks`; evaluation then scores the seven named like the top-level
+  `taxa_ranks`, as for every other method.
+- **Jobs.** Per fold, one fit job builds a BLAST database from that fold's reference
+  (one pseudo-taxid per unique lineage) and BLASTs the queries with `classify_threads`;
+  each `revamp_query_cov_values` × cutoffs combination is then a single-threaded job
+  reusing that BLAST. `cross-validated-trad` builds the database from the full reference
+  in each fold, as consensus-blast does.
+- **Mock communities** are BLASTed locally against the custom database; a dataset's
+  `blast_results` is a search against nt, so revamp-custom does not use it.
 
 ### Gotcha: staging does not re-run when only the config changes
 
