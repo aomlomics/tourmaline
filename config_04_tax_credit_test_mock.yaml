@@ -43,22 +43,18 @@ evaluation_methods:
 
 ## --- SIMULATION PARAMETERS (not used by mock-community) ---
 iterations: 2
-# TOTAL pool of cross-validated-trad query sequences, divided evenly between
-# the `iterations` folds. This is the total across all folds, NOT one fold.
-#   FLOAT in (0,1] = FRACTION of the database  -> 0.2 means 20% of the database
-#                                                 queried in total
-#   INT            = NUMBER of sequences       -> 8000 means 8000 sequences in
-#                                                 total, not 8000 per fold
-# e.g. trad_cv_query_size: 0.2 with iterations: 8 -> each fold is 20%/8 = 2.5%
-# of the database. Leave blank for the default: the whole database divided
-# between the folds (n_sequences / iterations per fold; same as 1.0).
-# An INT larger than a given database prints a warning and uses that entire
-# database instead, so one int can be shared across databases of different
-# sizes (useful for equalizing query counts when comparing them).
-# Folds are disjoint in every case. Only affects cross-validated-trad. Changing
-# this on a run whose folds already exist requires force_regenerate: true, or
-# the old folds are reused as-is.
-trad_cv_query_size:
+# Most query sequences scored in EACH fold of cross-validated,
+# cross-validated-trad and novel-taxa (a whole number). The database is split
+# between the `iterations` folds as usual, then any fold holding more queries
+# than this is cut down to a reproducible random subset of this size. 0 or
+# blank = no cap (every fold keeps all n_sequences / iterations queries).
+# Only the queries shrink: references are unchanged, and queries left out are
+# never added back to them. The uncapped set is kept in each capped fold as
+# query_full.fasta / query_full_taxa.tsv. self-validated is never capped.
+# Changing this on a finished run needs the datasets phase to run again:
+# delete .datasets.done (or --forcerun tax_credit_prepare_datasets); every
+# assignment then reruns. force_regenerate does NOT trigger it.
+max_query_size_per_fold:
 novel_taxa_levels: [6]
 cv_recall_max_level: 6
 novel_recall_min_level: 5

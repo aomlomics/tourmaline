@@ -38,16 +38,17 @@ taxonomy of each ASV.
 > across all of them. Read its scores as a ceiling on a random subset rather than as
 > cross-validated performance, and use `cross-validated` when you want a genuine held-out split.
 
-By default `cross-validated-trad` divides the whole database between the folds, so each queries
-`n_sequences / iterations` sequences. `trad_cv_query_size` shrinks the **total** query pool
-instead, which is then divided the same way: a float in (0, 1] is a fraction of the database, an
-int is an absolute number of sequences, and both describe the total across all folds rather than
-one fold. With `trad_cv_query_size: 0.2` and `iterations: 8`, 20% of the database is queried in
-total and each fold holds 2.5% of it. Folds stay disjoint either way. An int larger than a given
-database warns and uses that whole database instead, which makes one int a convenient way to
-equalize query counts across databases of different sizes. Changing it on a run whose
-folds already exist requires `force_regenerate: true`. See
-[Configuration](../configuration.md) for the details.
+By default every fold of `cross-validated`, `cross-validated-trad` and `novel-taxa` scores all of
+its queries: the database is divided between the `iterations` folds, about
+`n_sequences / iterations` sequences each. On a large database such as SILVA that is the
+dominant cost of the step. `max_query_size_per_fold` caps it: any fold holding more queries than
+the cap scores a reproducible random subset of that size instead. It is a per-fold count, not a
+total. Only the queries shrink: references are unchanged, and queries left out are never added
+back to them. Novel-taxa folds are built from the full cross-validated folds before capping. The
+uncapped set stays in each capped fold as `query_full.fasta` / `query_full_taxa.tsv`, and
+`self-validated` is never capped. It replaces `trad_cv_query_size`, which a config can no longer
+set. Changing it on a finished run needs the datasets phase to run again (delete
+`.datasets.done`). See [Configuration](../configuration.md) for the details.
 
 ### Requirements
 

@@ -317,30 +317,33 @@ evaluation_methods:
 
 ```yaml
 iterations: 10
-trad_cv_query_size:            # blank = whole database; float = fraction; int = count
+max_query_size_per_fold:       # blank or 0 = no cap; int = most queries scored per fold
 novel_taxa_levels: [6, 5, 4, 3]
 cv_recall_max_level: 6
 novel_recall_min_level: 3
 force_regenerate: false
 ```
 
-`trad_cv_query_size` sets the **total pool** of sequences queried by **cross-validated-trad**, which is then divided evenly between the `iterations` folds. It is the total across all folds, **not** the size of one fold:
+`max_query_size_per_fold` caps how many query sequences are scored in **each fold** of `cross-validated`, `cross-validated-trad` and `novel-taxa`. Folds are built exactly as without it, with the database split between the `iterations` folds (about `n_sequences / iterations` queries each). Then any fold holding more queries than the cap is cut down to a random subset of that size. Leave it blank or set `0` for no cap.
 
-| Value | Type | Total pool | Per fold, with `iterations: 8` |
-|---|---|---|---|
-| *(blank)* | — | The whole database. | `n_sequences / 8` — 12.5% of the database. |
-| `0.2` | float in (0, 1] | A **fraction** of the database — 20% of sequences. | 20%/8 = **2.5%** of the database. |
-| `8000` | int | An **absolute number** of sequences — 8000 in total. | 8000/8 = **1000** sequences. |
+| Value | Per fold, with `iterations: 10` and a 300,000-sequence database |
+|---|---|
+| *(blank)* or `0` | Every query: about 30,000 per cross-validated fold. |
+| `3000` | 3,000 queries per fold. A fold that already holds fewer keeps all of them. |
 
-`1.0` is accepted and means the whole database, so it behaves exactly like leaving the key blank.
+- **Per fold, not a total.** With `3000` and `iterations: 10`, up to 30,000 queries are scored per method and evaluation method in total. Novel-taxa folds vary in size by level, and each is capped on its own.
+- **Only the queries shrink.** Reference files are untouched, and queries left out are **not** added back to the reference. Adding them back would hand the classifier near relatives of the remaining queries and push scores toward `self-validated`.
+- **Novel-taxa folds are built from the full cross-validated folds**, then capped. Capping does not narrow the pool that novel taxa are drawn from.
+- **Reproducible.** The subset is drawn with a seed taken from the fold's name, so a rerun scores the same queries. Queries keep their original order.
+- **The uncapped set is kept.** Each fold with a cap in effect also holds `query_full.fasta` and `query_full_taxa.tsv`. Running again with no cap removes them.
+- **`self-validated` and `mock-community` are never capped.**
+- **Whole numbers only.** A negative number, a fraction such as `0.2`, or a quoted string is rejected when the datasets are generated.
 
-Because the key is applied **per database**, a float means "this fraction of *this* database" — so databases of different sizes contribute different query counts. Using an **int** equalizes them instead. An int larger than a given database is not an error: a `WARNING:` is printed and that whole database is used as the pool, so one int works across a mixed set of databases (the smaller ones contribute everything they have, and the warning notes that their query counts will not match).
+The cap shortens the classify part of each assignment, which is where bt2-blca and the consensus methods spend their time, and it shortens evaluation. It does **not** speed up naive-bayes fits, bowtie2 index builds or `makeblastdb`, because those depend on the fold's reference, not its queries. To cut those, use fewer `iterations` or fewer `novel_taxa_levels`. Per-taxon log analysis also gets thinner, because fewer reads per taxon clear `log_analysis_min_obvs`.
 
-A random pool of the requested size is drawn with a fixed seed, then split with `KFold`, so folds are always **disjoint** and together cover the pool exactly once (differing by at most one sequence when it does not divide evenly).
+> **`trad_cv_query_size` has been removed.** It sized the total cross-validated-trad query pool, as a fraction or a count, and affected trad only. A config that still sets it fails with an error naming `max_query_size_per_fold`. Leaving it blank is accepted, but remove it.
 
-Rejected with an error naming both readings: a float at or below 0 or above 1, an int below 1, a quoted string, and any value whose resolved pool would be smaller than `iterations` (some fold would get no sequences) — including a database holding fewer sequences than `iterations`. The key affects `cross-validated-trad` only; other evaluation methods ignore it.
-
-> **Changing `trad_cv_query_size` on a run that already finished needs the datasets phase to run again.** Fold contents are rewritten every time that phase runs, but Snakemake skips it once `.datasets.done` exists, so the new value is otherwise silently ignored. Delete `.datasets.done` in the run output directory or pass `--forcerun tax_credit_prepare_datasets`. `force_regenerate: true` does neither.
+> **Changing `max_query_size_per_fold` on a run that already finished needs the datasets phase to run again.** Fold contents are rewritten every time that phase runs, but Snakemake skips it once `.datasets.done` exists, so the new value is otherwise silently ignored. Delete `.datasets.done` in the run output directory or pass `--forcerun tax_credit_prepare_datasets`. The manifest is then rebuilt and every assignment job reruns against the new query sets. `force_regenerate: true` does not trigger it.
 
 **What cross-validated-trad actually holds out.** Only the query *list* is held out, not the reference. Each fold's `ref_seqs.fasta` and `ref_taxa.tsv` are symlinks to the full simulated-reads FASTA and cleaned taxonomy, so **every fold is classified against the entire database, queries included** — each query sequence has an exact self-match in the reference. That makes this mode closer to `self-validated` measured on a random subset than to a held-out cross-validation: scores sit near the ceiling and are optimistically biased, and because a single classifier is fitted per database and reused across folds, fold-to-fold spread understates real variance. Use `cross-validated` (taxonomy-aware) for a genuine held-out split, where query sequences are removed from the fold's reference.
 

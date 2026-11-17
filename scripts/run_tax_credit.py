@@ -46,9 +46,33 @@ def load_config(path: str) -> dict:
     with open(path) as fh:
         cfg = yaml.safe_load(fh)
     validate_blca_config(cfg)
+    validate_query_cap_config(cfg)
     if tax_credit_mock.mock_enabled(cfg):
         tax_credit_mock.mock_settings(cfg)
     return cfg
+
+
+def validate_query_cap_config(cfg: dict) -> None:
+    """Refuse the retired ``trad_cv_query_size`` key.
+
+    It sized the TOTAL cross-validated-trad query pool (a fraction or a count)
+    and affected trad only. ``max_query_size_per_fold`` replaced it: a per-fold
+    count applied to cross-validated, cross-validated-trad and novel-taxa.
+    Silently ignoring an old value would quietly run every fold uncapped, so a
+    config that still sets it is an error. The new key's own value is checked
+    by tax-credit when the datasets are generated.
+    """
+    old = cfg.get("trad_cv_query_size")
+    if old is None or (isinstance(old, str) and not old.strip()):
+        return
+    raise ValueError(
+        f"trad_cv_query_size ({old!r}) is no longer supported. Use "
+        "max_query_size_per_fold instead: the most query sequences scored in "
+        "EACH fold of cross-validated, cross-validated-trad and novel-taxa, as "
+        "a whole number (0 or blank = no cap). Note it is per fold, not a total "
+        "across folds, and fractions are not accepted. Remove trad_cv_query_size "
+        "from the config; see config_04_tax_credit.yaml."
+    )
 
 
 _BLCA_CUTOFF_KEYS = ("blca_perc_identity", "blca_query_cov")
@@ -1173,7 +1197,7 @@ def prepare_datasets(cfg: dict) -> None:
                 levelrange=levelrange,
                 force=force,
                 simulation_method=sim_methods,
-                trad_cv_query_size=cfg.get("trad_cv_query_size"),
+                max_query_size_per_fold=cfg.get("max_query_size_per_fold"),
                 **sim_params,
             )
 
