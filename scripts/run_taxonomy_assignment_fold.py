@@ -350,7 +350,7 @@ def blca_classify(
     ``blca_bootstraps`` (-n) and ``muscle_maxiters`` but **not** on the
     confidence threshold, so one run serves every confidence value. This is
     the expensive stage: one muscle alignment plus ``blca_bootstraps``
-    bootstraps per query.
+    bootstraps per query, spread over ``classify_threads`` worker processes.
     """
     staging_dir = shared_dir / "staging"
     # Cache hits when stage 1 staged these; re-exported only if run standalone.
@@ -374,6 +374,7 @@ def blca_classify(
         f"--muscle_max_iterations "
         f"{int(cfg.get('muscle_maxiters', DEFAULT_MUSCLE_MAXITERS))} "
         f"-m 1.0 -f -2.5 -g -2 "
+        f"--threads {int(cfg.get('classify_threads', 1))} "
         f"-tr '{taxa_ranks}' -o '{raw_taxonomy}'"
     )
     return raw_taxonomy

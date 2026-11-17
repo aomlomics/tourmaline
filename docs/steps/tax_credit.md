@@ -88,8 +88,8 @@ individually rather than giving every job `classify_threads`:
 
 | job | threads |
 |---|---|
-| `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 index + alignment, the REVAMP BLAST | `classify_threads` |
-| `makeblastdb`, the BLCA stage, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
+| `classify-sklearn`, `classify-consensus-blast`, `classify-consensus-vsearch`, bowtie2 index + alignment, the BLCA stage, the REVAMP BLAST | `classify_threads` |
+| `makeblastdb`, the confidence reformat, REVAMP's post-BLAST assignment | 1 |
 | `fit-classifier-naive-bayes`, as a shared fit job (confidence sweeps, `cross-validated-trad`) | 1 |
 
 `fit-classifier-naive-bayes` takes no thread option. A fold with a single confidence fits and
@@ -236,7 +236,7 @@ The columns:
 - `total_cpu_s`: CPU seconds.
 - `peak_rss_mb` / `peak_pss_mb`: the largest single job's peak memory in MB. PSS is Linux only.
 - `mean_load_pct`: average CPU use, where 100 = one full core. Compare it with the threads a
-  job reserved: a single-threaded BLCA job reads about 100, and a threaded job reading
+  job reserved: a single-threaded job (makeblastdb, a naive-bayes fit) reads about 100, and a threaded job reading
   far below `classify_threads × 100` is not using its threads.
 - `pct_of_total_wall`: each row's share of all measured wall time.
 

@@ -233,9 +233,10 @@ def _assign_threads(wildcards):
     fit_only = _row_is_true(row, "fit_only")
     trad_fit = _row_is_true(row, "trad_fit")
 
-    # BLCA itself (muscle + 100 bootstraps per query) and the confidence
-    # reformat take no thread option; the align stage before them does.
-    if blca_stage in ("blca", "reformat"):
+    # BLCA spreads its queries (muscle + bootstraps each) over classify_threads
+    # worker processes, like the align stage before it; the confidence
+    # reformat takes no thread option.
+    if blca_stage == "reformat":
         return 1
     # fit-classifier-naive-bayes has no thread option. The bt2-blca fit jobs
     # that share this flag build a bowtie2 index, which does.
@@ -276,6 +277,12 @@ def _assign_threads(wildcards):
 # structure it holds: blastn (-num_threads), vsearch (--threads) and bowtie2
 # (-p / --threads) all keep a single database/index and give each thread only
 # scratch space, so their reservations stay flat. The rest run single-threaded.
+# Each extra BLCA worker process: a Python interpreter with Biopython plus one
+# muscle subprocess aligning a query with its hits. Workers are sent each
+# query's hits rather than a copy of the reference, so this does not scale with
+# the database; the reference stays in the one parent counted by mem_mb_blca.
+_BLCA_WORKER_MB = 500
+
 _MEM_MB_DEFAULTS = {
     "naive_bayes_fit": 16000,
     "blca": 4000,
@@ -310,7 +317,7 @@ def _assign_mem_mb(wildcards, threads, attempt):
     skip_fit = _row_is_true(row, "skip_fit")
 
     if blca_stage == "blca":
-        base = _mem_mb("blca")
+        base = _mem_mb("blca") + _BLCA_WORKER_MB * (threads - 1)
     elif blca_stage == "align":
         # bowtie2-build over the fold reference
         base = _mem_mb("align")
@@ -335,7 +342,9 @@ def _assign_mem_mb(wildcards, threads, attempt):
             # No blca_stage and not a fit job: a fold with one parameter set
             # and one confidence runs all three stages here, so it needs the
             # largest of them.
-            base = max(_mem_mb("align"), _mem_mb("blca"))
+            base = max(
+                _mem_mb("align"), _mem_mb("blca") + _BLCA_WORKER_MB * (threads - 1)
+            )
     elif method == "consensus-blast":
         if fit_only:
             base = _mem_mb("makeblastdb")

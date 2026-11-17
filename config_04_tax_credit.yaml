@@ -249,7 +249,9 @@ mock_community:
 # fit-classifier-naive-bayes; the largest job, and larger again with a wide
 # fit_params ngram-range
 mem_mb_naive_bayes_fit: 16000
-# BLCA stage: loads the whole fold reference into memory, then runs muscle
+# BLCA stage: loads the whole fold reference into memory, then runs muscle.
+# Each of its classify_threads - 1 extra worker processes adds about 500 MB on
+# top of this (they get each query's hits, not a copy of the reference).
 mem_mb_blca: 4000
 # bowtie2-build and the bt2-blca align stage
 mem_mb_align: 4000
