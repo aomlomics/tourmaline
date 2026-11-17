@@ -356,7 +356,7 @@ def blca_classify(
         f"'{blca_script}' "
         f"-i '{sam_path}' -r '{ref_taxonomy}' -q '{ref_fasta}' "
         f"-b {cfg['perc_identity']} -l {cfg['query_cov']} "
-        f"-p muscle -n 100 -m 1.0 -f 2.5 -g -2 "
+        f"-p muscle -n 100 -m 1.0 -f -2.5 -g -2 "
         f"-tr '{taxa_ranks}' -o '{raw_taxonomy}'"
     )
     return raw_taxonomy

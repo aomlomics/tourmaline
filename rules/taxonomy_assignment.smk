@@ -111,7 +111,7 @@ elif config["classify_method"] == "bt2-blca":
             bowtie2 -x {params.prefix} -f -U {input.repseqs} -S {params.temp_dir}/end_to_end.sam --no-hd --no-sq --very-sensitive --end-to-end --no-unal -p {threads} -k 100 --un {params.temp_dir}/end_to_end_reject.fasta
             bowtie2 -x {params.prefix}  -f -U {params.temp_dir}/end_to_end_reject.fasta -S {params.temp_dir}/local.sam --no-hd --no-sq --very-sensitive --local --no-unal -p {threads} -k 100 --un {params.temp_dir}/end_to_end_and_local_reject.fasta
             cat {params.temp_dir}/*.sam > {output.sam}
-            python scripts/blca_from_bowtie.py -i {output.sam} -r {input.reftax} -q {input.refseq} -b {params.percID} -l {params.querycov} -p muscle -n 100 -m 1.0 -f 2.5 -g -2 -tr {params.taxaranks} -o {output.raw_taxonomy}
+            python scripts/blca_from_bowtie.py -i {output.sam} -r {input.reftax} -q {input.refseq} -b {params.percID} -l {params.querycov} -p muscle -n 100 -m 1.0 -f -2.5 -g -2 -tr {params.taxaranks} -o {output.raw_taxonomy}
             python scripts/reformat_summary_for_r.py {output.raw_taxonomy} {output.taxonomy} {params.conf} {params.taxaranks}
             if grep -q '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta > /dev/null 2>&1; then
                 grep '^>' {params.temp_dir}/end_to_end_and_local_reject.fasta | sed 's/^>//; s/$/\tUnassigned\t0/' >> {output.taxonomy}
