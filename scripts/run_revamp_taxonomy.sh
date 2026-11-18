@@ -151,16 +151,23 @@ max_hit_count() {
 
 # Replace column 4 (subject ID) of a BLAST table with the pseudo-taxid of the subject's
 # lineage, using column $3 of seqid_map.tsv as the key (1 = blast_id, 2 = original_id).
-# BLAST may report a local ID as "lcl|ID"; that prefix is dropped before lookup. Any
-# subject missing from the map is an error: the results came from another database.
+# BLAST may report a local ID as "lcl|ID", and an ID it parsed as an accession as
+# "gb|ID|" (makeblastdb -parse_seqids does that to r10000..r99999 unless the FASTA
+# header says lcl|, and to accession-like original IDs in external results). An ID not
+# in the map as reported is looked up again without such a "db|" prefix and trailing
+# "|" (case-insensitively for that retry, since BLAST may upper-case accessions). Any
+# subject still missing is an error: the results came from another database.
 rewrite_subject_ids() {
     local in_btab="$1" out_btab="$2" key_col="$3"
     awk -F'\t' -v OFS='\t' -v key="$key_col" '
-        NR == FNR { if (FNR > 1) map[$key] = $3; next }
+        NR == FNR { if (FNR > 1) { map[$key] = $3; upper[toupper($key)] = $3 }; next }
         {
             id = $4; sub(/^lcl\|/, "", id)
-            if (!(id in map)) { missing[id] = 1; nmiss++; next }
-            $4 = map[id]; print
+            if (id in map) { $4 = map[id]; print; next }
+            bare = id; sub(/^[A-Za-z]+\|/, "", bare); sub(/\|$/, "", bare)
+            if (bare in map) { $4 = map[bare]; print; next }
+            if (toupper(bare) in upper) { $4 = upper[toupper(bare)]; print; next }
+            missing[id] = 1; nmiss++
         }
         END {
             if (nmiss) {
@@ -232,8 +239,8 @@ custom/blast)
     fi
     mkdir -p "$workdir/blast_results" "$workdir/refdb/blastdb"
     echo "BLAST version: $(blastn -version 2>&1 | head -1)"
-    # ref_blast.fasta carries short generated IDs (r1..rN), so -parse_seqids is safe
-    # whatever the original IDs looked like.
+    # ref_blast.fasta carries generated local IDs (lcl|r1..lcl|rN), so -parse_seqids is
+    # safe whatever the original IDs looked like.
     makeblastdb -in "$ref_fasta" -dbtype nucl -parse_seqids \
         -out "$workdir/refdb/blastdb/refdb" > "$workdir/refdb/blastdb/makeblastdb.log"
 

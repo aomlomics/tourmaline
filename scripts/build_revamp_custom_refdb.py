@@ -8,8 +8,10 @@ its lineage, and `scripts/revamp_lca.py` looks lineages up from the table writte
 No NCBI taxonomy is involved, and the lineage keeps every rank in `taxa_ranks`.
 
 Outputs (in --outdir):
-  ref_blast.fasta         reference sequences renamed r1..rN, so makeblastdb
-                          -parse_seqids never rejects or rewrites an original ID
+  ref_blast.fasta         reference sequences renamed lcl|r1..lcl|rN, so makeblastdb
+                          -parse_seqids never rejects or rewrites an original ID (the
+                          lcl| keeps r10000..r99999 from being read as GenBank
+                          accessions; BLAST reports them as plain r12345)
   seqid_map.tsv           blast_id, original_id, pseudo_taxid
   pseudo_taxonomy.tsv     pseudo_taxid, lineage (one field per rank, ';'-joined,
                           empty string for a missing rank)
@@ -208,7 +210,10 @@ def main():
                 pseudo_ids[lineage] = len(pseudo_ids) + 1
             n_written += 1
             blast_id = f'r{n_written}'
-            fasta_out.write(f'>{blast_id}\n{seq}\n')
+            # 'lcl|' marks the ID as local. Without it, makeblastdb -parse_seqids
+            # reads IDs shaped like GenBank accessions (one letter + five digits:
+            # r10000..r99999) as accessions, and BLAST reports them as 'gb|r12345|'.
+            fasta_out.write(f'>lcl|{blast_id}\n{seq}\n')
             map_out.write(f'{blast_id}\t{seq_id}\t{pseudo_ids[lineage]}\n')
             kept_lineages.append(lineage)
 

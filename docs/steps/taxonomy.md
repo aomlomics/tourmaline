@@ -355,7 +355,8 @@ Under `{run_name}-taxonomy/revamp/`:
 
 1. `refdb/` — `scripts/build_revamp_custom_refdb.py` gives every unique lineage an integer
    *pseudo-taxid* (standing in for an NCBI taxid), renames the sequences `r1..rN` for
-   `makeblastdb`, and writes the report.
+   `makeblastdb` (written as local IDs, `lcl|r1`, so BLAST never mistakes one for a
+   GenBank accession), and writes the report.
 2. BLASTn against that database, with REVAMP's escalation of `-max_target_seqs` until
    every best hit fits; each hit's subject becomes its pseudo-taxid. REVAMP's
    `reformat_blast.R` then keeps hits covering `revamp_query_cov`% of the ASV and every
