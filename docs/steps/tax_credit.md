@@ -31,6 +31,15 @@ The first four are simulated from the reference database itself. `mock-community
 data you supply: a feature table, ASV sequences, and the expected composition and/or the known
 taxonomy of each ASV.
 
+**Novel-taxa levels.** `novel_taxa_levels` names which ranks to hold out, e.g.
+`[species, genus, family, order]`: `species` removes each query's species from the reference
+(the right answer is then its genus), `genus` its whole genus, and so on. Each level is a
+separate set of folds named after that rank (`<db>-species-iter0`, `<db>-genus-iter0`, …),
+and results are labelled the same way. A database with its own `taxa_ranks` (more or
+differently named ranks) holds each rank out at its position in that taxonomy, so
+`<db>-species-iter0` is novel species in every database and results compare across them. See
+[Configuration](../configuration.md) for the details and for runs generated before this.
+
 > **`cross-validated-trad` does not hold sequences out of the reference.** Each fold's
 > `ref_seqs.fasta` and `ref_taxa.tsv` are symlinks to the full database, so every query is
 > classified against a reference that still contains it, exact self-match included. Only the

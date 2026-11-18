@@ -55,9 +55,8 @@ iterations: 2
 # delete .datasets.done (or --forcerun tax_credit_prepare_datasets); every
 # assignment then reruns. force_regenerate does NOT trigger it.
 max_query_size_per_fold:
-novel_taxa_levels: [6]
-cv_recall_max_level: 6
-novel_recall_min_level: 5
+# Novel-taxa levels by rank name (unused here: mock-community only).
+novel_taxa_levels: [species]
 force_regenerate: false
 format_reference_databases: false #not implemented yet
 

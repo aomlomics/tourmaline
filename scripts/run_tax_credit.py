@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import itertools
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -284,15 +285,146 @@ def analysis_data_subdir(evaluation_method: str) -> str:
     raise ValueError(evaluation_method)
 
 
-def _cv_recall_levels(cfg: dict) -> tuple[int, int]:
-    """Cross-validated manifest levels: one pass at max_level (min = max - 1)."""
-    max_level = cfg.get("cv_recall_max_level", 6)
-    if max_level < 1:
-        raise ValueError("cv_recall_max_level must be >= 1")
-    return max_level, max_level - 1
-
-
 _DEFAULT_TAXA_RANKS = "kingdom,phylum,class,order,family,genus,species"
+_DEFAULT_NOVEL_LEVELS = ["species", "genus", "family", "order"]
+_level_notices: set = set()
+
+
+def _scored_rank_names(cfg: dict) -> list[str]:
+    return _parse_ranks(cfg.get("taxa_ranks") or _DEFAULT_TAXA_RANKS)
+
+
+def _level_from_spec(spec, cfg: dict, key: str) -> int:
+    """A novel-taxa / CV level from a rank name or a legacy number.
+
+    Levels count the seven scored ranks named by the top-level ``taxa_ranks``:
+    0 = the first (kingdom) ... 6 = species. A rank name is looked up there, so
+    ``species`` is level 6 whatever a database's own taxonomy looks like; each
+    database's rank positions then say where that rank sits in its taxonomy.
+    """
+    scored = _scored_rank_names(cfg)
+    if isinstance(spec, bool):
+        raise ValueError(f"{key}: expected a rank name or number, got {spec!r}")
+    if isinstance(spec, int) or (isinstance(spec, str) and spec.strip().isdigit()):
+        level = int(spec)
+        if not 0 <= level < len(scored):
+            raise ValueError(
+                f"{key}: level {level} is outside 0..{len(scored) - 1} "
+                f"({','.join(scored)})."
+            )
+        return level
+    name = str(spec).strip()
+    lowered = [rank.lower() for rank in scored]
+    if name.lower() not in lowered:
+        raise ValueError(
+            f"{key}: '{name}' is not one of the top-level taxa_ranks "
+            f"({','.join(scored)}). Name a scored rank; a database with a "
+            "different taxonomy maps it through its own taxa_ranks."
+        )
+    return lowered.index(name.lower())
+
+
+def novel_rank_names(cfg: dict) -> list[str]:
+    """The seven scored rank names, as novel-taxa fold names use them.
+
+    Folds are ``<db>-<rank>-iter<n>`` with ``<rank>`` = ``novel_rank_names(cfg)[level]``
+    (``<db>-species-iter0``). Generation, the manifest and evaluation must all pass
+    the same names to tax-credit.
+    """
+    return _scored_rank_names(cfg)
+
+
+def novel_taxa_levels(cfg: dict) -> list[int]:
+    """Novel-taxa levels to generate AND score, deepest first (6 = species).
+
+    A level indexes the top-level taxa_ranks; folds are named by that rank
+    (``novel_rank_names``), never by the number.
+
+    ``novel_taxa_levels`` takes rank names (``[species, genus, family, order]``)
+    or the legacy numbers (``[6, 5, 4, 3]``). It is the single source: the
+    manifest scores exactly these levels, so ``novel_recall_min_level`` is no
+    longer needed. When it is still set it must agree, as before (a number is
+    the exclusive lower bound: ``2`` for down to order; a name is the shallowest
+    level included: ``order``).
+    """
+    scored = _scored_rank_names(cfg)
+    if len(scored) != 7:
+        raise ValueError(
+            f"novel-taxa needs the top-level taxa_ranks to name the seven scored ranks; "
+            f"got {len(scored)} ({','.join(scored)}). List a database's full taxonomy "
+            "under its own reference_databases taxa_ranks instead."
+        )
+    unsafe = [rank for rank in scored if not re.match(r"^[A-Za-z0-9_.]+$", rank)]
+    if unsafe:
+        raise ValueError(
+            f"novel-taxa folds are named after the top-level taxa_ranks "
+            f"(<db>-<rank>-iter<n>), so rank names may contain only letters, digits, "
+            f"'_' and '.'; rename {unsafe}."
+        )
+    if len({rank.lower() for rank in scored}) != len(scored):
+        raise ValueError(f"the top-level taxa_ranks repeat a name: {','.join(scored)}")
+    raw = cfg.get("novel_taxa_levels")
+    if raw is None or raw == "" or raw == []:
+        raw = _DEFAULT_NOVEL_LEVELS
+    if not isinstance(raw, (list, tuple)):
+        raw = [raw]
+    levels = sorted({_level_from_spec(v, cfg, "novel_taxa_levels") for v in raw},
+                    reverse=True)
+    if 0 in levels:
+        raise ValueError(
+            "novel_taxa_levels cannot include the first rank "
+            f"({_scored_rank_names(cfg)[0]}): a novel taxon needs a known rank above it."
+        )
+
+    legacy = cfg.get("novel_recall_min_level")
+    if legacy not in (None, ""):
+        if isinstance(legacy, int) or str(legacy).strip().isdigit():
+            implied = list(range(6, int(legacy), -1))
+            agrees = implied == levels
+            wanted = min(levels) - 1
+        else:
+            agrees = _level_from_spec(legacy, cfg, "novel_recall_min_level") == min(levels)
+            wanted = _scored_rank_names(cfg)[min(levels)]
+        if not agrees:
+            raise ValueError(
+                f"novel_recall_min_level ({legacy}) disagrees with novel_taxa_levels "
+                f"({raw}). novel_taxa_levels alone now decides which levels are "
+                f"generated and scored: delete novel_recall_min_level (or set it to "
+                f"{wanted})."
+            )
+    return levels
+
+
+def _cv_recall_levels(cfg: dict) -> tuple[int, int]:
+    """Cross-validated manifest levels: one pass at max_level (min = max - 1).
+
+    ``cv_recall_max_level`` does not change what is scored: cross-validated fold
+    names carry no level, and scoring always covers phylum..species of the
+    scored ranks. It is accepted (rank name or number) so existing configs still
+    run, with a notice when set to anything but species.
+    """
+    raw = cfg.get("cv_recall_max_level")
+    if raw in (None, ""):
+        return 6, 5
+    try:
+        max_level = _level_from_spec(raw, cfg, "cv_recall_max_level")
+    except ValueError:
+        max_level = None  # e.g. 8 for a nine-rank database: harmless, since unused
+    if max_level is None or max_level < 1:
+        max_level = 6
+    elif max_level == 6:
+        return 6, 5
+    max_level = 6  # never changes what is recalled or scored
+    if "cv" not in _level_notices:
+        _level_notices.add("cv")
+        print(
+            f"[tax-credit] cv_recall_max_level ({raw}) has no effect: cross-validated "
+            "results are always scored from phylum to species of the top-level "
+            "taxa_ranks (per-database taxa_ranks map those to each taxonomy). "
+            "It can be removed from the config.",
+            file=sys.stderr,
+        )
+    return max_level, max_level - 1
 
 
 def _parse_ranks(value) -> list[str]:
@@ -322,8 +454,9 @@ def database_rank_positions(cfg: dict) -> dict[str, list[int]]:
     skipped. For PR2, ``kingdom,supergroup,phylum,subdivision,class,order,family,
     genus,species`` scores Domain as kingdom and Division as phylum.
 
-    Only cross-validated, cross-validated-trad and self-validated use this: novel-taxa
-    folds are generated on the first seven ranks, so they are scored that way too.
+    Every simulated evaluation method uses these: cross-validated, cross-validated-trad
+    and self-validated score at them, and novel-taxa both holds taxa out at them (level
+    6 = the species position) and scores at them.
     """
     scored = _parse_ranks(cfg.get("taxa_ranks") or _DEFAULT_TAXA_RANKS)
     positions = {}
@@ -1331,6 +1464,64 @@ def _append_fold_assignment_rows(
         })
 
 
+def check_novel_fold_positions(cfg: dict, sim_dir: str, combos) -> None:
+    """Stop if a novel-taxa fold was built for a different rank layout.
+
+    Also stops when the run holds only folds named by level number
+    (``<db>-L6-iter0``, from before folds were named by rank) instead of the
+    rank-named folds the manifest expects.
+
+    Each fold records the taxonomy positions it was generated with
+    (``novel_fold_info.tsv``). Folds generated before novel-taxa became
+    rank-aware have no record; that is only a problem for a database with its
+    own taxa_ranks, whose levels used to land on the wrong ranks (level 6 of a
+    nine-rank taxonomy held out the family, not the species).
+    """
+    from tax_credit.paths import NOVEL_FOLD_INFO_TSV
+
+    positions_by_db = database_rank_positions(cfg)
+    db_ids = [db["id"] for db in cfg.get("reference_databases") or []]
+    missing = [d for d, _ in combos if not os.path.isdir(join(sim_dir, d))]
+    legacy = sorted(
+        name for name in (os.listdir(sim_dir) if os.path.isdir(sim_dir) else [])
+        if re.match(r"^.+-L\d+-iter\d+$", name)
+        and _database_for_reference(name, db_ids) is not None
+    )
+    if missing and legacy:
+        raise ValueError(
+            "Novel-taxa folds are now named by rank (<db>-species-iter0), but this run "
+            f"holds folds named by level number ({', '.join(legacy[:4])}"
+            f"{', ...' if len(legacy) > 4 else ''}) and not the rank-named ones "
+            f"({', '.join(missing[:2])}{', ...' if len(missing) > 2 else ''}).\n"
+            "Regenerate the datasets: delete .datasets.done in the run directory (or "
+            "--forcerun tax_credit_prepare_datasets) and rerun. The old -L<n>- folds "
+            "can then be deleted."
+        )
+    stale = []
+    for dataset_id, _ in combos:
+        fold_dir = join(sim_dir, dataset_id)
+        if not os.path.isdir(fold_dir):
+            continue  # not generated yet; the manifest consumer reports that
+        db_id = _database_for_reference(dataset_id, db_ids)
+        want = ",".join(str(p) for p in positions_by_db.get(db_id, range(7)))
+        info_fp = join(fold_dir, NOVEL_FOLD_INFO_TSV)
+        if os.path.isfile(info_fp):
+            with open(info_fp) as handle:
+                info = dict(line.rstrip("\n").split("\t", 1) for line in handle if "\t" in line)
+            if info.get("rank_positions") != want:
+                stale.append(f"{dataset_id} (built for positions {info.get('rank_positions')}, "
+                             f"config gives {want})")
+        elif db_id in positions_by_db:
+            stale.append(f"{dataset_id} (built before novel-taxa used per-database taxa_ranks)")
+    if stale:
+        raise ValueError(
+            "Novel-taxa folds do not match the configured rank layout:\n  "
+            + "\n  ".join(stale[:10])
+            + "\nRegenerate the datasets: delete .datasets.done in the run directory "
+            "(or --forcerun tax_credit_prepare_datasets) and rerun."
+        )
+
+
 def prepare_datasets(cfg: dict) -> None:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.framework_functions import (
@@ -1367,7 +1558,8 @@ def prepare_datasets(cfg: dict) -> None:
             )
 
     if sim_methods:
-        levelrange = cfg.get("novel_taxa_levels", [6, 5, 4, 3])
+        levelrange = novel_taxa_levels(cfg)
+        positions_by_db = database_rank_positions(cfg)
         force = cfg.get("force_regenerate", False)
         exclude = set(cfg.get("exclude_databases") or [])
         for db in cfg.get("reference_databases", []):
@@ -1383,6 +1575,11 @@ def prepare_datasets(cfg: dict) -> None:
                 force=force,
                 simulation_method=sim_methods,
                 max_query_size_per_fold=cfg.get("max_query_size_per_fold"),
+                # novel-taxa holds each level out at this database's position
+                # for that rank; None = the standard seven ranks
+                rank_positions=positions_by_db.get(db_id),
+                # folds are named by rank: <db>-species-iter0
+                rank_names=novel_rank_names(cfg),
                 **sim_params,
             )
 
@@ -1473,12 +1670,19 @@ def prepare_manifest(cfg: dict) -> str:
                     multilevel=False,
                 )
             elif eval_method == "novel-taxa":
-                combos, ref_dbs = recall_simulated_taxa_dirs(
-                    sim_dir, db_ids, cfg["iterations"],
-                    ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
-                    max_level=6, min_level=cfg.get("novel_recall_min_level", 3),
-                    multilevel=True,
-                )
+                # Exactly the generated levels (novel_taxa_levels), one at a
+                # time so a non-contiguous list such as [species, family] works.
+                combos, ref_dbs = [], {}
+                for level in novel_taxa_levels(cfg):
+                    level_combos, level_refs = recall_simulated_taxa_dirs(
+                        sim_dir, db_ids, cfg["iterations"],
+                        ref_seqs="ref_seqs.qza", ref_taxa="ref_taxa.qza",
+                        max_level=level, min_level=level - 1,
+                        multilevel=True, rank_names=novel_rank_names(cfg),
+                    )
+                    combos += level_combos
+                    ref_dbs.update(level_refs)
+                check_novel_fold_positions(cfg, sim_dir, combos)
             elif eval_method == "cross-validated-trad":
                 from tax_credit.framework_functions import trad_cv_shared_reference_qzas
                 # recall_simulated_taxa_dirs returns (dataset_id, reference_id)
@@ -1723,10 +1927,44 @@ def prepare_manifest(cfg: dict) -> str:
     return manifest_fp
 
 
+_legacy_result_notices: set = set()
+
+
+def evaluation_result_dirs(cfg: dict, eval_method: str, computed: str) -> list[str]:
+    """Assignment result directories to evaluate, plot and analyse for *eval_method*.
+
+    For novel-taxa, skips result folders whose dataset is named by level number
+    (``<db>-L6-iter0``): they come from datasets generated before folds were named
+    by rank, would be misread as other datasets, and are superseded once the
+    datasets are regenerated. Prints a notice once per run directory.
+    """
+    from tax_credit.paths import list_assignment_result_dirs, parse_assignment_results_dir
+
+    dirs = list_assignment_result_dirs(computed)
+    if eval_method != "novel-taxa":
+        return dirs
+    legacy = re.compile(r"^.+-L\d+-iter\d+$")
+    keep, skipped = [], set()
+    for results_dir in dirs:
+        dataset_id = parse_assignment_results_dir(results_dir).dataset_id
+        if legacy.match(dataset_id):
+            skipped.add(dataset_id)
+        else:
+            keep.append(results_dir)
+    if skipped and computed not in _legacy_result_notices:
+        _legacy_result_notices.add(computed)
+        print(
+            f"[tax-credit] ignoring {len(skipped)} novel-taxa result folder(s) named by "
+            f"level number under {computed} (e.g. {sorted(skipped)[0]}); they predate "
+            "rank-named folds and can be deleted.",
+            file=sys.stderr,
+        )
+    return keep
+
+
 def evaluate(cfg: dict) -> None:
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.framework_functions import novel_taxa_classification_evaluation
-    from tax_credit.paths import list_assignment_result_dirs
 
     out = run_output_dir(cfg)
     summaries_dir = join(out, "summaries")
@@ -1747,7 +1985,7 @@ def evaluate(cfg: dict) -> None:
         sub = analysis_data_subdir(eval_method)
         computed = join(results_root, sub)
         expected = join(ddir, sub)
-        results_dirs = list_assignment_result_dirs(computed)
+        results_dirs = evaluation_result_dirs(cfg, eval_method, computed)
         if not results_dirs:
             print(f"No assignment results under {computed}; skipping evaluation.")
             continue
@@ -1769,18 +2007,13 @@ def evaluate(cfg: dict) -> None:
         elif eval_method == "self-validated":
             test_type = "self-validated"
 
-        if test_type == "novel-taxa" and rank_positions:
-            print(
-                "novel-taxa ignores per-database taxa_ranks "
-                f"({', '.join(rank_positions)}): its folds are built on the first "
-                "seven ranks, so they are scored on the first seven ranks."
-            )
         novel_taxa_classification_evaluation(
             results_dirs,
             expected,
             summary_fp,
             test_type=test_type,
-            rank_positions=None if test_type == "novel-taxa" else rank_positions,
+            rank_positions=rank_positions,
+            rank_names=novel_rank_names(cfg),
         )
 
 
@@ -1822,7 +2055,7 @@ def _per_level_plot_table(
     table["level"] = table["level"].astype(int)
     ratios = extract_per_level_classification_ratios_by_fold(assignment_dirs)
     if not ratios.empty:
-        ratios = ratios.drop(columns="novel_level")
+        ratios = ratios.drop(columns=["novel_level", "novel_rank"], errors="ignore")
         ratios["iteration"] = ratios["iteration"].astype(str)
         ratios["level"] = ratios["level"].astype(int)
         # keep the join keys plus only what the summary does not already carry
@@ -1833,10 +2066,11 @@ def _per_level_plot_table(
     return table
 
 
-def _novel_plot_table(summary_df: pd.DataFrame) -> pd.DataFrame:
-    """One row per novel-taxa fold; ``novel_level`` labels the simulation (L5, L6, ...)."""
+def _novel_plot_table(summary_df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """One row per novel-taxa fold; ``novel_rank`` names the held-out rank (species, ...)."""
+    names = novel_rank_names(cfg)
     table = summary_df.drop(columns=["mismatch_level_list"], errors="ignore").copy()
-    table["novel_level"] = "L" + table["level"].astype(int).astype(str)
+    table["novel_rank"] = table["level"].astype(int).map(lambda level: names[level])
     return table
 
 
@@ -1879,6 +2113,7 @@ def _plot_best_runs(
     csv_out: str,
     rank_labels: dict,
     rank_axis_label: str,
+    novel_rank_levels: dict | None = None,
 ) -> None:
     """Plot classification ratios for the best method + parameters per metric.
 
@@ -1897,9 +2132,9 @@ def _plot_best_runs(
         stacked_classification_panels_from_data_frames,
     )
 
-    novel = level_col == "novel_level"
+    novel = level_col == "novel_rank"
     if novel:
-        group_cols = ["Dataset", "novel_level"]
+        group_cols = ["Dataset", "novel_rank"]
         select_df = table
     else:
         group_cols = ["Dataset"]
@@ -1921,10 +2156,11 @@ def _plot_best_runs(
         dataset = group_key[0]
         runs = ratio_df[ratio_df["Dataset"] == dataset]
         if novel:
-            novel_level = int(group_key[1][1:])
+            novel_rank = group_key[1]
+            novel_level = novel_rank_levels[novel_rank]
             # only ranks above the novel rank have a meaningful expected taxonomy
             runs = runs[(runs["novel_level"] == novel_level) & (runs["level"] < novel_level)]
-            row_labels.append(f"{dataset}\nL{novel_level}")
+            row_labels.append(f"{dataset}\nnovel {novel_rank}")
         else:
             row_labels.append(dataset)
 
@@ -1945,7 +2181,7 @@ def _plot_best_runs(
 
     if not panels:
         return
-    selected_at = "each novel level's scores" if novel else f"{best_run_rank} rank"
+    selected_at = "each novel rank's scores" if novel else f"{best_run_rank} rank"
     fig = stacked_classification_panels_from_data_frames(
         panels,
         ncols=max(len(metrics), 1),
@@ -2017,7 +2253,6 @@ def analyze_log_results(cfg: dict) -> None:
         summarize_taxon_errors,
         select_top_sensitivity_taxa,
     )
-    from tax_credit.paths import list_assignment_result_dirs
     from tax_credit.log_plotting import (
         method_parameter_sensitivity_heatmap_from_data_frame,
     )
@@ -2040,7 +2275,7 @@ def analyze_log_results(cfg: dict) -> None:
         eval_label = eval_method_label(eval_method)
         sub = analysis_data_subdir(eval_method)
         computed = join(results_dir(cfg), sub)
-        assignment_dirs = list_assignment_result_dirs(computed)
+        assignment_dirs = evaluation_result_dirs(cfg, eval_method, computed)
         log_df = load_classification_accuracy_logs(assignment_dirs)
         if log_df.empty:
             continue
@@ -2077,18 +2312,19 @@ def analyze_log_results(cfg: dict) -> None:
             panels = []
             for novel_level in sorted(log_df["level"].dropna().astype(int).unique()):
                 parent_rank = RANK_NAMES[novel_level - 1]
+                novel_rank = novel_rank_names(cfg)[novel_level]
                 if parent_rank not in RANK_TO_LEVEL:
                     print(
                         f"WARNING: no sensitivity analysis for {eval_label} "
-                        f"L{novel_level}: {parent_rank} rank is not supported",
+                        f"novel {novel_rank}: {parent_rank} rank is not supported",
                         file=sys.stderr,
                     )
                     continue
                 panels.append((
                     parent_rank,
                     log_df[log_df["level"] == novel_level],
-                    f"{eval_label} L{novel_level}",
-                    f"L{novel_level}-{parent_rank}",
+                    f"{eval_label} novel {novel_rank}",
+                    f"novel-{novel_rank}-{parent_rank}",
                 ))
         else:
             panels = [(rank_, log_df, eval_label, rank_) for rank_ in ranks]
@@ -2150,7 +2386,6 @@ def plot_results(cfg: dict) -> None:
         return
     _ensure_tax_credit(cfg.get("tax_credit_package_dir", "../tax-credit"))
     from tax_credit.novel_evaluation import extract_per_level_classification_ratios
-    from tax_credit.paths import list_assignment_result_dirs
     from tax_credit.plot_theme import (
         eval_method_label,
         method_palette,
@@ -2204,20 +2439,22 @@ def plot_results(cfg: dict) -> None:
         method_plots_dir = join(plots_dir, eval_method)
         os.makedirs(method_plots_dir, exist_ok=True)
         sub = analysis_data_subdir(eval_method)
-        assignment_dirs = list_assignment_result_dirs(join(results_dir(cfg), sub))
+        assignment_dirs = evaluation_result_dirs(cfg, eval_method, join(results_dir(cfg), sub))
 
         ratio_df = pd.DataFrame()
         if plot_types & {"stacked_bar", "best_run_stacked_bar"}:
-            ratio_df = extract_per_level_classification_ratios(assignment_dirs)
+            ratio_df = extract_per_level_classification_ratios(
+                assignment_dirs, rank_names=novel_rank_names(cfg))
 
         if "stacked_bar" in plot_types and not ratio_df.empty:
             novel_levels = sorted(ratio_df["novel_level"].dropna().unique())
             if novel_levels:
                 # one plot per novel level, only ranks above the novel rank
+                names = novel_rank_names(cfg)
                 stacked_sets = [
                     (
-                        f"{eval_label} L{novel_level}",
-                        f"-L{novel_level}",
+                        f"{eval_label} novel {names[int(novel_level)]}",
+                        f"-novel-{names[int(novel_level)]}",
                         ratio_df[
                             (ratio_df["novel_level"] == novel_level)
                             & (ratio_df["level"] < novel_level)
@@ -2254,6 +2491,7 @@ def plot_results(cfg: dict) -> None:
         df = pd.read_csv(summary_fp, index_col=0)
         if df.empty:
             continue
+        novel_rank_levels = None
         if _summary_has_per_level_lists(df):
             # cross-validated / self-validated: metrics per fold and rank
             table = _per_level_plot_table(df, assignment_dirs)
@@ -2263,11 +2501,14 @@ def plot_results(cfg: dict) -> None:
             ]
             box_panels = [rank_ for rank_ in plot_ranks if rank_ in level_order]
         else:
-            # novel-taxa: metrics per fold and novel level
-            table = _novel_plot_table(df)
-            level_col = "novel_level"
+            # novel-taxa: metrics per fold and novel (held-out) rank
+            table = _novel_plot_table(df, cfg)
+            level_col = "novel_rank"
+            novel_rank_levels = {
+                rank_: level for level, rank_ in enumerate(novel_rank_names(cfg))
+            }
             level_order = sorted(
-                table["novel_level"].unique(), key=lambda v: int(v[1:])
+                table["novel_rank"].unique(), key=novel_rank_levels.__getitem__
             )
             box_panels = level_order
         palette = method_palette(table["Method"].unique(), palette_override)
@@ -2305,7 +2546,7 @@ def plot_results(cfg: dict) -> None:
                         col="Dataset",
                         x_order=level_order,
                         palette=palette,
-                        x_label="rank" if level_col == "rank" else "novel level",
+                        x_label="rank" if level_col == "rank" else "novel rank",
                         title=f"{eval_label}: {metric_label(metric)}",
                     ),
                     method_plots_dir,
@@ -2313,7 +2554,7 @@ def plot_results(cfg: dict) -> None:
                 )
 
         if "heatmap" in plot_types:
-            # config "level" means rank (or novel level); keep it in order
+            # config "level" means rank (or novel rank); keep it in order
             heat_cols = [level_col if c == "level" else c for c in heatmap_cols]
             if all(c in table.columns for c in heatmap_rows + heat_cols):
                 heat_df = table.copy()
@@ -2345,6 +2586,7 @@ def plot_results(cfg: dict) -> None:
                 join(summaries_dir, "best_runs", eval_method, f"{Path(summary_fp).stem}.csv"),
                 stacked_rank_labels,
                 stacked_rank_axis_label,
+                novel_rank_levels=novel_rank_levels,
             )
 
     analyze_log_results(cfg)

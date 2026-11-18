@@ -62,15 +62,13 @@ iterations: 2
 # delete .datasets.done (or --forcerun tax_credit_prepare_datasets); every
 # assignment then reruns. force_regenerate does NOT trigger it.
 max_query_size_per_fold:
-novel_taxa_levels: [5,6]
-cv_recall_max_level: 6
-## NOTE: novel-taxa levels are controlled by TWO keys that must agree.
-## Dataset generation uses `novel_taxa_levels`; the assignment manifest
-## independently enumerates range(6, novel_recall_min_level, -1) and does not
-## check that those fold directories exist. Keep them in sync or the run fails
-## with "ref_seqs.qza does not exist". For novel_taxa_levels: [6], the matching
-## value here is 5.
-novel_recall_min_level: 4
+# Novel-taxa levels to generate and score: rank names from the top-level taxa_ranks
+# (species, genus, family, order, class, phylum), deepest first or in any order.
+# A database with its own taxa_ranks holds each one out at its own position for that
+# rank (species is the 9th rank of PR2). Legacy numbers still work: 6 = species ...
+# 1 = phylum. novel_recall_min_level is no longer needed (if set, it must agree), and
+# cv_recall_max_level has no effect; both can be removed.
+novel_taxa_levels: [species, genus]
 force_regenerate: false
 format_reference_databases: false #not implemented yet
 

@@ -12,6 +12,18 @@ produce real benchmarking results.
 Both `.qza` and plain FASTA/TSV forms are provided; `run_tax_credit.py` accepts
 either (a `.qza` is exported to text on the fly, a text path is used as-is).
 
+`mifishGom-test-taxa-9rank.tsv` is the same taxonomy with two ranks inserted, for
+testing `classify_method: revamp-custom` with more than seven ranks
+(`config_03_taxonomy_revamp_custom_test.yaml`). Every record is Chordata
+(Actinopteri or Chondrichthyes), so kingdom `Metazoa` and subphylum `Vertebrata` are
+correct for all of them. Ranks: domain, kingdom, phylum, subphylum, class, order,
+family, genus, species. Regenerate with:
+
+```bash
+awk -F'\t' -v OFS='\t' 'NR==1{print; next} {n=split($2,a,";"); s=a[1]";Metazoa;"a[2]";Vertebrata"; for(i=3;i<=n;i++) s=s";"a[i]; print $1, s}' \
+    00-data/tax-credit-test/mifishGom-test-taxa.tsv > 00-data/tax-credit-test/mifishGom-test-taxa-9rank.tsv
+```
+
 ## Regenerating
 
 Deterministic — the same seed reproduces these files byte for byte:
@@ -74,7 +86,7 @@ Outputs land in `../v2-results/tax_credit_test-tax-credit/` and
 ## What a complete reduced run looks like
 
 With `config_04_tax_credit_test.yaml` as of 2026-09-15 (all three evaluation
-methods, 2 CV folds, novel-taxa levels 5 and 6, two values per parameter sweep):
+methods, 2 CV folds, novel species and genus, two values per parameter sweep):
 
 | Check | Expected |
 |---|---|
@@ -97,12 +109,11 @@ before using older outputs.
 
 ## Gotchas this test surfaced
 
-1. **`novel_taxa_levels` and `novel_recall_min_level` must agree.** Dataset
-   generation uses `novel_taxa_levels`; the assignment manifest independently
-   enumerates `range(6, novel_recall_min_level, -1)` and never checks the fold
-   directories exist. A mismatch fails with `ref_seqs.qza does not exist`.
-   `novel_taxa_levels: [6]` needs `novel_recall_min_level: 5`; `[5,6]` needs `4`.
-
+1. **`novel_taxa_levels` and `novel_recall_min_level` used to have to agree.** The
+   manifest enumerated `range(6, novel_recall_min_level, -1)` independently of the levels
+   generated, so a mismatch failed with "ref_seqs.qza does not exist". It now scores
+   exactly `novel_taxa_levels` (rank names such as `[species, genus]`, or the old
+   numbers); `novel_recall_min_level` is optional and checked for agreement if set.
 2. **Keep `classify_threads` well below `--cores`.** At `classify_threads: 4`
    with `-n 6`, two jobs would need 8 threads, so snakemake runs assignment jobs
    one at a time — the same work took 1022 s serialized versus 462 s at

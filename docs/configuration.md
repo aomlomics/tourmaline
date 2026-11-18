@@ -316,7 +316,8 @@ with the top-level names; the others are skipped:
 This applies to cross-validated, cross-validated-trad and self-validated evaluation. bt2-blca
 also labels its output with it: BLCA pairs rank names with taxonomy fields by position and drops
 fields beyond the last name, so a nine-rank database classified with seven names loses genus and
-species. novel-taxa ignores it, because its folds are still generated on the first seven ranks.
+species. novel-taxa uses it too: each novel-taxa level is held out at that rank's position in the
+database's taxonomy (novel species = the 9th rank of PR2) and scored at the seven named ranks.
 
 **Evaluation methods (one or more)**
 
@@ -334,11 +335,51 @@ evaluation_methods:
 ```yaml
 iterations: 10
 max_query_size_per_fold:       # blank or 0 = no cap; int = most queries scored per fold
-novel_taxa_levels: [6, 5, 4, 3]
-cv_recall_max_level: 6
-novel_recall_min_level: 3
+novel_taxa_levels: [species, genus, family, order]
 force_regenerate: false
 ```
+
+`novel_taxa_levels` lists the novel-taxa simulations to generate **and score**, by rank name
+from the top-level `taxa_ranks`: `species` holds out species (the expected answer is the
+genus), `genus` whole genera, and so on up to `phylum`. Each is generated and scored as its
+own set of folds, named after the rank held out (`<db>-species-iter0`, `<db>-genus-iter0`,
+…), and any subset works, e.g. `[species, family]`. Summaries, plots and log analysis label
+results the same way ("novel species").
+
+- **Databases with their own `taxa_ranks`** hold each level out at that rank's position in
+  their taxonomy. For PR2's nine ranks (`kingdom,supergroup,phylum,subdivision,class,order,
+  family,genus,species`), novel species is held out at the 9th rank and novel class at the
+  5th, with the subdivision left as the deepest known rank. Results are scored at the seven
+  named ranks, as in cross-validated evaluation, so `<db>-species-iter0` is novel species
+  in every database and runs are comparable across them.
+- **Legacy numbers still work**: `6` = species … `1` = phylum (they count the seven scored
+  ranks, not a database's own taxonomy).
+- **`novel_recall_min_level` is no longer needed.** The manifest now scores exactly
+  `novel_taxa_levels`; it used to enumerate `range(6, novel_recall_min_level, -1)`
+  separately, and the two had to be kept in sync. If still set, it must agree (a number is
+  the exclusive lower bound, a rank name the shallowest level), or the run stops.
+- **`cv_recall_max_level` has no effect** and can be removed. Cross-validated results are
+  always scored from phylum to species of the scored ranks; it only ever bounded a loop
+  that runs once. Rank names are accepted, and a value other than `species`/`6` prints a
+  notice.
+- The top-level `taxa_ranks` must name exactly seven ranks when novel-taxa runs; list a
+  database's full taxonomy on its own entry. Because they become part of folder names, those
+  names may contain only letters, digits, `_` and `.`.
+- Avoid database ids that end in `-<rank name>` (e.g. `silva-species`): a cross-validated
+  fold of such a database would look like a novel-taxa fold name.
+
+> **Runs generated before novel-taxa became rank-aware.** For a database with its own
+> `taxa_ranks`, older novel-taxa folds held each level out at the wrong rank (level 6 of a
+> nine-rank taxonomy was the family). Each fold now records the positions it was built with
+> (`novel_fold_info.tsv`), and the manifest phase stops if they don't match the config.
+> Regenerate: delete `.datasets.done` (or `--forcerun tax_credit_prepare_datasets`).
+> Seven-rank databases are unaffected.
+
+> **Runs from before folds were named by rank** hold novel-taxa folds named by level number
+> (`<db>-L6-iter0`). The manifest phase stops with a message to regenerate (same fix as
+> above); every database is affected, including seven-rank ones. Afterwards the old `-L<n>-`
+> folders under `data/novel-taxa-simulations/` and `data/results/novel-taxa-simulations/`
+> are ignored (with a notice) and can be deleted.
 
 `max_query_size_per_fold` caps how many query sequences are scored in **each fold** of `cross-validated`, `cross-validated-trad` and `novel-taxa`. Folds are built exactly as without it, with the database split between the `iterations` folds (about `n_sequences / iterations` queries each). Then any fold holding more queries than the cap is cut down to a random subset of that size. Leave it blank or set `0` for no cap.
 
@@ -365,7 +406,7 @@ The cap shortens the classify part of each assignment, which is where bt2-blca a
 
 In novel-taxa folds the expected taxonomy of each query is truncated to the deepest rank still present in that fold's reference. Removing the novel taxon can remove its parent as well (a monotypic genus goes with its only species), and a rank the reference no longer holds cannot be returned by any classifier, so grading against it would count every method as wrong whatever it did. Queries with no rank left in the reference are dropped from the fold. Dataset generation reports how many queries this affects per fold; novel-taxa scores are therefore not comparable with runs generated before this behaviour.
 
-`cv_recall_max_level` controls cross-validated assignment manifest generation (default `6`; `min_level` is always `max_level - 1` so each CV fold is listed once). Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
+Per-database simulation settings (`read_length`, `min_read_length`, `trim_primers`, `truncate`) are configured on each `reference_databases` entry (see above).
 
 **Taxonomic assignment** — uses the same keys as the taxonomy step (`classify_method`, `skl_confidence`, `classify_params`, etc.). Assignment runs via Snakemake rules shared with `taxonomy_step.Snakefile`, not tax-credit shell templates.
 
@@ -541,9 +582,9 @@ Cross-validated and self-validated metrics are plotted per fold and per taxonomi
 
 Plot files are named `<evaluation method>-<metric>-<plot type>.pdf` inside each evaluation method's folder, e.g. `plots/cross-validated/cross-validated-F-measure-heatmap.pdf`, and are read from the summary named in `summary_filenames`. Each classify method keeps the same colourblind-safe colour in every plot unless `plot_color_palette` sets a seaborn palette name or a method → colour mapping. Axes and heatmap colour scales zoom (and say so) when every value is within 0.25 of 0 or 1, so near-zero novel-taxa scores stay visible. `<evaluation method>-classification-ratios-stacked-barplot.pdf` has one row per method + parameter set and one column per reference database. PDF text is embedded as editable TrueType (Arial, or DejaVu Sans where Arial is not installed).
 
-`best_run_stacked_bar` picks, for each reference database and each metric in `plot_metrics`, the method + parameter combination with the best score averaged over folds (lowest for the mis-, over- and underclassification ratios, highest otherwise; ties go to the first run alphabetically). Cross-validated and self-validated runs are compared at `best_run_rank` (optional, default `species`); novel-taxa runs are compared within each novel level. It writes one figure per evaluation method, `<evaluation method>-best-run-stacked-barplot.pdf`, holding every database in that evaluation: databases (and novel levels) are rows, metrics are columns, and each panel is a stacked barplot of classification ratios by rank for that metric's winning run. It lists the selections (score, fold count, number of tied runs) in `summaries/best_runs/<evaluation method>/<summary>.csv`.
+`best_run_stacked_bar` picks, for each reference database and each metric in `plot_metrics`, the method + parameter combination with the best score averaged over folds (lowest for the mis-, over- and underclassification ratios, highest otherwise; ties go to the first run alphabetically). Cross-validated and self-validated runs are compared at `best_run_rank` (optional, default `species`); novel-taxa runs are compared within each novel rank. It writes one figure per evaluation method, `<evaluation method>-best-run-stacked-barplot.pdf`, holding every database in that evaluation: databases (and novel ranks) are rows, metrics are columns, and each panel is a stacked barplot of classification ratios by rank for that metric's winning run. It lists the selections (score, fold count, number of tied runs) in `summaries/best_runs/<evaluation method>/<summary>.csv`.
 
-Novel-taxa results are split by novel level (`L5`, `L6`, …). Stacked barplots are written per level (`novel-taxa-classification-ratios-stacked-barplot-L6.pdf`) and show only ranks above the novel rank. Method/parameter sensitivity is computed at the rank just above the novel rank (`novel-taxa-method-parameter-misclassified-L6-genus.pdf`) instead of `log_analysis_ranks`.
+Novel-taxa results are split by novel rank (novel `species`, `genus`, …). Stacked barplots are written per novel rank (`novel-taxa-classification-ratios-stacked-barplot-novel-species.pdf`) and show only ranks above it. Method/parameter sensitivity is computed at the rank just above the novel rank (`novel-taxa-method-parameter-misclassified-novel-species-genus.pdf`) instead of `log_analysis_ranks`.
 
 Log-analysis tables (`taxon_error_profiles.csv`, `confusion_pairs.csv`, `cross_fold_stability.csv`, `method_parameter_misclassified-*.csv`) include an `expected_rank` column: the deepest rank named in the expected taxonomy. It is shallower than the analysis rank when the reference lacks that rank or, in cross-validated folds, when the taxon's lower ranks are absent from the training fold. Misclassification heatmaps (`<evaluation method>-method-parameter-misclassified-<rank>.pdf`) show only taxa whose `expected_rank` is the plotted rank, with one panel per reference database holding up to `log_analysis_top_n` taxa ranked by their highest misclassification in any run (taxa never misclassified are left out); hatched cells mean the taxon had no reads in that run.
 
